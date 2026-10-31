@@ -23,7 +23,9 @@ function validMask(mask){
  const n=mask?.length;
  if(!Number.isInteger(n)||n<5||mask.some(row=>!Array.isArray(row)||row.length!==n))return false;
  const black=mask.reduce((sum,row)=>sum+row.filter(Boolean).length,0);
- if(black===0||black>Math.ceil(n*n*.45))return false;
+ if(black===0||black>=n*n)return false;
+ for(let r=0;r<n;r++)if(mask[r].every(Boolean))return false;
+ for(let c=0;c<n;c++)if(mask.every(row=>row[c]))return false;
  return !!slotsFor(mask);
 }
 function slotLengths(mask){
