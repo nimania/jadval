@@ -6,6 +6,7 @@ on:
       - index.html
       - demo-generator.js
       - sparse-generator.js
+      - mosaic-generator.js
       - import_puzzles.py
       - build_database.py
       - generate.py
@@ -37,5 +38,6 @@ jobs:
           node --check /tmp/jadval-studio.js
           node --check demo-generator.js
           node --check sparse-generator.js
+          node --check mosaic-generator.js
           node tests/test_demo_generator.cjs
           node tests/test_sparse_generator.cjs
