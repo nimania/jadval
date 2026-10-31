@@ -14,6 +14,9 @@ import urllib.parse
 import urllib.request
 
 PROJECT = "persiancrossword"
+# Public web-app configuration from BlankuApp/PersianCrossword/app/firebase.ts.
+# Firebase Web API keys identify projects; they do not bypass Firestore rules.
+PUBLIC_FIREBASE_API_KEY = "AIzaSyAUTZ9-5yqZow6vnOcAT7R_wtV7zOUsEXk"
 BASE = f"https://firestore.googleapis.com/v1/projects/{PROJECT}/databases/(default)/documents"
 
 def decode_firestore(value):
@@ -55,10 +58,10 @@ def safe_name(value):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output",default="archive/raw",help="Local output path; never push to public hosting directly")
-    parser.add_argument("--api-key",default=os.getenv("CROSSWORD_FIREBASE_API_KEY",""))
+    parser.add_argument("--api-key",default=os.getenv("CROSSWORD_FIREBASE_API_KEY", PUBLIC_FIREBASE_API_KEY))
     args = parser.parse_args()
     if not args.api_key:
-        parser.error("Set CROSSWORD_FIREBASE_API_KEY in GitHub Actions secrets or --api-key")
+        parser.error("Firebase Web API key missing; pass --api-key or CROSSWORD_FIREBASE_API_KEY")
     catalog = read_doc("catalog/index",args.api_key)
     if catalog.get("schema") != 2:
         raise RuntimeError("Unexpected catalog schema (expected 2)")
