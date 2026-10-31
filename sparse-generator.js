@@ -312,7 +312,7 @@ async function generateSample(){
   render(output.result);
   $("demoNote").textContent="شبکه با پاسخ کامل و تقاطع‌های سازگار ساخته شد. قبل از انتشار، متن سرنخ‌ها و شباهت به آرشیو باید بازبینی شود.";
  }catch(err){last=null;$("demoResult").hidden=true;$("demoNote").textContent="خطا: "+err.message;}
- finally{btn.disabled=false;btn.textContent="ساخت یک نمونه جدول";}
+ finally{btn.disabled=false;btn.textContent="تلاش برای طراحی تازه (آزمایشی)";}
 }
 function init(){
  if(!$("buildDemo"))return;
