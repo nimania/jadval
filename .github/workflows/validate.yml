@@ -11,6 +11,7 @@ on:
       - classic-preview.js
       - bank-tools.js
       - classic-solver-worker.js
+      - verified-sample-15.js
       - import_puzzles.py
       - build_database.py
       - generate.py
@@ -47,6 +48,8 @@ jobs:
           node --check classic-preview.js
           node --check bank-tools.js
           node --check classic-solver-worker.js
+          node --check verified-sample-15.js
+          node tests/test_verified_sample_15.cjs
           node tests/test_classic_solver.cjs
           node tests/test_classic_patterns.cjs
           node tests/test_demo_generator.cjs
