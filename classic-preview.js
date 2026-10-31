@@ -12,7 +12,7 @@ function renderMask(mask){
   label(r+1,false);
   for(let c=n-1;c>=0;c--){
    const d=document.createElement("div");
-   d.className=mask[r][c]?"demo-cell demo-block":"demo-cell";
+   d.className=mask[r][c]?"demo-cell demo-block art-"+($("blockArt")?.value||"plain"):"demo-cell";
    grid.append(d);
   }
  }
@@ -41,5 +41,6 @@ function init(){
  };
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+const style=$("blockArt");if(style)style.addEventListener("change",()=>{if(current)renderMask(current);});
 window.JadvalClassicPreview={renderMask};
 })();
