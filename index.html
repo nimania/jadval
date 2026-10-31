@@ -27,6 +27,20 @@ dialog{border:0;border-radius:15px;box-shadow:0 16px 80px #07172350;width:min(54
 .empty{padding:50px 20px;text-align:center;border:2px dashed #d7e0e7;border-radius:13px}
 .note{border-right:3px solid #c1a46a;padding-right:12px;font-size:12px;color:#65717a;margin-top:12px}
 @media(max-width:800px){.filters{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr 1fr}}@media(max-width:520px){.filters{grid-template-columns:1fr}.top{padding:12px}.hero h1{font-size:24px}}
+
+/* Draft crossword preview */
+.demo-layout{display:grid;grid-template-columns:minmax(260px,1fr) minmax(200px,1fr);gap:22px;align-items:start}
+.demo-grid{display:grid;direction:rtl;gap:2px;margin:10px 0;max-width:530px;width:100%;background:#dde6ec;padding:3px;border-radius:8px;aspect-ratio:1}
+.demo-cell{display:grid;place-items:center;min-width:0;min-height:0;aspect-ratio:1;background:white;font-weight:700;font-size:clamp(10px,1.3vw,19px);color:#254960;user-select:none}
+.demo-block{background:#2b4050}
+.demo-questions{padding:0 20px 0 0;max-height:410px;overflow:auto;line-height:2;font-size:13px}
+.demo-questions li{margin:0 0 4px}
+.demo-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.demo-controls select{width:auto;min-width:115px}
+.demo-intro{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+#demoResult{margin-top:18px;border-top:1px solid #e5eaf0;padding-top:14px}
+#demoGrid{direction:ltr}
+@media(max-width:800px){.demo-layout{grid-template-columns:1fr}.demo-grid{max-width:500px}}
 </style></head>
 <body><header><div class="top"><div><div class="brand">جدول <span class="subtitle">/ کارگاه طراحی فارسی</span></div></div><a href="https://nimania.github.io/payamejadval/" target="_blank" rel="noopener">پیام جدول ↗</a></div></header>
 <main>
@@ -34,6 +48,11 @@ dialog{border:0;border-radius:15px;box-shadow:0 16px 80px #07172350;width:min(54
 <div class="toolbar"><label class="btn primary" for="file">ورود بانک JSON</label><input id="file" type="file" accept=".json,application/json">
 <button class="btn" id="export" disabled>خروجی و پشتیبان JSON ↓</button><button class="btn" id="clear" disabled>پاک‌کردن بانک مرورگر</button></div></div>
 <div class="stats"><div class="stat"><span class="num" id="total">۰</span><span class="label">مدخل‌های بانک</span></div><div class="stat"><span class="num" id="approved">۰</span><span class="label">بازبینی‌شده</span></div><div class="stat"><span class="num" id="answers">۰</span><span class="label">پاسخ متفاوت</span></div><div class="stat"><span class="num" id="visible">۰</span><span class="label">نتیجه جست‌وجو</span></div></div>
+<section class="panel" id="demoStudio"><div class="demo-intro"><div><h2>طراحی آزمایشی جدول</h2><p class="muted small">از بانک فعلی خودت یک نمونهٔ متقاطع بساز. چیزی به پیام جدول منتشر نمی‌شود.</p></div><span class="status">نسخهٔ آزمایشی</span></div>
+<div class="demo-controls" style="margin-top:14px"><label for="demoSize">اندازه</label><select id="demoSize"><option value="10">۱۰ × ۱۰</option><option value="15" selected>۱۵ × ۱۵</option><option value="20">۲۰ × ۲۰</option></select><label for="demoFilter">موضوع</label><select id="demoFilter"><option value="">همه موضوع‌ها</option></select><button class="btn primary" id="buildDemo">ساخت یک نمونه جدول</button></div>
+<p class="note" id="demoNote">اگر بانک در مرورگر بارگذاری شده باشد از همان استفاده می‌کنیم؛ در غیر این صورت فقط داده‌های نمایشی داخلی استفاده می‌شوند.</p>
+<div id="demoResult" hidden><p id="demoMeta" class="muted small"></p><div class="demo-layout"><div><div class="demo-grid" id="demoGrid"></div><div class="toolbar" style="align-items:center"><label><input type="checkbox" id="showAnswers"> نمایش جواب‌ها</label><button class="btn" id="downloadDemo">دریافت فایل JSON جدول</button></div></div><div id="demoClues"></div></div></div>
+</section>
 <section class="panel"><h2>جست‌وجو و فیلتر</h2><div class="filters"><input type="text" id="search" placeholder="جست‌وجو در سؤال، جواب یا شناسه…" aria-label="جست‌وجو"><select id="category" aria-label="موضوع"><option value="">همه موضوع‌ها</option></select><select id="reviewed" aria-label="وضعیت بازبینی"><option value="">همه وضعیت‌ها</option><option value="0">نیازمند بازبینی</option><option value="1">بازبینی‌شده</option></select><select id="difficulty" aria-label="درجه سختی"><option value="">همه درجه‌های سختی</option><option value="easy">آسان</option><option value="medium">متوسط</option><option value="hard">سخت</option><option value="unknown">نامشخص</option></select></div>
 <p id="message" class="note" role="status">برای شروع فایل jadval_entries_19804.json را وارد کنید. داده‌ها به سرور ارسال نمی‌شوند و فقط در همین مرورگر ذخیره می‌شوند.</p></section>
 <section class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">فهرست سؤال‌ها</h2><button class="btn" id="suggest" disabled>دسته‌بندی پیشنهادی برای مدخل‌های بدون موضوع</button></div><div id="empty" class="empty">هنوز بانک سؤال‌وجواب وارد نشده است.</div><div id="tableArea" hidden><div class="table-scroll"><table><thead><tr><th>سؤال</th><th>جواب</th><th>موضوع</th><th>تعداد حروف</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="rows"></tbody></table></div><div class="pager"><button class="btn" id="prev">صفحهٔ قبل</button><span id="page"></span><button class="btn" id="next">صفحهٔ بعد</button></div></div></section>
@@ -85,4 +104,4 @@ $('suggest').onclick=async()=>{let n=0;for(const x of entries){if(x.category&&x.
 for(const id of ['search','category','reviewed','difficulty'])$(id).addEventListener(id==='search'?'input':'change',applyFilters);
 $('prev').onclick=()=>{page=Math.max(0,page-1);render()};$('next').onclick=()=>{page++;render()};
 restore().then(data=>{if(data?.entries?.length){entries=data.entries;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل از حافظهٔ مرورگر بازیابی شد.')}else render()}).catch(e=>status('ذخیره‌سازی محلی در این مرورگر فعال نیست: '+e.message));
-</script></body></html>
+</script><script src="./demo-generator.js"></script></body></html>
