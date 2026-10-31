@@ -247,12 +247,18 @@ async function generateSample(){
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
     let solution=null;
+    const deficits=[];
     for(let k=0;k<masks.length;k++){
+     const inventory=maker.assess(masks[k],filtered);
+     if(inventory.missingLengths.length){deficits.push(...inventory.missingLengths);continue;}
      const result=solve(masks[k],filtered,7500,Date.now()+k);
      if(result&&validateComplete(result)){solution=result;break;}
      await new Promise(resolve=>setTimeout(resolve,0));
     }
-    output=solution?{result:solution}:{error:"الگوی کلاسیک ساخته شد، ولی پرکردن تمام تقاطع‌های آن با بانک فعلی ممکن نشد. از «پیش‌نمایش الگوی سیاه» برای دیدن الگو استفاده کن؛ هیچ جدول ناقصی منتشر نمی‌شود."};
+    const missing=[...new Set(deficits)].sort((a,b)=>a-b);
+    output=solution?{result:solution}:{error:missing.length?
+     "الگوهای این تلاش برای طول‌های "+missing.join("، ")+" حرفی پاسخ کافی ندارند. از «نمایش آمار طول جواب‌ها» استفاده کن؛ هیچ خروجی ناقصی نشان داده نمی‌شود.":
+     "الگوهای کلاسیک با طول واژه‌های بانک سازگارند، اما حل‌گر هنوز نتوانست همهٔ تقاطع‌ها را هم‌زمان کامل کند. این مشکل مربوط به سازگاری حروف است، نه صرفاً طول پاسخ‌ها. از پیش‌نمایش الگو استفاده کن؛ جدول ناقص صادر نمی‌شود."};
    }
   }else{
    const builder=window.JadvalMosaic;
