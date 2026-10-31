@@ -229,6 +229,17 @@ function render(data){
  $("demoMeta").textContent="جدول کامل: "+data.slots+" پاسخ — شبکهٔ "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ الگوی آزاد.";
  section.scrollIntoView({behavior:"smooth",block:"start"});
 }
+function solveClassicInWorker(masks,source,seed){
+ return new Promise(resolve=>{
+  const worker=new Worker("./classic-solver-worker.js");
+  const id=String(seed),watchdog=setTimeout(()=>{worker.terminate();resolve({status:"timeout",reports:[]});},15500);
+  const finish=message=>{clearTimeout(watchdog);worker.terminate();resolve(message);};
+  worker.onmessage=event=>{if(event.data?.id===id)finish(event.data)};
+  worker.onerror=event=>finish({status:"error",message:"خطای اجرای حل‌گر جداگانه"});
+  worker.postMessage({action:"solve",id,masks,entries:source.map(e=>({id:e.id,answer:e.answer,clue:e.clue})),
+                      options:{totalMs:12000,seed}});
+ });
+}
 async function generateSample(){
  const btn=$("buildDemo"),size=Number($("demoSize").value),category=$("demoFilter").value;
  const bank=(typeof entries!=="undefined"&&entries.length)?entries:[];
@@ -246,19 +257,22 @@ async function generateSample(){
    const masks=maker.build(size,Date.now(),5,filtered);
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
-    let solution=null;
-    const deficits=[];
-    for(let k=0;k<masks.length;k++){
-     const inventory=maker.assess(masks[k],filtered);
-     if(inventory.missingLengths.length){deficits.push(...inventory.missingLengths);continue;}
-     const result=solve(masks[k],filtered,7500,Date.now()+k);
-     if(result&&validateComplete(result)){solution=result;break;}
-     await new Promise(resolve=>setTimeout(resolve,0));
+    const report=await solveClassicInWorker(masks,filtered,Date.now());
+    const candidate=report.result;
+    if(report.status==="solved"&&candidate&&validateComplete(candidate)){
+     output={result:candidate};
+    }else{
+     const stats=report.reports||[];
+     const depth=stats.reduce((m,x)=>Math.max(m,x.bestDepth||0),0);
+     const total=stats.find(x=>(x.bestDepth||0)===depth)?.slotCount||0;
+     const missing=[...new Set(stats.flatMap(x=>x.missingLengths||[]))].sort((a,b)=>a-b);
+     const detail=missing.length?
+      "در برخی الگوها پاسخ با طول "+missing.join("، ")+" حرف وجود نداشت.":
+      "حل‌گر نتوانست همهٔ تقاطع‌های حروف را سازگار کند.";
+     output={error:"جدول کامل پیدا نشد. بهترین پیشرفت: "+depth+" جایگاه از "+total+
+      "؛ "+detail+" هیچ جدول ناقصی نمایش یا صادر نمی‌شود."};
     }
-    const missing=[...new Set(deficits)].sort((a,b)=>a-b);
-    output=solution?{result:solution}:{error:missing.length?
-     "الگوهای این تلاش برای طول‌های "+missing.join("، ")+" حرفی پاسخ کافی ندارند. از «نمایش آمار طول جواب‌ها» استفاده کن؛ هیچ خروجی ناقصی نشان داده نمی‌شود.":
-     "الگوهای کلاسیک با طول واژه‌های بانک سازگارند، اما حل‌گر هنوز نتوانست همهٔ تقاطع‌ها را هم‌زمان کامل کند. این مشکل مربوط به سازگاری حروف است، نه صرفاً طول پاسخ‌ها. از پیش‌نمایش الگو استفاده کن؛ جدول ناقص صادر نمی‌شود."};
+
    }
   }else{
    const builder=window.JadvalMosaic;
