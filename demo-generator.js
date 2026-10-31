@@ -149,6 +149,7 @@ function init(){
   if(eligibleEntries.length<3){document.getElementById('demoNote').textContent='برای این فیلتر واژهٔ مناسب کافی وجود ندارد. موضوع «همه» را انتخاب کن.';return;}
   attempts++;let best=null;
   for(let k=0;k<3;k++){const trial=generate(eligibleEntries,size,Date.now()+attempts*17+k);if(trial&&(!best||trial.placed.length>best.placed.length))best=trial;}
+  if(best)best.usedSource=bank===demo?'demo':'bank';
   render(best);document.getElementById('demoNote').textContent='این جدول از تقاطع حرفی واژه‌ها ساخته شده، اما هنوز جدول روزنامه‌ای کامل نیست و سؤال‌ها نیازمند تأیید انسانی‌اند.';
  };
  // Re-read topic choices after importing the current browser bank.
