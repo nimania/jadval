@@ -4,7 +4,7 @@
 const normalize=s=>String(s||"").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\u064b-\u065f\u0670\s\u200c\u200d\-ـ]/g,"");
 const alphabet=/^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیؤئء]+$/;
 const $=id=>document.getElementById(id);
-let last=null,lastDiagnostic=null;
+let last=null,lastDiagnostic=null,sampleVariant=0;
 function updateReport(report){lastDiagnostic=report;const button=$("downloadSolveReport");if(button)button.disabled=!report;}
 function rng(seed){return ()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 function slotsFor(mask) {
@@ -325,7 +325,8 @@ function init(){
  const showSample=$("showVerifiedSample");
  if(showSample)showSample.onclick=()=>{
   const currentBank=(typeof entries!=="undefined"&&entries.length)?entries:[];
-  const preset=window.JadvalVerified15?.build(currentBank);
+  const variant=sampleVariant++ % (window.JadvalVerified15?.variants||1);
+  const preset=window.JadvalVerified15?.build(currentBank,variant);
   if(!preset?.result){
    $("demoNote").textContent=preset?.error||"نمونهٔ کامل ۱۵×۱۵ در دسترس نیست.";
    return;
@@ -333,7 +334,7 @@ function init(){
   $("demoSize").value="15";
   updateReport(null);
   render(preset.result);
-  $("demoNote").textContent="یک نمونهٔ کامل ۱۵×۱۵ از بانک محلی نمایش داده شد: ۷۷ جواب یکتا، هیچ خانهٔ سفید خالی نیست. این یک نمونهٔ ازپیش‌ساخته‌شده برای آزمون فنی است، نه نتیجهٔ حل‌گر کلاسیک و نه جدول تأییدشده برای انتشار.";
+  $("demoNote").textContent="نمونهٔ کامل شمارهٔ "+(variant+1)+" از بانک محلی نمایش داده شد: ۷۷ جواب یکتا، هیچ خانهٔ سفید خالی نیست. این یک نمونهٔ ازپیش‌ساخته‌شده برای آزمون فنی است، نه نتیجهٔ حل‌گر کلاسیک و نه جدول تأییدشده برای انتشار.";
  };
  const reportButton=$("downloadSolveReport");
  if(reportButton)reportButton.onclick=()=>{
