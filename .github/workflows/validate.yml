@@ -35,3 +35,4 @@ jobs:
           PY
           node --check /tmp/jadval-studio.js
           node --check demo-generator.js
+          node tests/test_demo_generator.cjs
