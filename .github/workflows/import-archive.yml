@@ -1,0 +1,38 @@
+name: Import licensed crossword archive
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate Firebase API key is available
+        env:
+          CROSSWORD_FIREBASE_API_KEY: ${{ secrets.CROSSWORD_FIREBASE_API_KEY }}
+        run: |
+          if [ -z "$CROSSWORD_FIREBASE_API_KEY" ]; then
+            echo "::error::Set the CROSSWORD_FIREBASE_API_KEY repository secret first."
+            exit 1
+          fi
+      - name: Fetch source puzzle files
+        env:
+          CROSSWORD_FIREBASE_API_KEY: ${{ secrets.CROSSWORD_FIREBASE_API_KEY }}
+        run: python3 fetch_archive.py --output archive/raw
+      - name: Build independent SQLite bank
+        run: python3 build_database.py --archive archive/raw --db archive/jadval.sqlite --report archive/report.json
+      - name: Upload private working archive as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jadval-import-${{ github.run_number }}
+          path: archive/
+          retention-days: 30
+          if-no-files-found: error
