@@ -20,63 +20,90 @@ function slotsFor(mask) {
  return slots;
 }
 function validMask(mask,maxBlacks=2){
- const n=mask.length,cols=Array(n).fill(0);
- for(const row of mask){if(row.reduce((a,b)=>a+Number(b),0)>maxBlacks)return false;row.forEach((v,c)=>cols[c]+=Number(v));}
- if(!cols.every(v=>v<=maxBlacks))return false;
- // Keep separate black cells distant from each other in each direction.
- for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(mask[r][c]){
-  for(let d=1;d<=2;d++){
-   if(c+d<n&&mask[r][c+d])return false;
-   if(r+d<n&&mask[r+d][c])return false;
-  }
+ const n=mask.length;
+ if(n<5||mask.some(row=>row.length!==n))return false;
+ for(let r=0;r<n;r++){
+  const sum=mask[r].filter(Boolean).length;
+  if(sum<1||sum>maxBlacks)return false;
+ }
+ for(let c=0;c<n;c++){
+  const sum=mask.filter(row=>row[c]).length;
+  if(sum<1||sum>maxBlacks)return false;
  }
  return !!slotsFor(mask);
 }
 function patterns(n,seed,count){
- const random=rng(seed),result=[],keys=new Set();
- // Start with two cyclic diagonals (<= 2 blocks per row and per column).
- // Remove problematic cells instead of adding blocks when one-letter slots appear.
- for(let t=0;t<count*32&&result.length<count;t++){
-  let shift=2+Math.floor(random()*(n-3));
-  let offset=Math.floor(random()*n);
+ // Sparse manuscript-style layouts: one black diagonal per row and column,
+ // with two-by-two corner repairs that eliminate one-letter slots.
+ // This always has between 1 and 2 black cells in EVERY row and column.
+ const result=[],seen=new Set();
+ for(const variant of [0,1]){
   const mask=Array.from({length:n},()=>Array(n).fill(false));
   for(let r=0;r<n;r++){
-   mask[r][(r+offset)%n]=true;
-   mask[r][(r+offset+shift)%n]=true;
+   const c=variant===0?r:n-1-r;
+   mask[r][c]=true;
   }
-  for(let pass=0;pass<n*3;pass++){
-   let changed=false;
-   for(const vertical of [false,true]){
-    for(let line=0;line<n;line++){
-     let i=0;
-     while(i<n){
-      const blocked=j=>vertical?mask[j][line]:mask[line][j];
-      if(blocked(i)){i++;continue;}
-      const from=i;while(i<n&&!blocked(i))i++;
-      if(i-from===1){
-       const targets=[from-1,i].filter(j=>j>=0&&j<n&&blocked(j));
-       if(targets.length){
-        const j=targets[Math.floor(random()*targets.length)];
-        if(vertical)mask[j][line]=false;else mask[line][j]=false;
-        changed=true;
-       }
-      }
-     }
-    }
-   }
-   if(!changed)break;
+  if(variant===0){
+   mask[0][1]=true;mask[1][0]=true;
+   mask[n-1][n-2]=true;mask[n-2][n-1]=true;
+  }else{
+   mask[0][n-2]=true;mask[1][n-1]=true;
+   mask[n-1][1]=true;mask[n-2][0]=true;
   }
-  // Remove clustered blacks; never add any new black cells.
-  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(mask[r][c]){
-   if((c>0&&mask[r][c-1])||(c>1&&mask[r][c-2])||
-      (r>0&&mask[r-1][c])||(r>1&&mask[r-2][c]))mask[r][c]=false;
+  if(validMask(mask)){
+   const key=mask.map(row=>row.map(x=>x?1:0).join("")).join("/");
+   if(!seen.has(key)){seen.add(key);result.push(mask);}
   }
-  if(!validMask(mask))continue;
-  const key=mask.map(row=>row.map(x=>x?1:0).join("")).join("/");
-  if(!keys.has(key)){keys.add(key);result.push(mask);}
  }
- return result;
+ return result.slice(0,count);
 }
+function draftFill(mask,source,seed){
+ // A clearly labelled editable *partial* draft, never described as a solved crossword.
+ const n=mask.length,slots=slotsFor(mask),random=rng(seed),lookup=new Map();
+ for(const e of source){
+  const w=normalize(e.answer),clue=String(e.clue||"").trim();
+  if(w.length<2||w.length>n||!alphabet.test(w)||!clue)continue;
+  if(!lookup.has(w.length))lookup.set(w.length,[]);
+  lookup.get(w.length).push({word:w,clue,id:e.id||null});
+ }
+ const letters=Array.from({length:n},()=>Array(n).fill(""));
+ const assigned=new Map(),used=new Set();
+ const order=slots.slice().filter(slot=>lookup.has(slot.cells.length));
+ // Long answers first; a shorter word can still cross an existing word.
+ order.sort((a,b)=>b.cells.length-a.cells.length+((random()-.5)*.06));
+ for(const slot of order){
+  const domain=lookup.get(slot.cells.length);
+  let best=null,bestScore=-Infinity;
+  // Scan the whole length-specific word list, maximizing compatible crossings.
+  for(const entry of domain){
+   if(used.has(entry.word))continue;
+   let score=0,ok=true;
+   for(let i=0;i<slot.cells.length;i++){
+    const [r,c]=slot.cells[i],before=letters[r][c];
+    if(before&&before!==entry.word[i]){ok=false;break;}
+    if(before)score+=7;
+   }
+   if(!ok)continue;
+   score+=random()*2;
+   if(score>bestScore){bestScore=score;best=entry;}
+  }
+  if(!best)continue;
+  assigned.set(slot.id,best);used.add(best.word);
+  slot.cells.forEach(([r,c],i)=>{letters[r][c]=best.word[i]});
+ }
+ const grid=mask.map((row,r)=>row.map((block,c)=>block?"":letters[r][c]||" "));
+ const clues={horizontal:{},vertical:{}};
+ for(const slot of slots){
+  const entry=assigned.get(slot.id);
+  if(!entry)continue;
+  (clues[slot.dir][String(slot.group)]??=[]).push(entry.clue);
+ }
+ const remaining=slots.length-assigned.size;
+ return {puzzle:{version:0,grid,clues,meta:{title:"پیش‌نویس ناقص جدول "+n+"×"+n,size:{rows:n,cols:n},status:"partial-draft",language:"fa",direction:"rtl"}},
+   mask,slots:slots.length,filledSlots:assigned.size,remaining,partial:true,
+   usedIds:[...assigned.values()].map(x=>x.id)};
+}
+
 function solve(mask,source,budget=7000,seed=1){
  const slots=slotsFor(mask);if(!slots)return null;
  const wordsByLength=new Map();
@@ -143,24 +170,10 @@ function solve(mask,source,budget=7000,seed=1){
  const puzzle={version:3,grid,clues,meta:{title:"پیش‌نویس جدول جدید",size:{rows:n,cols:n},language:"fa",direction:"rtl",status:"draft"}};
  return {puzzle,mask,usedIds,nodes,slots:slots.length};
 }
-// This 5x5 sample was assembled from licensed question-answer entries and
-// checked against all 324 original puzzles: maximum answer-set overlap 1/10.
-function verifiedSeedSample(bank){
- const horizontal=["مسافت","اینده","دلدار","اولیا","مرسین"];
- const vertical=["مادام","سیلور","اندلس","فدایی","تهران"];
- const lookup=new Map();
- for(const e of bank)if(!lookup.has(normalize(e.answer)))lookup.set(normalize(e.answer),e);
- if(![...horizontal,...vertical].every(w=>lookup.has(w)))return null;
- const grid=horizontal.map(w=>[...w].reverse());
- for(let j=0;j<5;j++)if(vertical[j]!==horizontal.map(w=>w[j]).join(""))return null;
- const clues={horizontal:{},vertical:{}};
- for(let j=0;j<5;j++){
-  clues.horizontal[String(j+1)]=[lookup.get(horizontal[j]).clue];
-  clues.vertical[String(j+1)]=[lookup.get(vertical[j]).clue];
- }
- const puzzle={version:3,grid,clues,meta:{title:"ترکیب تازهٔ آزمایشی ۵×۵",size:{rows:5,cols:5},language:"fa",direction:"rtl",status:"draft",referenceMaximumAnswerOverlap:0.1}};
- return {puzzle,mask:grid.map(row=>row.map(()=>false)),usedIds:[...horizontal,...vertical].map(w=>lookup.get(w).id),nodes:0,slots:10,preset:true};
-}
+// The older 5x5 sample had zero black cells and does not meet the new rules.
+// It remains disabled; sample generation now uses masks with at least one black
+// cell in every row and every column.
+
 function compare(puzzle,reference){
  // Compare answer sets and cell layouts when actual original puzzles are available.
  if(!Array.isArray(reference)||!reference.length)return {verified:false,message:"آرشیو جدول‌های اولیه برای سنجش شباهت ساختاری در مرورگر موجود نیست."};
@@ -175,64 +188,70 @@ function compare(puzzle,reference){
  return {verified:true,highestPatternSimilarity:highest,passed:highest<=.2};
 }
 function render(data){
- last=data;const grid=$("demoGrid"),section=$("demoResult"),clues=$("demoClues"),size=data.puzzle.grid.length;
- section.hidden=false;grid.replaceChildren();clues.replaceChildren();grid.style.gridTemplateColumns="repeat("+size+",minmax(0,1fr))";
+ last=data;
+ const grid=$("demoGrid"),section=$("demoResult"),clues=$("demoClues"),size=data.puzzle.grid.length;
+ section.hidden=false;grid.replaceChildren();clues.replaceChildren();
+ grid.style.gridTemplateColumns="repeat("+size+",minmax(0,1fr))";
  for(let r=0;r<size;r++)for(let c=size-1;c>=0;c--){
-  const cell=document.createElement("div"),letter=data.puzzle.grid[r][c];
-  cell.className=letter?"demo-cell":"demo-cell demo-block";cell.dataset.letter=letter;
-  cell.textContent=$("showAnswers").checked?letter:"";grid.append(cell);
+  const cell=document.createElement("div"),letter=data.puzzle.grid[r][c],blocked=data.mask[r][c];
+  cell.className=blocked?"demo-cell demo-block":"demo-cell";
+  if(!blocked){
+   if(letter.trim())cell.dataset.letter=letter;
+   else cell.classList.add("demo-empty");
+   cell.textContent=$("showAnswers").checked&&letter.trim()?letter:"";
+  }
+  grid.append(cell);
  }
  for(const [key,title] of [["horizontal","افقی"],["vertical","عمودی"]]){
   const wrap=document.createElement("div"),h=document.createElement("h3"),ul=document.createElement("ul");
   h.textContent=title;ul.className="demo-questions";
   for(const [num,list] of Object.entries(data.puzzle.clues[key]).sort((a,b)=>Number(a[0])-Number(b[0]))){
-   for(const question of list){const li=document.createElement("li");li.textContent=num+" — "+question;ul.append(li);}
+   for(const question of list){
+    const li=document.createElement("li");li.textContent=num+" — "+question;ul.append(li);
+   }
   }
   wrap.append(h,ul);clues.append(wrap);
  }
- $("demoMeta").textContent=data.slots+" سؤال — شبکهٔ "+size+"×"+size+"، حداکثر دو خانهٔ سیاه در هر ردیف یا ستون؛ خروجی نیازمند بازبینی.";
+ const blackCount=data.mask.flat().filter(Boolean).length;
+ $("demoMeta").textContent=(data.partial?"پیش‌نویس ناقص: "+data.filledSlots+" از "+data.slots+" پاسخ جای‌گذاری شده‌اند":"جدول کامل: "+data.slots+" پاسخ")+
+   " — "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ در هر ردیف و ستون ۱ یا ۲ خانهٔ سیاه.";
+ $("demoResult").scrollIntoView({behavior:"smooth",block:"start"});
 }
+
 async function generateSample(){
  const btn=$("buildDemo"),size=Number($("demoSize").value),category=$("demoFilter").value;
  const bank=(typeof entries!=="undefined"&&entries.length)?entries:[];
- if(!bank.length){$("demoNote").textContent="ابتدا بانک سؤال‌وجواب را وارد کن؛ نسخهٔ دوم از دادهٔ نمایشی استفاده نمی‌کند.";return;}
- let filtered=category?bank.filter(e=>(e.category||"دسته‌بندی‌نشده")===category):bank;
- const t=Date.now();btn.disabled=true;btn.textContent="در حال جست‌وجو…";
- $("demoNote").textContent="در حال بررسی الگوهای کم‌سیاه و تقاطع همهٔ پاسخ‌ها…";
+ if(!bank.length){$("demoNote").textContent="اول بانک سؤال‌وجواب خودت را وارد کن.";return;}
+ const filtered=category?bank.filter(e=>(e.category||"دسته‌بندی‌نشده")===category):bank;
+ const seed=Date.now();btn.disabled=true;btn.textContent="در حال طراحی…";
+ $("demoNote").textContent="در حال ساخت شبکه با ۱ تا ۲ خانهٔ سیاه در هر ردیف و ستون…";
  await new Promise(resolve=>setTimeout(resolve,30));
  try{
-  if(size===5){
-   const preset=verifiedSeedSample(filtered);
-   if(!preset){
-     $("demoResult").hidden=true;
-     $("demoNote").textContent="مدخل‌های لازم برای نمونهٔ کوچک در فیلتر فعلی موجود نیستند. موضوع همه را انتخاب کن.";
-     return;
-   }
-   render(preset);
-   $("demoNote").textContent="نمونهٔ کامل ۵×۵ از بانک واقعی: ده پاسخ، بدون خانهٔ سیاه. بیشترین اشتراک پاسخ با یکی از ۳۲۴ جدول قدیمی فقط ۱ پاسخ (۱۰٪) است؛ ویرایشگر نهایی هنوز لازم است.";
-   return;
-  }
-  const masks=patterns(size,t,8),tries=[];
+  const masks=patterns(size,seed,2);
+  if(!masks.length){$("demoNote").textContent="برای این اندازه الگوی سیاه معتبر پیدا نشد.";return;}
+  let complete=null;
   for(let i=0;i<masks.length;i++){
-   const solved=solve(masks[i],filtered,7500,t+i);
-   if(solved)tries.push(solved);
+   complete=solve(masks[i],filtered,5500,seed+i);
+   if(complete)break;
    await new Promise(resolve=>setTimeout(resolve,0));
   }
-  const best=tries[0];
-  if(!best){$("demoResult").hidden=true;$("demoNote").textContent="با محدودیت حداکثر دو خانهٔ سیاه در هر ردیف و ستون، در این تلاش جدول کاملاً پُر و معتبر پیدا نشد. می‌توانی دوباره امتحان کنی یا اندازهٔ کوچک‌تر انتخاب کنی. جدول ناقص نمایش داده نمی‌شود.";return;}
-  render(best);
-  $("demoNote").textContent="این جدول با بانک خودت ساخته شد؛ همهٔ جایگاه‌ها پر هستند. تأیید محتوایی و کنترل شباهت به آرشیو اصلی هنوز لازم است.";
- }catch(err){$("demoNote").textContent="خطای ساخت نمونه: "+err.message;}
+  const result=complete||draftFill(masks[seed%2],filtered,seed);
+  render(result);
+  $("demoNote").textContent=complete?
+   "همهٔ جایگاه‌ها کامل هستند؛ سرنخ‌ها از بانک خودت آمده‌اند. پیش از انتشار نیاز به کنترل شباهت و تأیید انسانی دارد.":
+   "شبکهٔ "+size+"×"+size+" ساخته شد و ۱ یا ۲ خانهٔ سیاه در هر ردیف/ستون دارد. اما "+result.remaining+" جایگاه هنوز جواب کامل ندارد؛ این فقط پیش‌نویس قابل مشاهده است، نه جدول آمادهٔ انتشار. فضای سفیدِ بدون حرف عمداً سیاه نشده است.";
+ }catch(err){$("demoNote").textContent="خطا: "+err.message;}
  finally{btn.disabled=false;btn.textContent="ساخت یک نمونه جدول";}
 }
+
 function init(){
  if(!$("buildDemo"))return;
- $("demoSize").replaceChildren(...[5,7,10,15].map(x=>new Option(x+" × "+x,String(x))));
- $("demoSize").value="5";
+ $("demoSize").replaceChildren(...[7,10,15,20].map(x=>new Option(x+" × "+x,String(x))));
+ $("demoSize").value="20";
  const old=$("buildDemo");old.replaceWith(old.cloneNode(true));$("buildDemo").onclick=generateSample;
  $("showAnswers").onchange=()=>{document.querySelectorAll(".demo-cell[data-letter]").forEach(x=>x.textContent=$("showAnswers").checked?x.dataset.letter:"");};
  $("downloadDemo").onclick=()=>{if(!last)return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
-window.JadvalSparse={slotsFor,validMask,patterns,solve,compare,verifiedSeedSample};
+window.JadvalSparse={slotsFor,validMask,patterns,solve,draftFill,compare};
 })();
