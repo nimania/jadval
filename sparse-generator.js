@@ -243,6 +243,16 @@ async function generateSample(){
  await new Promise(resolve=>setTimeout(resolve,30));
  try{
   const lengths=new Set(filtered.map(x=>normalize(x.answer).length));
+  const longest=Math.max(0,...lengths);
+  // Integer-constraint feasibility check: in a 20x20 grid with 1–2
+  // black cells in every row/column and no one-letter slots, a fully
+  // valid arrangement needs at least one uninterrupted 18-cell slot.
+  // Current source archive contains no answers of that length.
+  if(size===20&&longest<18){
+   last=null;$("demoResult").hidden=true;
+   $("demoNote").textContent="با این دو شرط هم‌زمان، ساخت جدول کامل ۲۰×۲۰ از بانک فعلی ممکن نیست: در این نوع شبکه دست‌کم یک پاسخ ۱۸حرفی لازم است، اما بلندترین جواب بانک "+longest+" حرف دارد. برای رسیدن به ۲۰×۲۰ باید پاسخ‌های بلند معتبر اضافه کنیم یا محدودیت تعداد خانه‌های سیاه را تغییر دهیم. جدول ناقص نمایش داده نمی‌شود.";
+   return;
+  }
   const masks=patterns(size,seed,8,lengths);
   const needed=slotLengths(masks[0]||[]);
   const unsupported=[...new Set(needed.filter(length=>!lengths.has(length)))].sort((a,b)=>a-b);
