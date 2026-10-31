@@ -190,7 +190,7 @@ function tryMasks(masks,entries,opts={}){
  for(let i=0;i<masks.length;i++){
   const remaining=budget-(Date.now()-start);if(remaining<=0)break;
   const r=solve(masks[i],entries,{limitMs:Math.min(4000,remaining),limitNodes:100000,seed:(opts.seed||0)+i});
-  reports.push({status:r.status,slotCount:r.slotCount,bestDepth:r.bestDepth,nodes:r.nodes,
+  reports.push({status:r.status,slotCount:r.slotCount,bestDepth:r.bestDepth,nodes:r.nodes,initialPruned:r.initialPruned||0,
                 missingLengths:r.missingLengths||[],elapsedMs:r.elapsedMs||0});
   if(r.status==='solved')return {status:'solved',result:r,reports};
  }
