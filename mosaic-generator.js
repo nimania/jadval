@@ -17,7 +17,7 @@ function buildIndex(entries,n){
 }
 function searchTile(index,random,used,limit=45000){
  const {words,first,list}=index;if(list.length<12)return null;
- let fallback=null;
+ let fallback=null,leastReused=Infinity;
  for(let attempt=0;attempt<limit;attempt++){
   const w0=list[Math.floor(random()*list.length)];
   const rows=[w0];
@@ -32,8 +32,8 @@ function searchTile(index,random,used,limit=45000){
   if(new Set(joined).size < rows.length+Math.floor(rows.length/2))continue;
   const reused=joined.filter(w=>used.has(w)).length;
   if(reused===0)return {rows,columns};
-  if(reused<=Math.ceil(joined.length/2) && (!fallback || reused<fallback.reused))
-   fallback={rows,columns,reused};
+  if(reused<leastReused){leastReused=reused;
+   fallback={rows,columns,reused};}
  }
  return fallback;
 }
