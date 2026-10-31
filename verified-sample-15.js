@@ -91,5 +91,5 @@ function build(bank,variant=0){
  if(slots.length!==77)return {error:"تعداد جایگاه‌های نمونه با نسخهٔ آزموده‌شده یکسان نیست."};
  return {result};
 }
-root.JadvalVerified15={build,rows:variants[0],variants:variants.length};
+root.JadvalVerified15={build,rows:variants[0],getRows:index=>variants[index],variants:variants.length};
 })(window);
