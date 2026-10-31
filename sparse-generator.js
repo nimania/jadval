@@ -322,6 +322,19 @@ function init(){
  const art=$("blockArt");
  if(art)art.addEventListener("change",()=>{document.querySelectorAll("#demoGrid .demo-block").forEach(cell=>{cell.classList.remove("art-plain","art-abstract","art-patterned","art-red");cell.classList.add("art-"+art.value);});});
  $("showAnswers").onchange=()=>{document.querySelectorAll(".demo-cell[data-letter]").forEach(x=>x.textContent=$("showAnswers").checked?x.dataset.letter:"");};
+ const showSample=$("showVerifiedSample");
+ if(showSample)showSample.onclick=()=>{
+  const currentBank=(typeof entries!=="undefined"&&entries.length)?entries:[];
+  const preset=window.JadvalVerified15?.build(currentBank);
+  if(!preset?.result){
+   $("demoNote").textContent=preset?.error||"نمونهٔ کامل ۱۵×۱۵ در دسترس نیست.";
+   return;
+  }
+  $("demoSize").value="15";
+  updateReport(null);
+  render(preset.result);
+  $("demoNote").textContent="یک نمونهٔ کامل ۱۵×۱۵ از بانک محلی نمایش داده شد: ۷۷ جواب یکتا، هیچ خانهٔ سفید خالی نیست. این یک نمونهٔ ازپیش‌ساخته‌شده برای آزمون فنی است، نه نتیجهٔ حل‌گر کلاسیک و نه جدول تأییدشده برای انتشار.";
+ };
  const reportButton=$("downloadSolveReport");
  if(reportButton)reportButton.onclick=()=>{
   if(!lastDiagnostic)return;
