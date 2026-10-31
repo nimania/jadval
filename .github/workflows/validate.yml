@@ -1,0 +1,35 @@
+name: Validate Jadval Studio
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - import_puzzles.py
+      - build_database.py
+      - generate.py
+      - tests/**
+      - .github/workflows/validate.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check Python importer unit tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Check browser JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('index.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script>(.*?)</script>',html,re.S)
+          if len(scripts)!=1: raise SystemExit(f'Expected 1 inline script, found {len(scripts)}')
+          Path('/tmp/jadval-studio.js').write_text(scripts[0],encoding='utf-8')
+          PY
+          node --check /tmp/jadval-studio.js
