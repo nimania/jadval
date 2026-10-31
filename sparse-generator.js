@@ -22,7 +22,15 @@ function slotsFor(mask) {
 function validMask(mask,maxBlacks=2){
  const n=mask.length,cols=Array(n).fill(0);
  for(const row of mask){if(row.reduce((a,b)=>a+Number(b),0)>maxBlacks)return false;row.forEach((v,c)=>cols[c]+=Number(v));}
- return cols.every(v=>v<=maxBlacks)&&!!slotsFor(mask);
+ if(!cols.every(v=>v<=maxBlacks))return false;
+ // Keep separate black cells distant from each other in each direction.
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(mask[r][c]){
+  for(let d=1;d<=2;d++){
+   if(c+d<n&&mask[r][c+d])return false;
+   if(r+d<n&&mask[r+d][c])return false;
+  }
+ }
+ return !!slotsFor(mask);
 }
 function patterns(n,seed,count){
  const random=rng(seed),result=[],keys=new Set();
@@ -58,6 +66,11 @@ function patterns(n,seed,count){
    }
    if(!changed)break;
   }
+  // Remove clustered blacks; never add any new black cells.
+  for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(mask[r][c]){
+   if((c>0&&mask[r][c-1])||(c>1&&mask[r][c-2])||
+      (r>0&&mask[r-1][c])||(r>1&&mask[r-2][c]))mask[r][c]=false;
+  }
   if(!validMask(mask))continue;
   const key=mask.map(row=>row.map(x=>x?1:0).join("")).join("/");
   if(!keys.has(key)){keys.add(key);result.push(mask);}
@@ -83,14 +96,14 @@ function solve(mask,source,budget=7000,seed=1){
   domains.push(domain);
  }
  const assigned=Array(slots.length).fill(null),used=new Set();
- let nodes=0;
+ let nodes=0;const deadline=Date.now()+Math.min(1100,250+budget/7);
  function candidateFits(slot,e){
   if(used.has(e.word))return false;
   for(const [pos,other,otherpos] of slot.cross){const v=assigned[other];if(v&&e.word[pos]!==v.word[otherpos])return false;}
   return true;
  }
  function recurse(depth){
-  if(++nodes>budget)return false;
+  if(++nodes>budget||Date.now()>deadline)return false;
   if(depth===slots.length)return true;
   let best=-1,options=null;
   for(const slot of slots){
@@ -113,7 +126,7 @@ function solve(mask,source,budget=7000,seed=1){
    }
    if(possible&&recurse(depth+1))return true;
    assigned[best]=null;used.delete(e.word);
-   if(nodes>budget)return false;
+   if(nodes>budget||Date.now()>deadline)return false;
   }
   return false;
  }
