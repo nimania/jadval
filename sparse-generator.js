@@ -187,20 +187,53 @@ function compare(puzzle,reference){
  },0);
  return {verified:true,highestPatternSimilarity:highest,passed:highest<=.2};
 }
+function validateComplete(data){
+ if(!data||data.partial||data.puzzle?.version!==3||!Array.isArray(data.mask))return false;
+ const mask=data.mask,grid=data.puzzle.grid,n=mask.length;
+ if(!validMask(mask)||!Array.isArray(grid)||grid.length!==n)return false;
+ if(grid.some((row,r)=>!Array.isArray(row)||row.length!==n||row.some((letter,c)=>mask[r][c]?letter!=="":typeof letter!=="string"||letter.length!==1||!alphabet.test(letter))))return false;
+ const slots=slotsFor(mask);
+ if(!slots)return false;
+ const counter={horizontal:{},vertical:{}};
+ for(const slot of slots){
+  const key=String(slot.group);
+  (counter[slot.dir][key]??=[]).push(slot);
+ }
+ for(const direction of ["horizontal","vertical"]){
+  const expected=counter[direction],actual=data.puzzle.clues[direction];
+  if(Object.keys(expected).length!==Object.keys(actual||{}).length)return false;
+  for(const [key,group] of Object.entries(expected)){
+   if(!Array.isArray(actual[key])||actual[key].length!==group.length||actual[key].some(clue=>!String(clue||"").trim()))return false;
+  }
+ }
+ return true;
+}
 function render(data){
+ if(!validateComplete(data))throw Error("جدول ناقص یا ناسازگار است و نمایش داده نمی‌شود.");
  last=data;
  const grid=$("demoGrid"),section=$("demoResult"),clues=$("demoClues"),size=data.puzzle.grid.length;
  section.hidden=false;grid.replaceChildren();clues.replaceChildren();
- grid.style.gridTemplateColumns="repeat("+size+",minmax(0,1fr))";
- for(let r=0;r<size;r++)for(let c=size-1;c>=0;c--){
-  const cell=document.createElement("div"),letter=data.puzzle.grid[r][c],blocked=data.mask[r][c];
-  cell.className=blocked?"demo-cell demo-block":"demo-cell";
-  if(!blocked){
-   if(letter.trim())cell.dataset.letter=letter;
-   else cell.classList.add("demo-empty");
-   cell.textContent=$("showAnswers").checked&&letter.trim()?letter:"";
+ grid.style.gridTemplateColumns="repeat("+(size+1)+",minmax(0,1fr))";
+ const numberCell=(num,extra)=>{
+  const cell=document.createElement("div");
+  cell.className="demo-axis"+(extra?" demo-corner":"");
+  cell.textContent=extra?"":new Intl.NumberFormat("fa-IR").format(num);
+  return cell;
+ };
+ // CSS grid uses RTL, so the first item is the upper-right corner.
+ grid.append(numberCell(null,true));
+ for(let c=0;c<size;c++)grid.append(numberCell(c+1,false));
+ for(let r=0;r<size;r++){
+  grid.append(numberCell(r+1,false));
+  for(let c=size-1;c>=0;c--){
+   const cell=document.createElement("div"),letter=data.puzzle.grid[r][c],blocked=data.mask[r][c];
+   cell.className=blocked?"demo-cell demo-block":"demo-cell";
+   if(!blocked){
+    cell.dataset.letter=letter;
+    cell.textContent=$("showAnswers").checked?letter:"";
+   }
+   grid.append(cell);
   }
-  grid.append(cell);
  }
  for(const [key,title] of [["horizontal","افقی"],["vertical","عمودی"]]){
   const wrap=document.createElement("div"),h=document.createElement("h3"),ul=document.createElement("ul");
@@ -213,11 +246,9 @@ function render(data){
   wrap.append(h,ul);clues.append(wrap);
  }
  const blackCount=data.mask.flat().filter(Boolean).length;
- $("demoMeta").textContent=(data.partial?"پیش‌نویس ناقص: "+data.filledSlots+" از "+data.slots+" پاسخ جای‌گذاری شده‌اند":"جدول کامل: "+data.slots+" پاسخ")+
-   " — "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ در هر ردیف و ستون ۱ یا ۲ خانهٔ سیاه.";
- $("demoResult").scrollIntoView({behavior:"smooth",block:"start"});
+ $("demoMeta").textContent="جدول کامل: "+data.slots+" پاسخ — شبکهٔ "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ در هر ردیف و ستون ۱ یا ۲ خانهٔ سیاه.";
+ section.scrollIntoView({behavior:"smooth",block:"start"});
 }
-
 async function generateSample(){
  const btn=$("buildDemo"),size=Number($("demoSize").value),category=$("demoFilter").value;
  const bank=(typeof entries!=="undefined"&&entries.length)?entries:[];
@@ -235,11 +266,14 @@ async function generateSample(){
    if(complete)break;
    await new Promise(resolve=>setTimeout(resolve,0));
   }
-  const result=complete||draftFill(masks[seed%2],filtered,seed);
-  render(result);
-  $("demoNote").textContent=complete?
-   "همهٔ جایگاه‌ها کامل هستند؛ سرنخ‌ها از بانک خودت آمده‌اند. پیش از انتشار نیاز به کنترل شباهت و تأیید انسانی دارد.":
-   "شبکهٔ "+size+"×"+size+" ساخته شد و ۱ یا ۲ خانهٔ سیاه در هر ردیف/ستون دارد. اما "+result.remaining+" جایگاه هنوز جواب کامل ندارد؛ این فقط پیش‌نویس قابل مشاهده است، نه جدول آمادهٔ انتشار. فضای سفیدِ بدون حرف عمداً سیاه نشده است.";
+  if(!complete||!validateComplete(complete)){
+   last=null;
+   $("demoResult").hidden=true;
+   $("demoNote").textContent="برای اندازهٔ "+size+"×"+size+" با بانک فعلی و شرط ۱ تا ۲ خانهٔ سیاه در هر ردیف و ستون، جدول کاملاً پُر پیدا نشد. هیچ جدول ناقصی نمایش یا صادر نمی‌شود. می‌توانی اندازهٔ دیگری را امتحان کنی.";
+   return;
+  }
+  render(complete);
+  $("demoNote").textContent="همهٔ خانه‌های سفید، پاسخ معتبر و سرنخ از بانک دارند. بررسی انسانی و کنترل شباهت با آرشیو پیش از انتشار همچنان لازم است.";
  }catch(err){$("demoNote").textContent="خطا: "+err.message;}
  finally{btn.disabled=false;btn.textContent="ساخت یک نمونه جدول";}
 }
@@ -250,8 +284,8 @@ function init(){
  $("demoSize").value="20";
  const old=$("buildDemo");old.replaceWith(old.cloneNode(true));$("buildDemo").onclick=generateSample;
  $("showAnswers").onchange=()=>{document.querySelectorAll(".demo-cell[data-letter]").forEach(x=>x.textContent=$("showAnswers").checked?x.dataset.letter:"");};
- $("downloadDemo").onclick=()=>{if(!last)return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+ $("downloadDemo").onclick=()=>{if(!last||!validateComplete(last))return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
-window.JadvalSparse={slotsFor,validMask,patterns,solve,draftFill,compare};
+window.JadvalSparse={slotsFor,validMask,patterns,solve,validateComplete,compare};
 })();
