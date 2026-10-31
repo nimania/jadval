@@ -7,6 +7,7 @@ from pathlib import Path
 from generate import normalize
 
 def extract(puzzle):
+    """Extract in SOURCE JSON reading order: rows left-to-right, columns left-to-right.\n\n    This is intentionally different from the app UI RTL slot conventions.\n    Verified against source puzzle 100: تالابزردابه and ترانه.\n    """
     grid = puzzle["grid"]
     if not grid or not all(isinstance(r,list) and len(r)==len(grid[0]) for r in grid):
         raise ValueError("invalid grid")
@@ -16,17 +17,17 @@ def extract(puzzle):
         groups = {}
         if direction == "horizontal":
             for r in range(rows):
-                c=cols-1
-                while c>=0:
+                c=0
+                while c<cols:
                     if grid[r][c]=="":
-                        c-=1;continue
+                        c+=1;continue
                     letters=[]
-                    while c>=0 and grid[r][c]!="":
-                        letters.append(grid[r][c]);c-=1
+                    while c<cols and grid[r][c]!="":
+                        letters.append(grid[r][c]);c+=1
                     if len(letters)>=2:
                         groups.setdefault(str(r+1),[]).append("".join(letters))
         else:
-            for c in range(cols-1,-1,-1):
+            for c in range(cols):
                 r=0
                 while r<rows:
                     if grid[r][c]=="":
@@ -35,7 +36,7 @@ def extract(puzzle):
                     while r<rows and grid[r][c]!="":
                         letters.append(grid[r][c]);r+=1
                     if len(letters)>=2:
-                        groups.setdefault(str(cols-c),[]).append("".join(letters))
+                        groups.setdefault(str(c+1),[]).append("".join(letters))
         for number, answers in groups.items():
             questions=clues.get(direction,{}).get(number,[])
             if len(questions)!=len(answers):
