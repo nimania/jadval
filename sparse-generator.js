@@ -305,7 +305,7 @@ function init(){
  $("demoSize").value="15";
  const old=$("buildDemo");old.replaceWith(old.cloneNode(true));$("buildDemo").onclick=generateSample;
  const art=$("blockArt");
- if(art)art.addEventListener("change",()=>{document.querySelectorAll("#demoGrid .demo-block").forEach(cell=>{cell.classList.remove("art-plain","art-abstract","art-patterned");cell.classList.add("art-"+art.value);});});
+ if(art)art.addEventListener("change",()=>{document.querySelectorAll("#demoGrid .demo-block").forEach(cell=>{cell.classList.remove("art-plain","art-abstract","art-patterned","art-red");cell.classList.add("art-"+art.value);});});
  $("showAnswers").onchange=()=>{document.querySelectorAll(".demo-cell[data-letter]").forEach(x=>x.textContent=$("showAnswers").checked?x.dataset.letter:"");};
  $("downloadDemo").onclick=()=>{if(!last||!validateComplete(last))return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 }
