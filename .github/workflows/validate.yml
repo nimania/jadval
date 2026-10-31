@@ -9,6 +9,7 @@ on:
       - mosaic-generator.js
       - classic-patterns.js
       - classic-preview.js
+      - bank-tools.js
       - import_puzzles.py
       - build_database.py
       - generate.py
@@ -43,6 +44,7 @@ jobs:
           node --check mosaic-generator.js
           node --check classic-patterns.js
           node --check classic-preview.js
+          node --check bank-tools.js
           node tests/test_classic_patterns.cjs
           node tests/test_demo_generator.cjs
           node tests/test_sparse_generator.cjs
