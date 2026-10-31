@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>جدول | کارگاه طراحی</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+:root{font-family:Vazirmatn,Tahoma,sans-serif;background:#f6f7f8;color:#1b2734;font-size:15px}
+*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:#1765a4;text-decoration:none}
+header{background:#fff;border-bottom:1px solid #e0e5e9;position:sticky;top:0;z-index:2}.top{max-width:1200px;padding:15px 22px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-size:21px;font-weight:800;color:#243647}.subtitle{color:#71808b;font-size:12px}
+main{max-width:1200px;margin:26px auto;padding:0 22px}.hero{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;margin-bottom:23px}
+h1{font-size:29px;margin:0 0 6px}h2{font-size:19px;margin:0 0 15px}h3{font-size:16px;margin:0}p{line-height:1.9;margin:4px 0}.muted{color:#677784}.small{font-size:12px}
+.btn{padding:10px 17px;border:1px solid #d6dfe7;border-radius:9px;background:white;color:#23394b;display:inline-flex;gap:8px;align-items:center;justify-content:center;font-weight:600}
+.btn.primary{background:#195c7b;border-color:#195c7b;color:#fff}.btn:disabled{opacity:.5;cursor:not-allowed}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px}input[type=file]{display:none}
+.panel{background:white;border:1px solid #e0e5e9;border-radius:15px;padding:18px;margin-bottom:19px;box-shadow:0 2px 9px #1c28330a}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:19px}
+.stat{background:#fff;border:1px solid #e0e5e9;border-radius:13px;padding:16px}.stat .num{display:block;font-weight:800;font-size:24px;direction:ltr;text-align:right;font-variant-numeric:tabular-nums}.stat .label{color:#71808b;font-size:12px}
+.filters{display:grid;grid-template-columns:minmax(210px,2fr) repeat(3,minmax(140px,1fr));gap:10px}
+input[type=text],select,textarea{width:100%;border-radius:9px;padding:10px 12px;border:1px solid #d7e0e7;background:white;outline-color:#237b9b}
+input[type=checkbox]{width:17px;height:17px;accent-color:#195c7b}.table-scroll{overflow:auto}
+table{width:100%;border-collapse:collapse;text-align:right}th{background:#f5f7f9;color:#637282;font-weight:600;font-size:12px}
+th,td{padding:13px 10px;border-bottom:1px solid #edf0f2}td{font-size:14px}tr:last-child td{border-bottom:0}
+.word{font-weight:700;color:#175b7b}.status{font-size:12px;border-radius:30px;padding:3px 8px;background:#fff4e6;color:#8a5c14}.status.ok{background:#e5f6ec;color:#216e40}
+.pager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:15px}
+dialog{border:0;border-radius:15px;box-shadow:0 16px 80px #07172350;width:min(540px,95vw);padding:25px}dialog::backdrop{background:#10232f77}
+.field{margin-bottom:13px}.field label{display:block;font-weight:600;font-size:13px;margin-bottom:6px}.dialog-actions{display:flex;justify-content:space-between;gap:10px;margin-top:19px}
+.empty{padding:50px 20px;text-align:center;border:2px dashed #d7e0e7;border-radius:13px}
+.note{border-right:3px solid #c1a46a;padding-right:12px;font-size:12px;color:#65717a;margin-top:12px}
+@media(max-width:800px){.filters{grid-template-columns:1fr 1fr}.stats{grid-template-columns:1fr 1fr}}@media(max-width:520px){.filters{grid-template-columns:1fr}.top{padding:12px}.hero h1{font-size:24px}}
+</style></head>
+<body><header><div class="top"><div><div class="brand">جدول <span class="subtitle">/ کارگاه طراحی فارسی</span></div></div><a href="https://nimania.github.io/payamejadval/" target="_blank" rel="noopener">پیام جدول ↗</a></div></header>
+<main>
+<div class="hero"><div><h1>بانک سؤال و جواب</h1><p class="muted">مدیریت، پالایش و آماده‌سازی مدخل‌ها برای تولید جدول‌های تازه</p></div>
+<div class="toolbar"><label class="btn primary" for="file">ورود بانک JSON</label><input id="file" type="file" accept=".json,application/json">
+<button class="btn" id="export" disabled>خروجی و پشتیبان JSON ↓</button><button class="btn" id="clear" disabled>پاک‌کردن بانک مرورگر</button></div></div>
+<div class="stats"><div class="stat"><span class="num" id="total">۰</span><span class="label">مدخل‌های بانک</span></div><div class="stat"><span class="num" id="approved">۰</span><span class="label">بازبینی‌شده</span></div><div class="stat"><span class="num" id="answers">۰</span><span class="label">پاسخ متفاوت</span></div><div class="stat"><span class="num" id="visible">۰</span><span class="label">نتیجه جست‌وجو</span></div></div>
+<section class="panel"><h2>جست‌وجو و فیلتر</h2><div class="filters"><input type="text" id="search" placeholder="جست‌وجو در سؤال، جواب یا شناسه…" aria-label="جست‌وجو"><select id="category" aria-label="موضوع"><option value="">همه موضوع‌ها</option></select><select id="reviewed" aria-label="وضعیت بازبینی"><option value="">همه وضعیت‌ها</option><option value="0">نیازمند بازبینی</option><option value="1">بازبینی‌شده</option></select><select id="difficulty" aria-label="درجه سختی"><option value="">همه درجه‌های سختی</option><option value="easy">آسان</option><option value="medium">متوسط</option><option value="hard">سخت</option><option value="unknown">نامشخص</option></select></div>
+<p id="message" class="note" role="status">برای شروع فایل jadval_entries_19804.json را وارد کنید. داده‌ها به سرور ارسال نمی‌شوند و فقط در همین مرورگر ذخیره می‌شوند.</p></section>
+<section class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">فهرست سؤال‌ها</h2><button class="btn" id="suggest" disabled>دسته‌بندی پیشنهادی برای مدخل‌های بدون موضوع</button></div><div id="empty" class="empty">هنوز بانک سؤال‌وجواب وارد نشده است.</div><div id="tableArea" hidden><div class="table-scroll"><table><thead><tr><th>سؤال</th><th>جواب</th><th>موضوع</th><th>تعداد حروف</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="rows"></tbody></table></div><div class="pager"><button class="btn" id="prev">صفحهٔ قبل</button><span id="page"></span><button class="btn" id="next">صفحهٔ بعد</button></div></div></section>
+<p class="muted small">این محیط ابزار داخلی است. بارگذاری داده و تغییرات در حافظهٔ همین مرورگر انجام می‌شود؛ برای پشتیبان دائمی از «خروجی JSON» استفاده کنید. پاک‌شدن دادهٔ مرورگر ممکن است تغییرات محلی را از بین ببرد.</p>
+</main>
+<dialog id="editor"><form id="editForm"><h2>ویرایش سؤال و جواب</h2><input type="hidden" id="editId">
+<div class="field"><label for="editClue">سؤال</label><textarea rows="3" required id="editClue"></textarea></div>
+<div class="field"><label for="editAnswer">جواب</label><input id="editAnswer" type="text" required></div>
+<div class="field"><label for="editCategory">موضوع</label><select id="editCategory"><option>دسته‌بندی‌نشده</option><option>عمومی</option><option>ادبیات و زبان</option><option>تاریخ</option><option>جغرافیا</option><option>علم و فناوری</option><option>سینما و هنر</option><option>ورزش</option><option>موسیقی</option><option>طبیعت</option><option>سایر</option></select></div>
+<div class="field"><label for="editDifficulty">درجه سختی</label><select id="editDifficulty"><option value="unknown">نامشخص</option><option value="easy">آسان</option><option value="medium">متوسط</option><option value="hard">سخت</option></select></div>
+<label><input type="checkbox" id="editReviewed"> سؤال و جواب بررسی و تأیید شده است</label>
+<div class="dialog-actions"><button class="btn" type="button" id="cancel">انصراف</button><button class="btn primary" type="submit">ذخیره تغییرات</button></div></form></dialog>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+let entries=[],filtered=[],page=0,dirty=false;
+const perPage=40, nf=new Intl.NumberFormat('fa-IR');
+const categories=['دسته‌بندی‌نشده','عمومی','ادبیات و زبان','تاریخ','جغرافیا','علم و فناوری','سینما و هنر','ورزش','موسیقی','طبیعت','سایر'];
+const rules=[
+['جغرافیا',/پایتخت|استان|کشور|قاره|اقیانوس|دریا|رود|شهر|جزیره|کوه|خلیج|مرکز.*استان/],
+['ادبیات و زبان',/شاعر|نویسنده|کتاب|غزل|شاهنامه|حافظ|سعدی|رمان|معنی.*واژه|مترادف|متضاد/],
+['تاریخ',/تاریخ|دوره.*تاریخی|پادشاه|شاهنشاه|سلسله|قاجار|ساسانی|هخامنشی|باستان/],
+['علم و فناوری',/سیاره|ستاره|دانشمند|شیمی|فیزیک|ریاضی|عنصر|سلول|فناوری|رایانه|کامپیوتر/],
+['سینما و هنر',/فیلم|سینما|بازیگر|کارگردان|نقاش|هنرمند|تئاتر/],
+['ورزش',/فوتبال|ورزش|المپیک|تنیس|تیم.*ملی|والیبال|قهرمان.*جهان/],
+['موسیقی',/آهنگ|خواننده|موسیقی|ساز.*ایرانی|نوازنده/],
+['طبیعت',/گیاه|درخت|حیوان|پرنده|جانور|گل.*گیاه/]
+];
+const normalize=s=>String(s||'').replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u200c\s\-]/g,'').trim();
+const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+function status(msg){$('message').textContent=msg}
+function openDB(){return new Promise((resolve,reject)=>{let q=indexedDB.open('jadval-studio',1);q.onupgradeneeded=()=>q.result.createObjectStore('state');q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)})}
+async function save(){let db=await openDB();try{await new Promise((res,rej)=>{let tx=db.transaction('state','readwrite');tx.objectStore('state').put({entries},'bank');tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}finally{db.close()}}
+async function restore(){let db=await openDB();try{return await new Promise((res,rej)=>{let tx=db.transaction('state','readonly'),q=tx.objectStore('state').get('bank');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}finally{db.close()}}
+function updateStats(){ $('total').textContent=nf.format(entries.length);$('approved').textContent=nf.format(entries.filter(x=>x.reviewed).length);$('answers').textContent=nf.format(new Set(entries.map(x=>normalize(x.answer))).size);$('visible').textContent=nf.format(filtered.length); for(const id of ['export','clear','suggest'])$(id).disabled=!entries.length }
+function updateCategories(){let all=[...new Set([...categories,...entries.map(x=>x.category||'دسته‌بندی‌نشده')])];let old=$('category').value; $('category').replaceChildren(new Option('همه موضوع‌ها',''),...all.map(x=>new Option(x,x)));$('category').value=all.includes(old)?old:''}
+function applyFilters(){const query=normalize($('search').value).toLowerCase(),cat=$('category').value,reviewed=$('reviewed').value,difficulty=$('difficulty').value;filtered=entries.filter(x=>(!query||normalize(x.clue).toLowerCase().includes(query)||normalize(x.answer).toLowerCase().includes(query)||String(x.id||'').includes(query))&&(!cat||(x.category||'دسته‌بندی‌نشده')===cat)&&(!reviewed?true:(x.reviewed?1:0)===Number(reviewed))&&(!difficulty||(x.difficulty||'unknown')===difficulty));page=0;render()}
+function render(){updateStats();$('empty').hidden=entries.length>0;$('tableArea').hidden=!entries.length;const start=page*perPage;const data=filtered.slice(start,start+perPage);
+$('rows').innerHTML=data.map(x=>'<tr><td>'+escapeHTML(x.clue)+'</td><td class="word">'+escapeHTML(x.answer)+'</td><td>'+escapeHTML(x.category||'دسته‌بندی‌نشده')+'</td><td>'+nf.format(x.letters??normalize(x.answer).length)+'</td><td><span class="status '+(x.reviewed?'ok':'')+'">'+(x.reviewed?'تأییدشده':'بررسی‌نشده')+'</span></td><td><button class="btn" data-edit="'+escapeHTML(x.id)+'">ویرایش</button></td></tr>').join('')||'<tr><td colspan="6" class="muted">موردی پیدا نشد.</td></tr>';
+$('page').textContent=nf.format(filtered.length? page+1:0)+' / '+nf.format(Math.ceil(filtered.length/perPage));$('prev').disabled=page===0;$('next').disabled=(page+1)*perPage>=filtered.length}
+function selectEntry(id){let x=entries.find(v=>v.id===id);if(!x)return;$('editId').value=x.id;$('editClue').value=x.clue;$('editAnswer').value=x.answer;$('editCategory').value=categories.includes(x.category)?x.category:'سایر';$('editDifficulty').value=['easy','medium','hard'].includes(x.difficulty)?x.difficulty:'unknown';$('editReviewed').checked=!!x.reviewed;$('editor').showModal()}
+$('rows').addEventListener('click',e=>{let b=e.target.closest('button[data-edit]');if(b)selectEntry(b.dataset.edit)});
+$('cancel').onclick=()=>$('editor').close();
+$('editForm').onsubmit=async e=>{e.preventDefault();let x=entries.find(v=>v.id===$('editId').value);if(!x)return;let answer=normalize($('editAnswer').value);if(!answer){status('پاسخ معتبر نیست.');return}x.clue=$('editClue').value.trim();x.answer=answer;x.letters=[...answer].length;x.category=$('editCategory').value;x.difficulty=$('editDifficulty').value;x.reviewed=$('editReviewed').checked?1:0;dirty=true;await save();$('editor').close();updateCategories();applyFilters();status('ویرایش ذخیره شد. برای نسخه پشتیبان از خروجی JSON استفاده کنید.')};
+$('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let data=JSON.parse(await f.text());let arr=Array.isArray(data)?data:data.entries;if(!Array.isArray(arr)||!arr.length||arr.some(x=>!x.id||typeof x.clue!=='string'||typeof x.answer!=='string'))throw Error('فرمت بانک معتبر نیست.');if(entries.length&&!confirm('بانک کنونی با فایل جدید جایگزین شود؟ ابتدا خروجی پشتیبان بگیرید.'))return;entries=arr.map(x=>({...x,category:x.category||'دسته‌بندی‌نشده',difficulty:x.difficulty||'unknown',reviewed:x.reviewed?1:0}));await save();dirty=false;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل وارد و در مرورگر ذخیره شد.')}catch(err){status('خطای خواندن فایل: '+err.message)}finally{e.target.value=''}};
+$('export').onclick=()=>{let payload=JSON.stringify({schema:1,exportedAt:new Date().toISOString(),entries},null,2);let blob=new Blob([payload],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='jadval-bank-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);dirty=false;status('فایل پشتیبان دانلود شد.')};
+$('clear').onclick=async()=>{if(!confirm('بانک و تمام تغییرات ذخیره‌شده در این مرورگر پاک شود؟ این کار برگشت‌پذیر نیست.'))return;entries=[];await save();updateCategories();applyFilters();status('بانک مرورگر پاک شد.')};
+$('suggest').onclick=async()=>{let n=0;for(const x of entries){if(x.category&&x.category!=='دسته‌بندی‌نشده')continue;let hit=rules.find(([cat,re])=>re.test(x.clue));if(hit){x.category=hit[0];n++}}if(n){await save();updateCategories();applyFilters()}status(nf.format(n)+' مدخل دسته‌بندی پیشنهادی دریافت کردند؛ این دسته‌بندی ماشینی است و نیاز به بازبینی دارد.')};
+for(const id of ['search','category','reviewed','difficulty'])$(id).addEventListener(id==='search'?'input':'change',applyFilters);
+$('prev').onclick=()=>{page=Math.max(0,page-1);render()};$('next').onclick=()=>{page++;render()};
+restore().then(data=>{if(data?.entries?.length){entries=data.entries;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل از حافظهٔ مرورگر بازیابی شد.')}else render()}).catch(e=>status('ذخیره‌سازی محلی در این مرورگر فعال نیست: '+e.message));
+</script></body></html>
