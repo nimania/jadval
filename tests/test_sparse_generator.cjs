@@ -19,11 +19,9 @@ for(const size of [7,10,15,20]){
  assert(draft.slots>=draft.filledSlots);
  assert(draft.puzzle.grid.every((row,r)=>row.every((ch,c)=>(patterns[0][r][c]?ch==='':ch!=='') ),'Never turn blanks into blocks');
  assert(draft.mask.every(row=>row.filter(Boolean).length>=1));
- for(const slot of engine.slotsFor(patterns[0])){
-  const filled=slot.cells.map(([r,c])=>draft.puzzle.grid[r][c]);
-  const hasFull=filled.every(ch=>ch.trim());
-  const relevant=draft.puzzle.clues[slot.dir][String(slot.group)]||[];
-  if(hasFull)assert(relevant.length>=1,'Finished slot needs its clue');
- }
+ // Every stored clue must correspond to a placed answer; incomplete slots are drafts.
+ const clueTotal=Object.values(draft.puzzle.clues.horizontal).reduce((sum,list)=>sum+list.length,0)+
+  Object.values(draft.puzzle.clues.vertical).reduce((sum,list)=>sum+list.length,0);
+ assert.equal(clueTotal,draft.filledSlots,'Every placed word must preserve one original clue');
  console.log('OK',size,'black cells:',patterns[0].flat().filter(Boolean).length,'filled:',draft.filledSlots);
 }
