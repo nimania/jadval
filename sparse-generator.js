@@ -266,11 +266,19 @@ async function generateSample(){
      const depth=stats.reduce((m,x)=>Math.max(m,x.bestDepth||0),0);
      const total=stats.find(x=>(x.bestDepth||0)===depth)?.slotCount||0;
      const missing=[...new Set(stats.flatMap(x=>x.missingLengths||[]))].sort((a,b)=>a-b);
+     const timeLimited=stats.filter(x=>x.status==="budget-exhausted").length;
+     const earlyMismatch=stats.filter(x=>x.status==="arc-inconsistent").length;
+     const unsatisfiable=stats.filter(x=>x.status==="inconsistent").length;
      const detail=missing.length?
-      "در برخی الگوها پاسخ با طول "+missing.join("، ")+" حرف وجود نداشت.":
-      "حل‌گر نتوانست همهٔ تقاطع‌های حروف را سازگار کند.";
-     output={error:"جدول کامل پیدا نشد. بهترین پیشرفت: "+depth+" جایگاه از "+total+
-      "؛ "+detail+" هیچ جدول ناقصی نمایش یا صادر نمی‌شود."};
+      "در برخی طرح‌ها طول‌های "+missing.join("، ")+" حرفی در بانک موجود نبود.":
+      timeLimited?"در "+timeLimited+" طرح، زمان یا بودجهٔ جست‌وجو تمام شد؛ این به معنی غیرممکن‌بودن جدول نیست.":
+      earlyMismatch?"در "+earlyMismatch+" طرح، تقاطع‌ها در مرحلهٔ پالایش اولیه ناسازگار شدند.":
+      unsatisfiable?"برای "+unsatisfiable+" طرح، حل‌گر در محدودیت‌های بررسی‌شده به جواب کامل نرسید.":
+      "هنوز جواب کامل پیدا نشد.";
+     const pruned=stats.reduce((sum,x)=>sum+(x.initialPruned||0),0);
+     output={error:"جدول کامل پیدا نشد. بیشترین پیشرفت: "+depth+" جایگاه از "+total+
+      "؛ "+detail+" "+(pruned?"گزینه‌های حذف‌شده در پالایش اولیه: "+pruned+"؛ ":"")+
+      "هیچ جدول ناقصی نمایش یا صادر نمی‌شود."};
     }
 
    }
