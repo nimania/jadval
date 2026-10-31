@@ -2,7 +2,7 @@ name: Publish Jadval Studio UI
 on:
   push:
     branches: [main]
-    paths: [index.html, demo-generator.js, sparse-generator.js, mosaic-generator.js, .github/workflows/pages.yml]
+    paths: [index.html, demo-generator.js, sparse-generator.js, mosaic-generator.js, classic-patterns.js, classic-preview.js, .github/workflows/pages.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,6 +27,8 @@ jobs:
           cp demo-generator.js public/demo-generator.js
           cp sparse-generator.js public/sparse-generator.js
           cp mosaic-generator.js public/mosaic-generator.js
+          cp classic-patterns.js public/classic-patterns.js
+          cp classic-preview.js public/classic-preview.js
           echo 'User-managed private data is not hosted here.' > public/robots.txt
       - uses: actions/upload-pages-artifact@v3
         with:
