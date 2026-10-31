@@ -2,7 +2,7 @@ name: Publish Jadval Studio UI
 on:
   push:
     branches: [main]
-    paths: [index.html, .github/workflows/pages.yml]
+    paths: [index.html, demo-generator.js, .github/workflows/pages.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -24,6 +24,7 @@ jobs:
         run: |
           mkdir -p public
           cp index.html public/index.html
+          cp demo-generator.js public/demo-generator.js
           echo 'User-managed private data is not hosted here.' > public/robots.txt
       - uses: actions/upload-pages-artifact@v3
         with:
