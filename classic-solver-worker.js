@@ -51,6 +51,32 @@ function buildPool(entries,slots){
  }
  return groups;
 }
+function inspect(mask,entries){
+ const slots=slotsFor(mask);
+ if(!slots)return {status:'invalid-mask',score:Infinity,slotCount:0};
+ const pools=buildPool(entries,slots),domains=slots.map(slot=>pools.get(slot.cells.length)||[]);
+ const missing=[...new Set(slots.filter(slot=>!domains[slot.id].length).map(slot=>slot.cells.length))];
+ if(missing.length)return {status:'missing-lengths',score:Infinity,slotCount:slots.length,missingLengths:missing};
+ const support=domains.map((candidates,id)=>{
+  const positions=Array.from({length:slots[id].cells.length},()=>new Set());
+  for(const entry of candidates)for(let p=0;p<entry.word.length;p++)positions[p].add(entry.word[p]);
+  return positions;
+ });
+ let unsupported=0,weak=0;
+ for(const slot of slots)for(const [p,other,q] of slot.cross){
+  let overlap=0;
+  for(const ch of support[slot.id][p])if(support[other][q].has(ch))overlap++;
+  if(!overlap)unsupported++;
+  else if(overlap<3)weak++;
+ }
+ const lengths=slots.map(s=>s.cells.length);
+ const longPenalty=lengths.reduce((score,len)=>score+(len>=8?(len-7)*(len-7):0),0);
+ // Score independent of arbitrary numbers assigned to grid cells.
+ const score=unsupported*100000+weak*15+longPenalty*12+
+    domains.reduce((sum,d)=>sum+Math.log1p(d.length),0);
+ return {status:unsupported?'unsupported-crossings':'candidate',score,slotCount:slots.length,
+         unsupported,weak,longest:Math.max(...lengths)};
+}
 function solve(mask,entries,{limitMs=9000,limitNodes=140000,seed=0}={}){
  const slots=slotsFor(mask);
  if(!slots)return {status:'invalid-mask',bestDepth:0,slotCount:0,nodes:0};
@@ -187,16 +213,27 @@ function solve(mask,entries,{limitMs=9000,limitNodes=140000,seed=0}={}){
 }
 function tryMasks(masks,entries,opts={}){
  const budget=opts.totalMs||12000,start=Date.now(),reports=[];
- for(let i=0;i<masks.length;i++){
+ // Pre-check every candidate grid. A geometrically valid mask can still be
+ // useless if the bank does not support one or more crossing positions.
+ const ranked=masks.map((mask,index)=>({mask,index,assessment:inspect(mask,entries)}))
+   .sort((a,b)=>a.assessment.score-b.assessment.score);
+ for(const item of ranked){
   const remaining=budget-(Date.now()-start);if(remaining<=0)break;
-  const r=solve(masks[i],entries,{limitMs:Math.min(4000,remaining),limitNodes:100000,seed:(opts.seed||0)+i});
-  reports.push({status:r.status,slotCount:r.slotCount,bestDepth:r.bestDepth,nodes:r.nodes,initialPruned:r.initialPruned||0,
+  const {mask,index,assessment}=item;
+  if(assessment.status!=='candidate'){
+   reports.push({status:assessment.status,slotCount:assessment.slotCount,bestDepth:0,nodes:0,
+                 score:assessment.score,missingLengths:assessment.missingLengths||[]});
+   continue;
+  }
+  const r=solve(mask,entries,{limitMs:Math.min(4800,remaining),limitNodes:120000,seed:(opts.seed||0)+index});
+  reports.push({status:r.status,slotCount:r.slotCount,bestDepth:r.bestDepth,nodes:r.nodes,
+                initialPruned:r.initialPruned||0,score:assessment.score,
                 missingLengths:r.missingLengths||[],elapsedMs:r.elapsedMs||0});
   if(r.status==='solved')return {status:'solved',result:r,reports};
  }
  return {status:'unsolved',reports};
 }
-root.JadvalWorkerEngine={solve,tryMasks,slotsFor};
+root.JadvalWorkerEngine={solve,tryMasks,slotsFor,inspect};
 if(typeof root.addEventListener==='function'&&typeof root.postMessage==='function'){
  root.addEventListener('message',event=>{
   const data=event.data||{};
