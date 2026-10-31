@@ -22,7 +22,7 @@ function searchTile(index,random,used,limit=45000){
   const w0=list[Math.floor(random()*list.length)];
   const rows=[w0];
   for(let j=1;j<w0.length;j++){
-   const choices=first.get(w0[j]);if(!choices?.length)break;
+   const choices=w0.length===2?list:first.get(w0[j]);if(!choices?.length)break;
    rows.push(choices[Math.floor(random()*choices.length)]);
   }
   if(rows.length!==w0.length)continue;
