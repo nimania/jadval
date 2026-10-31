@@ -45,6 +45,8 @@ dialog{border:0;border-radius:15px;box-shadow:0 16px 80px #07172350;width:min(54
 #demoResult{margin-top:18px;border-top:1px solid #e5eaf0;padding-top:14px}
 #demoGrid{direction:rtl}
 @media(max-width:800px){.demo-layout{grid-template-columns:1fr}.demo-grid{max-width:500px}}
+
+.length-item{display:grid;grid-template-columns:55px minmax(0,1fr) 70px;align-items:center;gap:10px;margin:7px 0;font-size:12px}.length-track{height:9px;border-radius:8px;background:#e8edf1;overflow:hidden}.length-fill{height:100%;background:#1d6885}.length-item strong{text-align:left;font-variant-numeric:tabular-nums}.length-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}
 </style></head>
 <body><header><div class="top"><div><div class="brand">جدول <span class="subtitle">/ کارگاه طراحی فارسی</span></div></div><a href="https://nimania.github.io/payamejadval/" target="_blank" rel="noopener">پیام جدول ↗</a></div></header>
 <main>
@@ -52,6 +54,12 @@ dialog{border:0;border-radius:15px;box-shadow:0 16px 80px #07172350;width:min(54
 <div class="toolbar"><label class="btn primary" for="file">ورود بانک JSON</label><input id="file" type="file" accept=".json,application/json">
 <button class="btn" id="export" disabled>خروجی و پشتیبان JSON ↓</button><button class="btn" id="clear" disabled>پاک‌کردن بانک مرورگر</button></div></div>
 <div class="stats"><div class="stat"><span class="num" id="total">۰</span><span class="label">مدخل‌های بانک</span></div><div class="stat"><span class="num" id="approved">۰</span><span class="label">بازبینی‌شده</span></div><div class="stat"><span class="num" id="answers">۰</span><span class="label">پاسخ متفاوت</span></div><div class="stat"><span class="num" id="visible">۰</span><span class="label">نتیجه جست‌وجو</span></div></div>
+<section class="panel" id="lengthManagement">
+<h2>گسترش بانک و بررسی طول پاسخ‌ها</h2>
+<p class="muted small">برای طراحی الگوی کلاسیک، تعداد واژه‌های متفاوت در هر طول اهمیت دارد؛ به‌ویژه پاسخ‌های بلند که در آرشیو فعلی کم‌اند.</p>
+<div class="length-actions"><button class="btn" id="showLengthStats">نمایش آمار طول جواب‌ها</button><button class="btn primary" id="addLongEntry">افزودن سؤال و جواب تازه</button></div>
+<div id="lengthStats" hidden><div id="lengthBars" style="margin-top:16px"></div><p class="note" id="lengthNote"></p></div>
+</section>
 <section class="panel" id="demoStudio"><div class="demo-intro"><div><h2>طراحی آزمایشی جدول</h2><p class="muted small">طرح‌های کلاسیک با خانه‌های سیاه پراکنده و غیرکپی تولید می‌شوند. شمارهٔ سطرها در سمت راست و شمارهٔ ستون‌ها بالای جدول حفظ می‌شود؛ هیچ ردیف یا ستونی حذف نمی‌شود.</p></div><span class="status">نسخهٔ آزمایشی</span></div>
 <div class="demo-controls" style="margin-top:14px"><label for="demoSize">اندازه</label><select id="demoSize"><option value="7">۷ × ۷</option><option value="10">۱۰ × ۱۰</option><option value="15">۱۵ × ۱۵</option><option value="20" selected>۲۰ × ۲۰</option></select><label for="patternStyle">سبک</label><select id="patternStyle"><option value="classic" selected>کلاسیک پراکنده</option><option value="mosaic">بخش‌بندی آزمایشی</option></select><label for="demoFilter">موضوع</label><select id="demoFilter"><option value="">همه موضوع‌ها</option></select><button class="btn" id="previewPattern">پیش‌نمایش الگوی سیاه</button><button class="btn primary" id="buildDemo">ساخت جدول کامل</button></div>
 <p class="note" id="demoNote">«الگوی کلاسیک» برای مشاهدهٔ چیدمان پراکنده است. ساخت جدول کامل، تنها در صورت یافتن پاسخ برای همهٔ خانه‌های سفید خروجی می‌دهد. بخش‌بندی آزمایشی نیز فعلاً در دسترس است.</p>
@@ -62,6 +70,16 @@ dialog{border:0;border-radius:15px;box-shadow:0 16px 80px #07172350;width:min(54
 <section class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">فهرست سؤال‌ها</h2><button class="btn" id="suggest" disabled>دسته‌بندی پیشنهادی برای مدخل‌های بدون موضوع</button></div><div id="empty" class="empty">هنوز بانک سؤال‌وجواب وارد نشده است.</div><div id="tableArea" hidden><div class="table-scroll"><table><thead><tr><th>سؤال</th><th>جواب</th><th>موضوع</th><th>تعداد حروف</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="rows"></tbody></table></div><div class="pager"><button class="btn" id="prev">صفحهٔ قبل</button><span id="page"></span><button class="btn" id="next">صفحهٔ بعد</button></div></div></section>
 <p class="muted small">این محیط ابزار داخلی است. بارگذاری داده و تغییرات در حافظهٔ همین مرورگر انجام می‌شود؛ برای پشتیبان دائمی از «خروجی JSON» استفاده کنید. پاک‌شدن دادهٔ مرورگر ممکن است تغییرات محلی را از بین ببرد.</p>
 </main>
+<dialog id="longEntryDialog"><form id="newEntryForm">
+<h2>افزودن مدخل جدید به بانک</h2>
+<div class="field"><label for="newClue">متن سؤال</label><textarea id="newClue" required rows="3"></textarea></div>
+<div class="field"><label for="newAnswer">جواب (۲ تا ۳۰ حرف)</label><input id="newAnswer" required type="text"></div>
+<div class="field"><label for="newSource">منبع و مستندات پاسخ</label><input id="newSource" required type="text" placeholder="مثلاً واژه‌نامه، منبع تاریخی یا تألیف شخصی"></div>
+<div class="field"><label for="newCategory">موضوع</label><select id="newCategory"><option>عمومی</option><option>ادبیات و زبان</option><option>تاریخ</option><option>جغرافیا</option><option>علم و فناوری</option><option>سینما و هنر</option><option>ورزش</option><option>موسیقی</option><option>سایر</option></select></div>
+<p class="muted small">مدخل با وضعیت «بررسی‌نشده» ثبت می‌شود. داده فقط در مرورگر ذخیره می‌شود؛ از بانک نسخهٔ پشتیبان بگیر.</p>
+<p id="longError" role="alert" style="color:#b34334"></p>
+<div class="dialog-actions"><button class="btn" id="closeLongEntry" type="button">انصراف</button><button class="btn primary" type="submit">افزودن به بانک</button></div>
+</form></dialog>
 <dialog id="editor"><form id="editForm"><h2>ویرایش سؤال و جواب</h2><input type="hidden" id="editId">
 <div class="field"><label for="editClue">سؤال</label><textarea rows="3" required id="editClue"></textarea></div>
 <div class="field"><label for="editAnswer">جواب</label><input id="editAnswer" type="text" required></div>
@@ -108,4 +126,4 @@ $('suggest').onclick=async()=>{let n=0;for(const x of entries){if(x.category&&x.
 for(const id of ['search','category','reviewed','difficulty'])$(id).addEventListener(id==='search'?'input':'change',applyFilters);
 $('prev').onclick=()=>{page=Math.max(0,page-1);render()};$('next').onclick=()=>{page++;render()};
 restore().then(data=>{if(data?.entries?.length){entries=data.entries;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل از حافظهٔ مرورگر بازیابی شد.')}else render()}).catch(e=>status('ذخیره‌سازی محلی در این مرورگر فعال نیست: '+e.message));
-</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script></body></html>
+</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script><script src="./bank-tools.js"></script></body></html>
