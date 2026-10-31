@@ -38,3 +38,4 @@ jobs:
           node --check demo-generator.js
           node --check sparse-generator.js
           node tests/test_demo_generator.cjs
+          node tests/test_sparse_generator.cjs
