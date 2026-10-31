@@ -19,17 +19,11 @@ function slotsFor(mask) {
  for(const s of slots){s.cross=[];for(let p=0;p<s.cells.length;p++){const refs=cellSlots.get(s.cells[p].join(","));for(const [other,q] of refs)if(other!==s.id)s.cross.push([p,other,q]);}}
  return slots;
 }
-function validMask(mask,maxBlacks=2){
- const n=mask.length;
- if(n<5||mask.some(row=>row.length!==n))return false;
- for(let r=0;r<n;r++){
-  const sum=mask[r].filter(Boolean).length;
-  if(sum<1||sum>maxBlacks)return false;
- }
- for(let c=0;c<n;c++){
-  const sum=mask.filter(row=>row[c]).length;
-  if(sum<1||sum>maxBlacks)return false;
- }
+function validMask(mask){
+ const n=mask?.length;
+ if(!Number.isInteger(n)||n<5||mask.some(row=>!Array.isArray(row)||row.length!==n))return false;
+ const black=mask.reduce((sum,row)=>sum+row.filter(Boolean).length,0);
+ if(black===0||black>Math.ceil(n*n*.45))return false;
  return !!slotsFor(mask);
 }
 function slotLengths(mask){
@@ -230,7 +224,7 @@ function render(data){
   wrap.append(h,ul);clues.append(wrap);
  }
  const blackCount=data.mask.flat().filter(Boolean).length;
- $("demoMeta").textContent="جدول کامل: "+data.slots+" پاسخ — شبکهٔ "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ در هر ردیف و ستون ۱ یا ۲ خانهٔ سیاه.";
+ $("demoMeta").textContent="جدول کامل: "+data.slots+" پاسخ — شبکهٔ "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ الگوی آزاد.";
  section.scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function generateSample(){
@@ -238,48 +232,23 @@ async function generateSample(){
  const bank=(typeof entries!=="undefined"&&entries.length)?entries:[];
  if(!bank.length){$("demoNote").textContent="اول بانک سؤال‌وجواب خودت را وارد کن.";return;}
  const filtered=category?bank.filter(e=>(e.category||"دسته‌بندی‌نشده")===category):bank;
- const seed=Date.now();btn.disabled=true;btn.textContent="در حال طراحی…";
- $("demoNote").textContent="در حال ساخت شبکه با ۱ تا ۲ خانهٔ سیاه در هر ردیف و ستون…";
+ btn.disabled=true;btn.textContent="در حال طراحی…";
+ $("demoNote").textContent="در حال ساخت یک جدول کامل با ترکیب جدید پاسخ‌های کوتاه از بانک…";
  await new Promise(resolve=>setTimeout(resolve,30));
  try{
-  const lengths=new Set(filtered.map(x=>normalize(x.answer).length));
-  const longest=Math.max(0,...lengths);
-  // Integer-constraint feasibility check: in a 20x20 grid with 1–2
-  // black cells in every row/column and no one-letter slots, a fully
-  // valid arrangement needs at least one uninterrupted 18-cell slot.
-  // Current source archive contains no answers of that length.
-  if(size===20&&longest<18){
+  const builder=window.JadvalMosaic;
+  if(!builder)throw Error("موتور طراحی در مرورگر بارگذاری نشده است.");
+  const output=builder.generate(filtered,size,Date.now());
+  if(!output.result){
    last=null;$("demoResult").hidden=true;
-   $("demoNote").textContent="با این دو شرط هم‌زمان، ساخت جدول کامل ۲۰×۲۰ از بانک فعلی ممکن نیست: در این نوع شبکه دست‌کم یک پاسخ ۱۸حرفی لازم است، اما بلندترین جواب بانک "+longest+" حرف دارد. برای رسیدن به ۲۰×۲۰ باید پاسخ‌های بلند معتبر اضافه کنیم یا محدودیت تعداد خانه‌های سیاه را تغییر دهیم. جدول ناقص نمایش داده نمی‌شود.";
+   $("demoNote").textContent=output.error||"جدول کاملاً پُر پیدا نشد؛ نتیجهٔ ناقص نمایش داده نمی‌شود.";
    return;
   }
-  const masks=patterns(size,seed,8,lengths);
-  const needed=slotLengths(masks[0]||[]);
-  const unsupported=[...new Set(needed.filter(length=>!lengths.has(length)))].sort((a,b)=>a-b);
-  if(unsupported.length){
-   last=null;$("demoResult").hidden=true;
-   $("demoNote").textContent="بانک فعلی برای طول‌های "+unsupported.join("، ")+" حرفی هیچ پاسخی ندارد؛ این چیدمان قابل تکمیل نیست. برای ۲۰×۲۰ باید واژه‌های بلند بیشتری به بانک اضافه کنیم.";
-   return;
-  }
-  if(!masks.length){$("demoNote").textContent="برای این اندازه الگوی سیاه معتبر پیدا نشد.";return;}
-  let complete=null;
-  for(let i=0;i<masks.length;i++){
-   complete=solve(masks[i],filtered,5500,seed+i);
-   if(complete)break;
-   await new Promise(resolve=>setTimeout(resolve,0));
-  }
-  if(!complete||!validateComplete(complete)){
-   last=null;
-   $("demoResult").hidden=true;
-   $("demoNote").textContent="برای اندازهٔ "+size+"×"+size+" با بانک فعلی و شرط ۱ تا ۲ خانهٔ سیاه در هر ردیف و ستون، جدول کاملاً پُر پیدا نشد. هیچ جدول ناقصی نمایش یا صادر نمی‌شود. می‌توانی اندازهٔ دیگری را امتحان کنی.";
-   return;
-  }
-  render(complete);
-  $("demoNote").textContent="همهٔ خانه‌های سفید، پاسخ معتبر و سرنخ از بانک دارند. بررسی انسانی و کنترل شباهت با آرشیو پیش از انتشار همچنان لازم است.";
- }catch(err){$("demoNote").textContent="خطا: "+err.message;}
+  render(output.result);
+  $("demoNote").textContent="نمونهٔ کامل ساخته شد؛ هر خانهٔ سفید دارای حرف و هر ردیف/ستونِ باز دارای سرنخ از بانک است. این روش از بخش‌های کوچکِ متقاطع و جداکننده‌های سیاه استفاده می‌کند و هنوز نیازمند بررسی ویراستاری و سنجش شباهت است.";
+ }catch(err){last=null;$("demoResult").hidden=true;$("demoNote").textContent="خطا: "+err.message;}
  finally{btn.disabled=false;btn.textContent="ساخت یک نمونه جدول";}
 }
-
 function init(){
  if(!$("buildDemo"))return;
  $("demoSize").replaceChildren(...[7,10,15,20].map(x=>new Option(x+" × "+x,String(x))));
