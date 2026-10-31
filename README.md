@@ -12,7 +12,7 @@
 **داده‌های واقعی هنوز وارد نشده‌اند.** برای شروع انتقال باید گردش‌کار را از GitHub Actions اجرا کنیم.
 
 ## اجرای دریافت کامل آرشیو
-۱. در [Repository secrets](https://github.com/nimania/jadval/settings/secrets/actions) یک secret با نام `CROSSWORD_FIREBASE_API_KEY` و مقدار کلید وب Firebase پروژهٔ جدول انار قرار دهید. این کلید در پیکربندی عمومی مخزن اصلی آن پروژه قابل مشاهده است؛ داخل README وارد نکنید.
+۱. نیازی به تهیهٔ کلید یا ساخت Secret نیست؛ کلید عمومی وب Firebase از پیکربندی منتشرشدهٔ جدول انار استفاده می‌شود. این کلید مجوز دسترسی اضافه‌ای نمی‌دهد.
 ۲. در [Actions](https://github.com/nimania/jadval/actions/workflows/import-archive.yml)، گردش‌کار **Import licensed crossword archive** را با `Run workflow` اجرا کنید.
 ۳. خروجی اجرای موفق را از بخش **Artifacts** همان اجرا دریافت کنید: پوشهٔ `archive/raw` شامل جدول‌های اصلی JSON، فایل `archive/jadval.sqlite` شامل بانک استخراج‌شده و `archive/report.json` شامل آمار واقعی است.
 
@@ -20,7 +20,6 @@
 
 ## اجرای محلی
 ```bash
-export CROSSWORD_FIREBASE_API_KEY='...'
 python3 fetch_archive.py --output archive/raw
 python3 build_database.py --archive archive/raw --db archive/jadval.sqlite --report archive/report.json
 python3 generate.py --input sample.json --size 15 --count 3
