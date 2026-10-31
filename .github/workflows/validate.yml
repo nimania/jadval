@@ -7,6 +7,8 @@ on:
       - demo-generator.js
       - sparse-generator.js
       - mosaic-generator.js
+      - classic-patterns.js
+      - classic-preview.js
       - import_puzzles.py
       - build_database.py
       - generate.py
@@ -39,6 +41,9 @@ jobs:
           node --check demo-generator.js
           node --check sparse-generator.js
           node --check mosaic-generator.js
+          node --check classic-patterns.js
+          node --check classic-preview.js
+          node tests/test_classic_patterns.cjs
           node tests/test_demo_generator.cjs
           node tests/test_sparse_generator.cjs
           node tests/test_mosaic_generator.cjs
