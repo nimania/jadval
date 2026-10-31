@@ -20,3 +20,6 @@ for(const size of [15,20]){
  assert.equal(keys.size,masks.length,'Duplicate masks');
  console.log('Classic',size,'valid patterns:',masks.length);
 }
+
+// The 15x15 classic mask is the editorial baseline; it is not a completed crossword.
+assert(window.JadvalClassic.build(15,31827,4,sample).length>0);
