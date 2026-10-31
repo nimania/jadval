@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - index.html
+      - demo-generator.js
       - import_puzzles.py
       - build_database.py
       - generate.py
@@ -33,3 +34,4 @@ jobs:
           Path('/tmp/jadval-studio.js').write_text(scripts[0],encoding='utf-8')
           PY
           node --check /tmp/jadval-studio.js
+          node --check demo-generator.js
