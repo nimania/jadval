@@ -28,7 +28,7 @@ function init(){
    $("classicPreview").hidden=true;
    return;
   }
-  const masks=window.JadvalClassic?.build(n,Date.now(),8)||[];
+  const masks=window.JadvalClassic?.build(n,Date.now(),8,(typeof entries!=='undefined'?entries:[]))||[];
   if(!masks.length){$("classicPreview").hidden=true;$("demoNote").textContent="برای این تلاش الگوی مناسبی یافت نشد؛ دوباره امتحان کن.";return;}
   const mask=masks[0],bank=(typeof entries!=="undefined"?entries:[]);
   const stats=window.JadvalClassic.assess(mask,bank);
