@@ -254,7 +254,10 @@ async function generateSample(){
   if(classic){
    const maker=window.JadvalClassic;
    if(!maker)throw Error("موتور الگوی کلاسیک بارگذاری نشده است.");
+   const preview=window.JadvalClassicPreview?.getSelected?.();
+   const selected=preview&&preview.length===size&&maker.valid(preview)?preview:null;
    const masks=maker.build(size,Date.now(),8,filtered);
+   if(selected&&!masks.some(mask=>JSON.stringify(mask)===JSON.stringify(selected)))masks.unshift(selected);
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
     const report=await solveClassicInWorker(masks,filtered,Date.now());
