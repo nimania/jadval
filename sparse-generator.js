@@ -4,7 +4,8 @@
 const normalize=s=>String(s||"").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\u064b-\u065f\u0670\s\u200c\u200d\-ـ]/g,"");
 const alphabet=/^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیؤئء]+$/;
 const $=id=>document.getElementById(id);
-let last=null;
+let last=null,lastDiagnostic=null;
+function updateReport(report){lastDiagnostic=report;const button=$("downloadSolveReport");if(button)button.disabled=!report;}
 function rng(seed){return ()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 function slotsFor(mask) {
  const n=mask.length,slots=[],cellSlots=new Map();
@@ -245,6 +246,7 @@ async function generateSample(){
  const bank=(typeof entries!=="undefined"&&entries.length)?entries:[];
  if(!bank.length){$("demoNote").textContent="اول بانک سؤال‌وجواب خودت را وارد کن.";return;}
  const filtered=category?bank.filter(e=>(e.category||"دسته‌بندی‌نشده")===category):bank;
+ updateReport(null);
  btn.disabled=true;btn.textContent="در حال طراحی…";
  $("demoNote").textContent="در حال ساخت یک جدول کامل با ترکیب جدید پاسخ‌های کوتاه از بانک…";
  await new Promise(resolve=>setTimeout(resolve,30));
@@ -261,6 +263,16 @@ async function generateSample(){
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
     const report=await solveClassicInWorker(masks,filtered,Date.now());
+    updateReport({
+     schema:1,type:"jadval-solver-diagnostics",timestamp:new Date().toISOString(),
+     size,style:"classic",category:category||"all",bankEntries:bank.length,
+     filteredEntries:filtered.length,attemptedMasks:masks.length,
+     reports:(report.reports||[]).map(x=>({
+       status:x.status,slotCount:x.slotCount,bestDepth:x.bestDepth,nodes:x.nodes,
+       elapsedMs:x.elapsedMs,initialPruned:x.initialPruned,score:x.score,
+       missingLengths:x.missingLengths
+     }))
+    });
     const candidate=report.result;
     if(report.status==="solved"&&candidate&&validateComplete(candidate)){
      output={result:candidate};
@@ -310,6 +322,14 @@ function init(){
  const art=$("blockArt");
  if(art)art.addEventListener("change",()=>{document.querySelectorAll("#demoGrid .demo-block").forEach(cell=>{cell.classList.remove("art-plain","art-abstract","art-patterned","art-red");cell.classList.add("art-"+art.value);});});
  $("showAnswers").onchange=()=>{document.querySelectorAll(".demo-cell[data-letter]").forEach(x=>x.textContent=$("showAnswers").checked?x.dataset.letter:"");};
+ const reportButton=$("downloadSolveReport");
+ if(reportButton)reportButton.onclick=()=>{
+  if(!lastDiagnostic)return;
+  const blob=new Blob([JSON.stringify(lastDiagnostic,null,2)],{type:"application/json;charset=utf-8"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="jadval-solver-report.json";a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ };
  $("downloadDemo").onclick=()=>{if(!last||!validateComplete(last))return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
