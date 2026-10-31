@@ -207,7 +207,7 @@ function render(data){
   grid.append(numberCell(r+1,false));
   for(let c=size-1;c>=0;c--){
    const cell=document.createElement("div"),letter=data.puzzle.grid[r][c],blocked=data.mask[r][c];
-   cell.className=blocked?"demo-cell demo-block":"demo-cell";
+   cell.className=blocked?"demo-cell demo-block art-"+($("blockArt")?.value||"plain"):"demo-cell";
    if(!blocked){
     cell.dataset.letter=letter;
     cell.textContent=$("showAnswers").checked?letter:"";
@@ -278,8 +278,10 @@ async function generateSample(){
 function init(){
  if(!$("buildDemo"))return;
  $("demoSize").replaceChildren(...[7,10,15,20].map(x=>new Option(x+" × "+x,String(x))));
- $("demoSize").value="20";
+ $("demoSize").value="15";
  const old=$("buildDemo");old.replaceWith(old.cloneNode(true));$("buildDemo").onclick=generateSample;
+ const art=$("blockArt");
+ if(art)art.addEventListener("change",()=>{document.querySelectorAll("#demoGrid .demo-block").forEach(cell=>{cell.classList.remove("art-plain","art-abstract","art-patterned");cell.classList.add("art-"+art.value);});});
  $("showAnswers").onchange=()=>{document.querySelectorAll(".demo-cell[data-letter]").forEach(x=>x.textContent=$("showAnswers").checked?x.dataset.letter:"");};
  $("downloadDemo").onclick=()=>{if(!last||!validateComplete(last))return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 }
