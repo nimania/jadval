@@ -57,88 +57,133 @@ function solve(mask,entries,{limitMs=9000,limitNodes=140000,seed=0}={}){
  const pools=buildPool(entries,slots),domains=slots.map(s=>(pools.get(s.cells.length)||[]));
  const missingLengths=[...new Set(slots.filter(s=>!domains[s.id].length).map(s=>s.cells.length))].sort((a,b)=>a-b);
  if(missingLengths.length)return {status:'missing-lengths',missingLengths,bestDepth:0,slotCount:slots.length,nodes:0};
- const assigned=Array(slots.length).fill(null),used=new Set(),start=Date.now();
- let nodes=0,bestDepth=0,stop=false;
- // Per-position support maps for cheap forward checks.
- const index=domains.map((arr,id)=>{
-  const byPosition=Array.from({length:slots[id].cells.length},()=>new Map());
-  for(const candidate of arr)for(let p=0;p<candidate.word.length;p++){
-   const key=candidate.word[p],list=byPosition[p].get(key)||[];
-   list.push(candidate);byPosition[p].set(key,list);
-  }
-  return byPosition;
- });
- // Calculate a candidate's compatibility with already assigned intersections.
- function fits(id,item){
-  if(used.has(item.word))return false;
-  for(const [pos,other,q] of slots[id].cross){
-   const fixed=assigned[other];if(fixed&&item.word[pos]!==fixed.word[q])return false;
-  }
-  return true;
+ const start=Date.now(),deadline=start+limitMs,assigned=Array(slots.length).fill(null),used=new Set();
+ let nodes=0,bestDepth=0,stop=false,initialPruned=0;
+ function timedOut(){
+  if(nodes>limitNodes||Date.now()>deadline){stop=true;return true;}
+  return false;
  }
- function options(id,stopAfter=Infinity){
-  let narrow=null;
-  for(const [pos,other,q] of slots[id].cross){
-   const fixed=assigned[other];if(!fixed)continue;
-   const list=index[id][pos].get(fixed.word[q])||[];
-   if(narrow===null||list.length<narrow.length)narrow=list;
+ // Apply global arc consistency (AC-3) before search. For every crossing,
+ // remove answers whose crossing letter has no support in the other slot.
+ // All candidate strings remain original, source-backed answers.
+ const arcs=[];
+ for(const slot of slots)for(const [p,other,q] of slot.cross)
+  arcs.push([slot.id,other,p,q]);
+ let arcChecks=0;
+ function pruneArcs(current,initial=false){
+  const queue=arcs.slice();
+  for(let head=0;head<queue.length;head++){
+   if(++arcChecks%1024===0&&Date.now()>deadline){stop=true;return null;}
+   const [i,j,p,q]=queue[head],supported=new Set();
+   for(const item of current[j])supported.add(item.word[q]);
+   const next=current[i].filter(item=>supported.has(item.word[p]));
+   if(next.length===current[i].length)continue;
+   if(initial)initialPruned+=current[i].length-next.length;
+   if(!next.length)return null;
+   current[i]=next;
+   // Only arcs that *depend* on slot i need to be reconsidered.
+   for(const [pos,other,otherPos] of slots[i].cross){
+    if(other===j)continue;
+    queue.push([other,i,otherPos,pos]);
+   }
+   if(head>120000){stop=true;return null;}
   }
-  const arr=narrow||domains[id],out=[];
-  for(const item of arr){if(fits(id,item))out.push(item);if(out.length>=stopAfter)break;}
-  return out;
+  return current;
  }
- function dfs(depth){
+ let base=pruneArcs(domains.map(a=>a.slice()),true);
+ if(!base)return {status:stop?'budget-exhausted':'arc-inconsistent',slotCount:slots.length,bestDepth,nodes,
+                         initialPruned,elapsedMs:Date.now()-start};
+ // The board is filled with unique answer strings; words already assigned are
+ // taken out of all other domains. Work on copy-on-write domains per branch.
+ function recurse(current,depth){
   if(depth>bestDepth)bestDepth=depth;
   if(depth===slots.length)return true;
-  if(++nodes%128===0&&(Date.now()-start>limitMs||nodes>limitNodes)){stop=true;return false;}
-  let chosen=-1,candidates=null;
-  for(const slot of slots){
-   if(assigned[slot.id])continue;
-   const opt=options(slot.id,candidates?candidates.length:Infinity);
-   if(!opt.length)return false;
-   if(chosen<0||opt.length<candidates.length){
-    chosen=slot.id;candidates=opt;
-    if(opt.length===1)break;
+  if(++nodes%64===0&&timedOut())return false;
+  let chosen=-1,options=null;
+  for(let i=0;i<slots.length;i++){
+   if(assigned[i])continue;
+   const valid=current[i].filter(item=>!used.has(item.word));
+   if(!valid.length)return false;
+   if(chosen===-1||valid.length<options.length||
+      (valid.length===options.length&&slots[i].cross.length>slots[chosen].cross.length)){
+    chosen=i;options=valid;
+    if(valid.length===1)break;
    }
   }
-  const id=chosen;
-  // Favor frequent cross-compatible characters; vary tie-breaks with seed.
-  if(candidates.length>1){
-   candidates.sort((a,b)=>{
-    let sa=0,sb=0;
-    for(const [p,other,q] of slots[id].cross){
-     if(assigned[other])continue;
-     sa+=(index[other][q].get(a.word[p])||[]).length;
-     sb+=(index[other][q].get(b.word[p])||[]).length;
+  // Least-constraining candidate first: prefer letters supported by the
+  // remaining crossing domains, with seeded tie-breaking for restarts.
+  const neighbors=slots[chosen].cross.filter(([,i])=>!assigned[i]);
+  const support=neighbors.map(([p,other,q])=>{
+   const freq=new Map();
+   for(const word of current[other])if(!used.has(word.word))
+    freq.set(word.word[q],(freq.get(word.word[q])||0)+1);
+   return [p,freq];
+  });
+  options.sort((a,b)=>{
+   const score=x=>support.reduce((sum,[p,freq])=>sum+Math.log1p(freq.get(x.word[p])||0),0);
+   const d=score(b)-score(a);
+   if(Math.abs(d)>1e-8)return d;
+   // Deterministic variation across attempts: does not change correctness.
+   return (hashWord(a.word,seed)%997)-(hashWord(b.word,seed)%997);
+  });
+  for(const entry of options){
+   if(timedOut())return false;
+   assigned[chosen]=entry;used.add(entry.word);
+   // Forward checking and small-scope AC-3 propagation. Domain copying is
+   // intentional: restoring the previous branch cannot leak reductions.
+   const next=current.slice(),affected=new Set([chosen]);
+   next[chosen]=[entry];
+   let consistent=true;
+   for(const [p,other,q] of slots[chosen].cross){
+    if(assigned[other])continue;
+    const narrowed=current[other].filter(word=>word.word!==entry.word&&word.word[q]===entry.word[p]&&!used.has(word.word));
+    if(!narrowed.length){consistent=false;break;}
+    next[other]=narrowed;affected.add(other);
+   }
+   if(consistent){
+    // Only revise arcs adjacent to changed slots. Propagated changes enqueue
+    // their neighbors, which is stronger than the original forward check.
+    const queue=[];
+    for(const i of affected)for(const [p,other,q] of slots[i].cross)
+     if(!assigned[other])queue.push([other,i,q,p]);
+    for(let head=0;head<queue.length;head++){
+     if(head%1024===0&&Date.now()>deadline){stop=true;consistent=false;break;}
+     const [i,j,p,q]=queue[head];
+     if(assigned[i])continue;
+     const supported=new Set(next[j].map(x=>x.word[q]));
+     const narrowed=next[i].filter(x=>!used.has(x.word)&&supported.has(x.word[p]));
+     if(!narrowed.length){consistent=false;break;}
+     if(narrowed.length===next[i].length)continue;
+     next[i]=narrowed;
+     for(const [pi,other,qo] of slots[i].cross)
+      if(other!==j&&!assigned[other])queue.push([other,i,qo,pi]);
+     if(head>40000){consistent=false;break;}
     }
-    if(sa!==sb)return sb-sa;
-    return ((a.word.charCodeAt(0)+seed)%103)-((b.word.charCodeAt(0)+seed)%103);
-   });
-  }
-  for(const entry of candidates){
-   assigned[id]=entry;used.add(entry.word);
-   let viable=true;
-   for(const [p,other,q] of slots[id].cross){
-    if(!assigned[other]&&!options(other,1).length){viable=false;break;}
    }
-   if(viable&&dfs(depth+1))return true;
-   assigned[id]=null;used.delete(entry.word);
+   if(consistent&&recurse(next,depth+1))return true;
+   assigned[chosen]=null;used.delete(entry.word);
    if(stop)return false;
   }
   return false;
  }
- const success=dfs(0),base={slotCount:slots.length,bestDepth,nodes,elapsedMs:Date.now()-start};
- if(!success)return {status:stop?'budget-exhausted':'inconsistent',...base};
- const n=mask.length,grid=mask.map(row=>row.map(v=>v?'':''));
- const clues={horizontal:{},vertical:{}};
- for(const slot of slots){
-  const entry=assigned[slot.id],key=String(slot.group);
-  slot.cells.forEach(([r,c],i)=>{grid[r][c]=entry.word[i];});
-  (clues[slot.dir][key]??=[]).push(entry.clue);
+ function hashWord(word,salt){
+  let h=(salt>>>0)||2166136261;
+  for(let i=0;i<word.length;i++)h=Math.imul(h^word.charCodeAt(i),16777619);
+  return h>>>0;
  }
- if(grid.some((row,r)=>row.some((value,c)=>!mask[r][c]&&!value)))return {status:'invalid-output',...base};
- return {status:'solved',...base,puzzle:{version:3,grid,clues,meta:{
-  title:'جدول کلاسیک ۱۵×۱۵',status:'draft',size:{rows:n,cols:n},direction:'rtl',language:'fa',method:'classic-csp-v3'}},mask};
+ const success=recurse(base,0),report={slotCount:slots.length,bestDepth,nodes,initialPruned,arcChecks,
+                                      elapsedMs:Date.now()-start};
+ if(!success)return {status:stop?'budget-exhausted':'inconsistent',...report};
+ const n=mask.length,grid=mask.map(row=>row.map(()=>'')),clues={horizontal:{},vertical:{}};
+ for(const slot of slots){
+  const word=assigned[slot.id];
+  slot.cells.forEach(([r,c],p)=>{grid[r][c]=word.word[p]});
+  (clues[slot.dir][String(slot.group)]??=[]).push(word.clue);
+ }
+ if(grid.some((row,r)=>row.some((v,c)=>!mask[r][c]&&!v)))return {status:'invalid-output',...report};
+ return {status:'solved',...report,puzzle:{version:3,grid,clues,meta:{
+  title:'جدول کلاسیک '+n+'×'+n,status:'draft',size:{rows:n,cols:n},
+  direction:'rtl',language:'fa',method:'classic-csp-ac3'}},mask};
 }
 function tryMasks(masks,entries,opts={}){
  const budget=opts.totalMs||12000,start=Date.now(),reports=[];
