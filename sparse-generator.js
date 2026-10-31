@@ -25,14 +25,39 @@ function validMask(mask,maxBlacks=2){
  return cols.every(v=>v<=maxBlacks)&&!!slotsFor(mask);
 }
 function patterns(n,seed,count){
- const random=rng(seed);const result=[],keys=new Set();
- // Two offset permutations: at most two blocks per row or column, no adjacent runs.
- for(let t=0;t<count*22 && result.length<count;t++){
-  const order=Array.from({length:n},(_,i)=>i);
-  for(let i=n-1;i>0;i--){let j=Math.floor(random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
-  const secondShift=Math.floor(n/2);
+ const random=rng(seed),result=[],keys=new Set();
+ // Start with two cyclic diagonals (<= 2 blocks per row and per column).
+ // Remove problematic cells instead of adding blocks when one-letter slots appear.
+ for(let t=0;t<count*32&&result.length<count;t++){
+  let shift=2+Math.floor(random()*(n-3));
+  let offset=Math.floor(random()*n);
   const mask=Array.from({length:n},()=>Array(n).fill(false));
-  for(let r=0;r<n;r++){mask[r][order[r]]=true;mask[r][order[(r+secondShift)%n]]=true;}
+  for(let r=0;r<n;r++){
+   mask[r][(r+offset)%n]=true;
+   mask[r][(r+offset+shift)%n]=true;
+  }
+  for(let pass=0;pass<n*3;pass++){
+   let changed=false;
+   for(const vertical of [false,true]){
+    for(let line=0;line<n;line++){
+     let i=0;
+     while(i<n){
+      const blocked=j=>vertical?mask[j][line]:mask[line][j];
+      if(blocked(i)){i++;continue;}
+      const from=i;while(i<n&&!blocked(i))i++;
+      if(i-from===1){
+       const targets=[from-1,i].filter(j=>j>=0&&j<n&&blocked(j));
+       if(targets.length){
+        const j=targets[Math.floor(random()*targets.length)];
+        if(vertical)mask[j][line]=false;else mask[line][j]=false;
+        changed=true;
+       }
+      }
+     }
+    }
+   }
+   if(!changed)break;
+  }
   if(!validMask(mask))continue;
   const key=mask.map(row=>row.map(x=>x?1:0).join("")).join("/");
   if(!keys.has(key)){keys.add(key);result.push(mask);}
