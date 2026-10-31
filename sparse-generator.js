@@ -243,7 +243,7 @@ async function generateSample(){
   if(classic){
    const maker=window.JadvalClassic;
    if(!maker)throw Error("موتور الگوی کلاسیک بارگذاری نشده است.");
-   const masks=maker.build(size,Date.now(),5);
+   const masks=maker.build(size,Date.now(),5,filtered);
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
     let solution=null;
