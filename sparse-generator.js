@@ -158,7 +158,7 @@ function verifiedSeedSample(bank){
   clues.horizontal[String(j+1)]=[lookup.get(horizontal[j]).clue];
   clues.vertical[String(j+1)]=[lookup.get(vertical[j]).clue];
  }
- const puzzle={version:3,grid,clues,meta:{title:"نمونهٔ تألیفی کوچک ۵×۵",size:{rows:5,cols:5},language:"fa",direction:"rtl",status:"draft",referenceMaximumAnswerOverlap:0.1}};
+ const puzzle={version:3,grid,clues,meta:{title:"ترکیب تازهٔ آزمایشی ۵×۵",size:{rows:5,cols:5},language:"fa",direction:"rtl",status:"draft",referenceMaximumAnswerOverlap:0.1}};
  return {puzzle,mask:grid.map(row=>row.map(()=>false)),usedIds:[...horizontal,...vertical].map(w=>lookup.get(w).id),nodes:0,slots:10,preset:true};
 }
 function compare(puzzle,reference){
