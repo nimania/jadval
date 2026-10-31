@@ -254,7 +254,7 @@ async function generateSample(){
   if(classic){
    const maker=window.JadvalClassic;
    if(!maker)throw Error("موتور الگوی کلاسیک بارگذاری نشده است.");
-   const masks=maker.build(size,Date.now(),5,filtered);
+   const masks=maker.build(size,Date.now(),8,filtered);
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
     const report=await solveClassicInWorker(masks,filtered,Date.now());
@@ -268,10 +268,12 @@ async function generateSample(){
      const missing=[...new Set(stats.flatMap(x=>x.missingLengths||[]))].sort((a,b)=>a-b);
      const timeLimited=stats.filter(x=>x.status==="budget-exhausted").length;
      const earlyMismatch=stats.filter(x=>x.status==="arc-inconsistent").length;
+     const unsupported=stats.filter(x=>x.status==="unsupported-crossings").length;
      const unsatisfiable=stats.filter(x=>x.status==="inconsistent").length;
      const detail=missing.length?
       "در برخی طرح‌ها طول‌های "+missing.join("، ")+" حرفی در بانک موجود نبود.":
       timeLimited?"در "+timeLimited+" طرح، زمان یا بودجهٔ جست‌وجو تمام شد؛ این به معنی غیرممکن‌بودن جدول نیست.":
+      unsupported?"در "+unsupported+" طرح، بعضی تقاطع‌ها از ابتدا هیچ حرف مشترک قابل‌استفاده‌ای نداشتند.":
       earlyMismatch?"در "+earlyMismatch+" طرح، تقاطع‌ها در مرحلهٔ پالایش اولیه ناسازگار شدند.":
       unsatisfiable?"برای "+unsatisfiable+" طرح، حل‌گر در محدودیت‌های بررسی‌شده به جواب کامل نرسید.":
       "هنوز جواب کامل پیدا نشد.";
