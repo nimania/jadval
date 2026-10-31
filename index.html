@@ -33,6 +33,10 @@ dialog{border:0;border-radius:15px;box-shadow:0 16px 80px #07172350;width:min(54
 .demo-grid{display:grid;direction:rtl;gap:2px;margin:10px 0;max-width:530px;width:100%;background:#dde6ec;padding:3px;border-radius:8px;aspect-ratio:1}
 .demo-cell{display:grid;place-items:center;min-width:0;min-height:0;aspect-ratio:1;background:white;font-weight:700;font-size:clamp(10px,1.3vw,19px);color:#254960;user-select:none}
 .demo-block{background:#2b4050}
+.demo-axis{background:#eaf0f4;display:grid;place-items:center;color:#24506d;font-size:clamp(9px,.9vw,13px);font-weight:800;min-width:0;aspect-ratio:1;font-variant-numeric:tabular-nums}
+.demo-corner{background:transparent}
+.demo-grid{aspect-ratio:1;direction:rtl}
+
 .demo-questions{padding:0 20px 0 0;max-height:410px;overflow:auto;line-height:2;font-size:13px}
 .demo-questions li{margin:0 0 4px}
 .demo-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -48,9 +52,9 @@ dialog{border:0;border-radius:15px;box-shadow:0 16px 80px #07172350;width:min(54
 <div class="toolbar"><label class="btn primary" for="file">ورود بانک JSON</label><input id="file" type="file" accept=".json,application/json">
 <button class="btn" id="export" disabled>خروجی و پشتیبان JSON ↓</button><button class="btn" id="clear" disabled>پاک‌کردن بانک مرورگر</button></div></div>
 <div class="stats"><div class="stat"><span class="num" id="total">۰</span><span class="label">مدخل‌های بانک</span></div><div class="stat"><span class="num" id="approved">۰</span><span class="label">بازبینی‌شده</span></div><div class="stat"><span class="num" id="answers">۰</span><span class="label">پاسخ متفاوت</span></div><div class="stat"><span class="num" id="visible">۰</span><span class="label">نتیجه جست‌وجو</span></div></div>
-<section class="panel" id="demoStudio"><div class="demo-intro"><div><h2>طراحی آزمایشی جدول</h2><p class="muted small">در هر ردیف و هر ستون دقیقاً ۱ یا ۲ خانهٔ سیاه قرار می‌گیرد. در جدول‌های بزرگ، پیش‌نویس دارای خانه‌های سفیدِ تکمیل‌نشده هم قابل مشاهده است.</p></div><span class="status">نسخهٔ آزمایشی</span></div>
+<section class="panel" id="demoStudio"><div class="demo-intro"><div><h2>طراحی آزمایشی جدول</h2><p class="muted small">در هر ردیف و هر ستون ۱ یا ۲ خانهٔ سیاه قرار می‌گیرد؛ فقط جدول کاملاً پُر نمایش داده می‌شود. شمارهٔ سطرها در سمت راست و شمارهٔ ستون‌ها بالای جدول است.</p></div><span class="status">نسخهٔ آزمایشی</span></div>
 <div class="demo-controls" style="margin-top:14px"><label for="demoSize">اندازه</label><select id="demoSize"><option value="7">۷ × ۷</option><option value="10">۱۰ × ۱۰</option><option value="15">۱۵ × ۱۵</option><option value="20" selected>۲۰ × ۲۰</option></select><label for="demoFilter">موضوع</label><select id="demoFilter"><option value="">همه موضوع‌ها</option></select><button class="btn primary" id="buildDemo">ساخت یک نمونه جدول</button></div>
-<p class="note" id="demoNote">این موتور فقط از بانک سؤال‌وجواب واردشده استفاده می‌کند. خروجی ناقص با برچسب «پیش‌نویس» مشخص می‌شود و قابل انتشار عمومی نیست.</p>
+<p class="note" id="demoNote">این موتور فقط از بانک سؤال‌وجواب واردشده استفاده می‌کند. اگر نتواند تمام خانه‌های سفید را پر کند، نتیجه‌ای نمایش نمی‌دهد.</p>
 <div id="demoResult" hidden><p id="demoMeta" class="muted small"></p><div class="demo-layout"><div><div class="demo-grid" id="demoGrid"></div><div class="toolbar" style="align-items:center"><label><input type="checkbox" id="showAnswers" checked> نمایش جواب‌ها</label><button class="btn" id="downloadDemo">دریافت فایل JSON جدول</button></div></div><div id="demoClues"></div></div></div>
 </section>
 <section class="panel"><h2>جست‌وجو و فیلتر</h2><div class="filters"><input type="text" id="search" placeholder="جست‌وجو در سؤال، جواب یا شناسه…" aria-label="جست‌وجو"><select id="category" aria-label="موضوع"><option value="">همه موضوع‌ها</option></select><select id="reviewed" aria-label="وضعیت بازبینی"><option value="">همه وضعیت‌ها</option><option value="0">نیازمند بازبینی</option><option value="1">بازبینی‌شده</option></select><select id="difficulty" aria-label="درجه سختی"><option value="">همه درجه‌های سختی</option><option value="easy">آسان</option><option value="medium">متوسط</option><option value="hard">سخت</option><option value="unknown">نامشخص</option></select></div>
