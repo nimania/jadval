@@ -238,16 +238,34 @@ async function generateSample(){
  $("demoNote").textContent="در حال ساخت یک جدول کامل با ترکیب جدید پاسخ‌های کوتاه از بانک…";
  await new Promise(resolve=>setTimeout(resolve,30));
  try{
-  const builder=window.JadvalMosaic;
-  if(!builder)throw Error("موتور طراحی در مرورگر بارگذاری نشده است.");
-  const output=builder.generate(filtered,size,Date.now());
+  const classic=$("patternStyle")?.value==="classic";
+  let output;
+  if(classic){
+   const maker=window.JadvalClassic;
+   if(!maker)throw Error("موتور الگوی کلاسیک بارگذاری نشده است.");
+   const masks=maker.build(size,Date.now(),5);
+   if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
+   else{
+    let solution=null;
+    for(let k=0;k<masks.length;k++){
+     const result=solve(masks[k],filtered,7500,Date.now()+k);
+     if(result&&validateComplete(result)){solution=result;break;}
+     await new Promise(resolve=>setTimeout(resolve,0));
+    }
+    output=solution?{result:solution}:{error:"الگوی کلاسیک ساخته شد، ولی پرکردن تمام تقاطع‌های آن با بانک فعلی ممکن نشد. از «پیش‌نمایش الگوی سیاه» برای دیدن الگو استفاده کن؛ هیچ جدول ناقصی منتشر نمی‌شود."};
+   }
+  }else{
+   const builder=window.JadvalMosaic;
+   if(!builder)throw Error("موتور بخش‌بندی بارگذاری نشده است.");
+   output=builder.generate(filtered,size,Date.now());
+  }
   if(!output.result){
    last=null;$("demoResult").hidden=true;
    $("demoNote").textContent=output.error||"جدول کاملاً پُر پیدا نشد؛ نتیجهٔ ناقص نمایش داده نمی‌شود.";
    return;
   }
   render(output.result);
-  $("demoNote").textContent="نمونهٔ کامل ساخته شد؛ هر خانهٔ سفید دارای حرف و هر ردیف/ستونِ باز دارای سرنخ از بانک است. این روش از بخش‌های کوچکِ متقاطع و جداکننده‌های سیاه استفاده می‌کند و هنوز نیازمند بررسی ویراستاری و سنجش شباهت است.";
+  $("demoNote").textContent="شبکه با پاسخ کامل و تقاطع‌های سازگار ساخته شد. قبل از انتشار، متن سرنخ‌ها و شباهت به آرشیو باید بازبینی شود.";
  }catch(err){last=null;$("demoResult").hidden=true;$("demoNote").textContent="خطا: "+err.message;}
  finally{btn.disabled=false;btn.textContent="ساخت یک نمونه جدول";}
 }
