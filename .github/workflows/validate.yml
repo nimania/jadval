@@ -10,6 +10,7 @@ on:
       - classic-patterns.js
       - classic-preview.js
       - bank-tools.js
+      - classic-solver-worker.js
       - import_puzzles.py
       - build_database.py
       - generate.py
@@ -45,6 +46,8 @@ jobs:
           node --check classic-patterns.js
           node --check classic-preview.js
           node --check bank-tools.js
+          node --check classic-solver-worker.js
+          node tests/test_classic_solver.cjs
           node tests/test_classic_patterns.cjs
           node tests/test_demo_generator.cjs
           node tests/test_sparse_generator.cjs
