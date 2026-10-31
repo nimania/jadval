@@ -5,6 +5,7 @@ on:
     paths:
       - index.html
       - demo-generator.js
+      - sparse-generator.js
       - import_puzzles.py
       - build_database.py
       - generate.py
@@ -35,4 +36,5 @@ jobs:
           PY
           node --check /tmp/jadval-studio.js
           node --check demo-generator.js
+          node --check sparse-generator.js
           node tests/test_demo_generator.cjs
