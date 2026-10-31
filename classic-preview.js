@@ -42,5 +42,5 @@ function init(){
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 const style=$("blockArt");if(style)style.addEventListener("change",()=>{if(current)renderMask(current);});
-window.JadvalClassicPreview={renderMask};
+window.JadvalClassicPreview={renderMask,getSelected:()=>current?current.map(row=>row.slice()):null};
 })();
