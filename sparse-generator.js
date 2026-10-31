@@ -32,78 +32,62 @@ function validMask(mask,maxBlacks=2){
  }
  return !!slotsFor(mask);
 }
-function patterns(n,seed,count){
- // Sparse manuscript-style layouts: one black diagonal per row and column,
- // with two-by-two corner repairs that eliminate one-letter slots.
- // This always has between 1 and 2 black cells in EVERY row and column.
- const result=[],seen=new Set();
- for(const variant of [0,1]){
-  const mask=Array.from({length:n},()=>Array(n).fill(false));
-  for(let r=0;r<n;r++){
-   const c=variant===0?r:n-1-r;
-   mask[r][c]=true;
-  }
-  if(variant===0){
-   mask[0][1]=true;mask[1][0]=true;
-   mask[n-1][n-2]=true;mask[n-2][n-1]=true;
-  }else{
-   mask[0][n-2]=true;mask[1][n-1]=true;
-   mask[n-1][1]=true;mask[n-2][0]=true;
-  }
-  if(validMask(mask)){
-   const key=mask.map(row=>row.map(x=>x?1:0).join("")).join("/");
-   if(!seen.has(key)){seen.add(key);result.push(mask);}
-  }
- }
- return result.slice(0,count);
-}
-function draftFill(mask,source,seed){
- // A clearly labelled editable *partial* draft, never described as a solved crossword.
- const n=mask.length,slots=slotsFor(mask),random=rng(seed),lookup=new Map();
- for(const e of source){
-  const w=normalize(e.answer),clue=String(e.clue||"").trim();
-  if(w.length<2||w.length>n||!alphabet.test(w)||!clue)continue;
-  if(!lookup.has(w.length))lookup.set(w.length,[]);
-  lookup.get(w.length).push({word:w,clue,id:e.id||null});
- }
- const letters=Array.from({length:n},()=>Array(n).fill(""));
- const assigned=new Map(),used=new Set();
- const order=slots.slice().filter(slot=>lookup.has(slot.cells.length));
- // Long answers first; a shorter word can still cross an existing word.
- order.sort((a,b)=>b.cells.length-a.cells.length+((random()-.5)*.06));
- for(const slot of order){
-  const domain=lookup.get(slot.cells.length);
-  let best=null,bestScore=-Infinity;
-  // Scan the whole length-specific word list, maximizing compatible crossings.
-  for(const entry of domain){
-   if(used.has(entry.word))continue;
-   let score=0,ok=true;
-   for(let i=0;i<slot.cells.length;i++){
-    const [r,c]=slot.cells[i],before=letters[r][c];
-    if(before&&before!==entry.word[i]){ok=false;break;}
-    if(before)score+=7;
+function slotLengths(mask){
+ const n=mask.length,all=[];
+ for(const direction of [0,1]){
+  for(let line=0;line<n;line++){
+   let start=0;
+   for(let i=0;i<=n;i++){
+    const block=i===n||(direction===0?mask[line][i]:mask[i][line]);
+    if(block){if(i>start)all.push(i-start);start=i+1;}
    }
-   if(!ok)continue;
-   score+=random()*2;
-   if(score>bestScore){bestScore=score;best=entry;}
   }
-  if(!best)continue;
-  assigned.set(slot.id,best);used.add(best.word);
-  slot.cells.forEach(([r,c],i)=>{letters[r][c]=best.word[i]});
  }
- const grid=mask.map((row,r)=>row.map((block,c)=>block?"":letters[r][c]||" "));
- const clues={horizontal:{},vertical:{}};
- for(const slot of slots){
-  const entry=assigned.get(slot.id);
-  if(!entry)continue;
-  (clues[slot.dir][String(slot.group)]??=[]).push(entry.clue);
- }
- const remaining=slots.length-assigned.size;
- return {puzzle:{version:0,grid,clues,meta:{title:"پیش‌نویس ناقص جدول "+n+"×"+n,size:{rows:n,cols:n},status:"partial-draft",language:"fa",direction:"rtl"}},
-   mask,slots:slots.length,filledSlots:assigned.size,remaining,partial:true,
-   usedIds:[...assigned.values()].map(x=>x.id)};
+ return all;
 }
-
+function maskScore(mask,availableLengths){
+ const lengths=slotLengths(mask);
+ let score=0;
+ for(const length of lengths){
+  if(length<2)score+=100000;
+  else if(availableLengths&&!availableLengths.has(length))score+=25000;
+  else if(length>15)score+=12000+(length-15)*2500;
+  else if(length>11)score+=Math.pow(length-11,2)*75;
+ }
+ return score;
+}
+function patterns(n,seed,count,availableLengths){
+ const rand=rng(seed),results=[],seen=new Set();
+ if(n<5)return [];
+ // Two disjoint column permutations put exactly two black cells in every
+ // row and every column. Pairwise row swaps preserve those counts.
+ for(let trial=0;trial<Math.max(6,count*5);trial++){
+  const cols=Array.from({length:n},(_,i)=>i);
+  for(let i=n-1;i>0;i--){const j=Math.floor(rand()*(i+1));[cols[i],cols[j]]=[cols[j],cols[i]];}
+  const shift=2+Math.floor(rand()*(n-3));
+  const mask=Array.from({length:n},()=>Array(n).fill(false));
+  for(let r=0;r<n;r++){mask[r][cols[r]]=true;mask[r][cols[(r+shift)%n]]=true;}
+  let score=maskScore(mask,availableLengths),bestScore=score,best=mask.map(row=>row.slice());
+  for(let step=0;step<Math.max(1200,n*95);step++){
+   const a=Math.floor(rand()*n),b=Math.floor(rand()*n);
+   if(a===b)continue;
+   const ac=mask[a].flatMap((v,i)=>v?[i]:[]);
+   const bc=mask[b].flatMap((v,i)=>v?[i]:[]);
+   const u=ac[Math.floor(rand()*ac.length)],v=bc[Math.floor(rand()*bc.length)];
+   if(u===v||mask[a][v]||mask[b][u])continue;
+   mask[a][u]=false;mask[b][v]=false;mask[a][v]=true;mask[b][u]=true;
+   const next=maskScore(mask,availableLengths);
+   if(next<=score||rand()<.004){score=next;if(score<bestScore){bestScore=score;best=mask.map(row=>row.slice());}}
+   else {mask[a][u]=true;mask[b][v]=true;mask[a][v]=false;mask[b][u]=false;}
+   if(bestScore===0)break;
+  }
+  if(!validMask(best))continue;
+  const key=best.map(row=>row.map(x=>x?1:0).join("")).join("/");
+  if(!seen.has(key)){seen.add(key);results.push({mask:best,score:bestScore});}
+  if(results.length>=count&&results.some(x=>x.score===0))break;
+ }
+ return results.sort((a,b)=>a.score-b.score).slice(0,count).map(x=>x.mask);
+}
 function solve(mask,source,budget=7000,seed=1){
  const slots=slotsFor(mask);if(!slots)return null;
  const wordsByLength=new Map();
@@ -258,7 +242,15 @@ async function generateSample(){
  $("demoNote").textContent="در حال ساخت شبکه با ۱ تا ۲ خانهٔ سیاه در هر ردیف و ستون…";
  await new Promise(resolve=>setTimeout(resolve,30));
  try{
-  const masks=patterns(size,seed,2);
+  const lengths=new Set(filtered.map(x=>normalize(x.answer).length));
+  const masks=patterns(size,seed,8,lengths);
+  const needed=slotLengths(masks[0]||[]);
+  const unsupported=[...new Set(needed.filter(length=>!lengths.has(length)))].sort((a,b)=>a-b);
+  if(unsupported.length){
+   last=null;$("demoResult").hidden=true;
+   $("demoNote").textContent="بانک فعلی برای طول‌های "+unsupported.join("، ")+" حرفی هیچ پاسخی ندارد؛ این چیدمان قابل تکمیل نیست. برای ۲۰×۲۰ باید واژه‌های بلند بیشتری به بانک اضافه کنیم.";
+   return;
+  }
   if(!masks.length){$("demoNote").textContent="برای این اندازه الگوی سیاه معتبر پیدا نشد.";return;}
   let complete=null;
   for(let i=0;i<masks.length;i++){
@@ -287,5 +279,5 @@ function init(){
  $("downloadDemo").onclick=()=>{if(!last||!validateComplete(last))return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
-window.JadvalSparse={slotsFor,validMask,patterns,solve,validateComplete,compare};
+window.JadvalSparse={slotsFor,validMask,patterns,slotLengths,maskScore,solve,validateComplete,compare};
 })();
