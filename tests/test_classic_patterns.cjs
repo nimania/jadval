@@ -23,3 +23,11 @@ for(const size of [15,20]){
 
 // The 15x15 classic mask is the editorial baseline; it is not a completed crossword.
 assert(window.JadvalClassic.build(15,31827,4,sample).length>0);
+
+
+// Duplicate clue records do not create additional usable answer strings.
+const twoLetterGrid=Array.from({length:10},()=>Array(10).fill(false));
+twoLetterGrid[0][2]=true;
+const repeated=Array.from({length:30},()=>({answer:'آب',clue:'یک پرسش متفاوت'}));
+const review=window.JadvalClassic.assess(twoLetterGrid,repeated);
+assert(review.scarceLengths.includes(2),'30 duplicate records count as one 2-letter answer');
