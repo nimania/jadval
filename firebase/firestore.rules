@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedInEditor() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false; // Assign editors only with trusted Admin SDK.
+    }
+
+    match /entries/{entryId} {
+      allow read: if signedInEditor();
+      allow create: if signedInEditor()
+        && request.resource.data.keys().hasAll(['answer', 'clue', 'reviewed']);
+      allow update: if signedInEditor()
+        && request.resource.data.keys().hasAll(['answer', 'clue', 'reviewed']);
+      allow delete: if false; // Preserve history; use reviewed/status flags.
+    }
+
+    match /puzzles/{puzzleId} {
+      allow read, create, update: if signedInEditor();
+      allow delete: if false;
+    }
+
+    match /auditLogs/{eventId} {
+      allow read: if signedInEditor();
+      allow write: if false; // Only trusted backend creates immutable logs.
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
