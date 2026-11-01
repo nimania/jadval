@@ -3,3 +3,11 @@ output/
 *.sqlite
 __pycache__/
 *.pyc
+# Never commit exports, auth credentials or project-specific private data
+*.service-account.json
+*service-account*.json
+firebase-admin-key.json
+jadval_entries_*.json
+*.db
+.env
+.env.*
