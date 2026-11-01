@@ -66,6 +66,45 @@ service cloud.firestore {
       getAfter(/databases/$(database)/documents/entries/$(request.resource.data.lastEntry)).data.generation==request.resource.data.generation));
    allow delete: if false;
   }
+  // Only explicitly approved, minimal puzzle documents are public.
+  // No bank entries, private metadata, drafts or administrator data are exposed.
+  function validPublicPuzzle(d, puzzleId) {
+   return d.keys().hasAll(['id','title','size','publishedAt','approvedBy','editorApproved','puzzle']) &&
+    d.keys().hasOnly(['id','title','size','publishedAt','approvedBy','editorApproved','puzzle']) &&
+    d.id == puzzleId && d.id is string && d.id.matches('^pub_[A-Za-z0-9_-]{12,80}
+  match /auditLogs/{id} { allow read: if isEditor(); allow write: if false; }
+  match /{document=**} { allow read,write: if false; }
+ }
+}
+) &&
+    d.title is string && d.title.size()>0 && d.title.size()<=120 &&
+    d.size is int && d.size in [7,10,15,20] &&
+    d.publishedAt == request.time && d.approvedBy == request.auth.uid &&
+    d.editorApproved == true &&
+    d.puzzle is map &&
+    d.puzzle.keys().hasAll(['version','grid','clues','meta']) &&
+    d.puzzle.keys().hasOnly(['version','grid','clues','meta']) &&
+    d.puzzle.version == 3 && d.puzzle.grid is list && d.puzzle.grid.size()==d.size &&
+    d.puzzle.grid[0] is list && d.puzzle.grid[0].size()==d.size &&
+    d.puzzle.clues is map &&
+    d.puzzle.clues.keys().hasOnly(['horizontal','vertical']) &&
+    d.puzzle.clues.keys().hasAll(['horizontal','vertical']) &&
+    d.puzzle.clues.horizontal is map && d.puzzle.clues.vertical is map &&
+    d.puzzle.meta is map &&
+    d.puzzle.meta.keys().hasOnly(['title','size','language','direction','status','method']) &&
+    d.puzzle.meta.keys().hasAll(['title','size','language','direction','status','method']) &&
+    d.puzzle.meta.title == d.title && d.puzzle.meta.status == 'published' &&
+    d.puzzle.meta.language == 'fa' && d.puzzle.meta.direction == 'rtl' &&
+    d.puzzle.meta.method == 'editor-approved' &&
+    d.puzzle.meta.size is map &&
+    d.puzzle.meta.size.keys().hasOnly(['rows','cols']) &&
+    d.puzzle.meta.size.rows == d.size && d.puzzle.meta.size.cols == d.size;
+  }
+  match /publishedPuzzles/{puzzleId} {
+   allow get, list: if true;
+   allow create: if isEditor() && validPublicPuzzle(request.resource.data,puzzleId);
+   allow update, delete: if false;
+  }
   match /puzzles/{id} { allow read: if isEditor(); allow write: if false; }
   match /auditLogs/{id} { allow read: if isEditor(); allow write: if false; }
   match /{document=**} { allow read,write: if false; }
