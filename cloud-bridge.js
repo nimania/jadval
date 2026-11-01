@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id),S=window.JadvalSafety,B=window.JadvalBac
 const config=window.JADVAL_FIREBASE_CONFIG||{},configured=['apiKey','authDomain','projectId','appId'].every(k=>typeof config[k]==='string'&&config[k].trim());
 const SDK='https://www.gstatic.com/firebasejs/12.19.0/';
 let auth=null,db=null,api=null,administrator=null,remoteReady=false,loading=false,source='locked',epoch=0,cache=null,verifiedSecurity=false;
+let publishReadReady=false;
 const state=s=>{$('cloudStatus').textContent=s;},summary=s=>{$('cloudProgress').textContent=s;};
 function buttons(){ $('cloudLogin').disabled=!api||!!auth?.currentUser; $('cloudLogout').disabled=!auth?.currentUser||loading; $('cloudReload').disabled=!administrator||loading; $('cloudImport').disabled=!administrator||loading||remoteReady; }
 const bankRef=()=>api.doc(db,'meta','bank');
@@ -185,10 +186,34 @@ async function importBrowser(){
  }catch(e){remoteReady=false;state('انتقال متوقف شد؛ داده‌های محلی محفوظ‌اند: '+(e.code||e.message));}
  finally{loading=false;buttons();}
 }
+// A server-only, read-only preflight: existing rules deny this collection,
+ // while the approved publishing rules grant public list access.
+ // No documents are created, modified or deleted by this check.
+async function checkPublicPublishing(){
+ const status=$('cloudPublishStatus');
+ publishReadReady=false;
+ if(!api||!db){
+  if(status)status.textContent='اتصال Firebase هنوز آماده نیست؛ صفحه را تازه کن.';
+  return false;
+ }
+ if(status)status.textContent='در حال بررسی خواندن عمومیِ مجموعهٔ publishedPuzzles…';
+ try{
+  await api.getDocsFromServer(api.query(api.collection(db,'publishedPuzzles'),api.limit(1)));
+  publishReadReady=true;
+  if(status)status.textContent='خواندن عمومی publishedPuzzles فعال است؛ برای انتشار باید با حساب مدیر وارد شوی و جدول کامل را بازبینی کنی.';
+  return true;
+ }catch(error){
+  if(status)status.textContent=error?.code==='permission-denied'?
+   'قواعد انتشار روی Firebase هنوز فعال نیستند. ابتدا نسخهٔ تأییدشدهٔ firebase/firestore.rules را در Firebase → Firestore → Rules منتشر کن. بانک خصوصی را عمومی نکن.':
+   'بررسی دسترسی انتشار ناموفق بود: '+(error?.code||error?.message||'خطای اتصال')+'. بعداً دوباره بررسی کن.';
+  return false;
+ }
+}
 // Public publication is independent of the private bank migration.
 // Only a completely reviewed, whitelisted puzzle leaves the browser.
 async function publishPuzzle(publication){
  if(!administrator||!auth?.currentUser||loading)throw Error('برای انتشار، با حساب مدیر وارد شو.');
+ if(!publishReadReady)throw Error('دسترسی عمومی تأیید نشده است؛ ابتدا «بررسی دسترسی انتشار» را اجرا کن.');
  if(!publication||publication.editorApproved!==true||!publication.id||!publication.title||
     !publication.puzzle||!Number.isInteger(publication.size))throw Error('بستهٔ انتشار یا تأیید ویراستار معتبر نیست.');
  const uid=administrator.uid,token=epoch;
@@ -202,9 +227,9 @@ async function publishPuzzle(publication){
 }
 async function bootstrap(){
  if(!configured){state('اتصال مرکزی تنظیم نشده است.');buttons();return;}
- try{const [a,b,c]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);const app=a.initializeApp(config,'jadval-private');api={...b,...c};auth=b.getAuth(app);db=c.getFirestore(app);b.onAuthStateChanged(auth,authChanged);buttons();}catch(e){state('بارگذاری Firebase ناموفق: '+e.message);}
+ try{const [a,b,c]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);const app=a.initializeApp(config,'jadval-private');api={...b,...c};auth=b.getAuth(app);db=c.getFirestore(app);b.onAuthStateChanged(auth,authChanged);buttons();checkPublicPublishing();}catch(e){state('بارگذاری Firebase ناموفق: '+e.message);}
 }
-window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading,publishPuzzle,saveEntry,loadCentral,configIsReady:()=>configured};
-function init(){ $('cloudLogin').onclick=login;$('cloudLogout').onclick=()=>api.signOut(auth);$('cloudReload').onclick=()=>administrator?loadCentral():authChanged(auth.currentUser);$('cloudImport').onclick=importBrowser;buttons();Promise.resolve(window.JadvalApp?.localReady).then(bootstrap);setInterval(()=>{if(remoteReady&&!loading&&document.visibilityState==='visible'&&!document.querySelector('dialog[open]'))loadCentral();},90000);}
+window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading&&publishReadReady,checkPublicPublishing,publishPuzzle,saveEntry,loadCentral,configIsReady:()=>configured};
+function init(){ $('cloudLogin').onclick=login;$('cloudLogout').onclick=()=>api.signOut(auth);$('cloudReload').onclick=()=>administrator?loadCentral():authChanged(auth.currentUser);$('cloudImport').onclick=importBrowser;if($('cloudCheckPublish'))$('cloudCheckPublish').onclick=checkPublicPublishing;buttons();Promise.resolve(window.JadvalApp?.localReady).then(bootstrap);setInterval(()=>{if(remoteReady&&!loading&&document.visibilityState==='visible'&&!document.querySelector('dialog[open]'))loadCentral();},90000);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
