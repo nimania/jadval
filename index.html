@@ -140,7 +140,7 @@ function selectEntry(id){let x=entries.find(v=>v.id===id);if(!x)return;$('editId
 $('rows').addEventListener('click',e=>{let b=e.target.closest('button[data-edit]');if(b)selectEntry(b.dataset.edit)});
 $('cancel').onclick=()=>$('editor').close();
 $('editForm').onsubmit=async e=>{e.preventDefault();let x=entries.find(v=>v.id===$('editId').value);if(!x)return;let answer=normalize($('editAnswer').value);if(!answer){status('پاسخ معتبر نیست.');return}x.clue=$('editClue').value.trim();x.answer=answer;x.letters=[...answer].length;x.category=$('editCategory').value;x.difficulty=$('editDifficulty').value;x.reviewed=$('editReviewed').checked?1:0;dirty=true;let cloudError=null;
-if(window.JadvalCloud?.isReady()){try{await window.JadvalCloud.saveEntry(x)}catch(err){cloudError=err;await save()}}
+if(window.JadvalCloud?.isReady()){try{await window.JadvalCloud.saveEntry(x)}catch(err){cloudError=err;await window.JadvalApp.backupPendingEntry(x);}}
 else await save();
 $('editor').close();updateCategories();applyFilters();
 status(cloudError?'ویرایش فقط در این دستگاه ذخیره شد؛ همگام‌سازی ناموفق: '+cloudError.message:
@@ -156,6 +156,26 @@ for(const id of ['search','category','reviewed','difficulty'])$(id).addEventList
 $('prev').onclick=()=>{page=Math.max(0,page-1);render()};$('next').onclick=()=>{page++;render()};
 window.JadvalApp={
  getLocal:()=>entries.map(x=>({...x})),
+ backupPendingEntry:async item=>{
+  const db=await openDB();
+  try{await new Promise((resolve,reject)=>{
+   const tx=db.transaction("state","readwrite"),store=tx.objectStore("state");
+   const req=store.get("pending-cloud-edits");
+   req.onsuccess=()=>{const pending=req.result?.entries||[];
+    const duplicate=pending.findIndex(x=>x.id===item.id);
+    if(duplicate>=0)pending[duplicate]={...item};else pending.push({...item});
+    store.put({entries:pending,createdAt:new Date().toISOString()},"pending-cloud-edits");
+   };
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
+  })}finally{db.close()}
+ },
+ pendingCount:async()=>{
+  const db=await openDB();
+  try{return await new Promise((resolve,reject)=>{
+   const tx=db.transaction("state","readonly"),req=tx.objectStore("state").get("pending-cloud-edits");
+   req.onsuccess=()=>resolve(req.result?.entries?.length||0);req.onerror=()=>reject(req.error);
+  })}finally{db.close()}
+ },
  backupBeforeCloud:async()=>{
   const db=await openDB();
   try{await new Promise((resolve,reject)=>{
