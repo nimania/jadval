@@ -53,11 +53,10 @@ dialog{border:0;border-radius:15px;box-shadow:0 16px 80px #07172350;width:min(54
 .demo-cell.demo-block.art-plain{background:#263f50}
 .demo-cell.demo-block.art-red{background:#bd0b1b;border-color:#6e1520}
 .demo-cell.demo-block.art-red::after{content:none}
-body.cloud-locked .hero,body.cloud-locked .stats,body.cloud-locked main>.panel:not(#cloudManagement),body.cloud-locked main>p{display:none!important}
+html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:not(#cloudManagement),html.cloud-locked main>p{display:none!important}
 </style><script src="./firebase-config.js"></script></head>
 <body><header><div class="top"><div><div class="brand">جدول <span class="subtitle">/ کارگاه طراحی فارسی</span></div></div><a href="https://nimania.github.io/payamejadval/" target="_blank" rel="noopener">پیام جدول ↗</a></div></header>
 <main>
-<script>if(window.JADVAL_FIREBASE_CONFIG?.apiKey)document.body.classList.add("cloud-locked")</script>
 <div class="hero"><div><h1>بانک سؤال و جواب</h1><p class="muted">مدیریت، پالایش و آماده‌سازی مدخل‌ها برای تولید جدول‌های تازه</p></div>
 <div class="toolbar"><label class="btn primary" for="file">ورود بانک JSON</label><input id="file" type="file" accept=".json,application/json">
 <button class="btn" id="export" disabled>خروجی و پشتیبان JSON ↓</button><button class="btn" id="clear" disabled>پاک‌کردن بانک مرورگر</button></div></div>
@@ -186,8 +185,8 @@ window.JadvalApp={
   })}finally{db.close()}
  },
  useCloudRows:cloudEntries=>{entries=cloudEntries;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل از پایگاه مرکزی بارگذاری شد.')},
- hideCloudRows:()=>{entries=[];applyFilters();document.body.classList.add("cloud-locked")},
- grantEditorView:()=>document.body.classList.remove("cloud-locked")
+ hideCloudRows:()=>{entries=[];applyFilters();document.documentElement.classList.add("cloud-locked")},
+ grantEditorView:()=>document.documentElement.classList.remove("cloud-locked")
 };
 window.JadvalApp.localReady=restore().then(data=>{
  if(data?.entries?.length){entries=data.entries;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل از حافظهٔ مرورگر بازیابی شد.')}
