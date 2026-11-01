@@ -71,6 +71,8 @@ async function loadCentral(){
   state("در حال دریافت بانک مرکزی ("+remoteCount+" مدخل)...");
   const snapshots=await api.getDocsFromServer(api.collection(db,"entries"));
   const data=snapshots.docs.map(rawToLocal);
+  const pending=await window.JadvalApp?.pendingCount?.();
+  if(pending){remoteReady=false;state("در این مرورگر "+pending+" ویرایش ناموفقِ همگام‌سازی وجود دارد؛ پیش از دریافت بانک مرکزی، نسخهٔ پشتیبان بگیر و تعارض‌ها را بررسی کن.");return;}
   await window.JadvalApp?.backupBeforeCloud?.();
   cloudRows=data;
   window.JadvalApp?.useCloudRows?.(data);
@@ -98,6 +100,7 @@ async function authStateChanged(user){
    return;
   }
   administrator={uid:user.uid,email:user.email||""};
+  window.JadvalApp?.grantEditorView?.();
   retainedLocal=window.JadvalApp?.getLocal?.()||[];
   await loadCentral();
  }catch(err){state("بررسی مجوز مدیر ناموفق بود: "+(err.code||err.message));}
