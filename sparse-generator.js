@@ -209,8 +209,31 @@ function validateComplete(data){
  }
  return true;
 }
+// Validate actual answer/clue pairs against the local licensed bank, not just
+// the shape of the board. This independently audits worker and preset outputs.
+function validateWithBank(data,bank){
+ if(!validateComplete(data)||!Array.isArray(bank)||!bank.length)return false;
+ const pairs=new Map();
+ for(const e of bank){
+  const answer=normalize(e?.answer),clue=String(e?.clue||"").trim();
+  if(!answer||!clue)continue;
+  if(!pairs.has(answer))pairs.set(answer,new Set());
+  pairs.get(answer).add(clue);
+ }
+ const used=new Set(),next={horizontal:new Map(),vertical:new Map()};
+ for(const slot of slotsFor(data.mask)){
+  const answer=normalize(slot.cells.map(([r,c])=>data.puzzle.grid[r][c]).join(""));
+  if(!answer||used.has(answer)||!pairs.has(answer))return false;
+  used.add(answer);
+  const group=String(slot.group),offset=next[slot.dir].get(group)||0;
+  const clue=data.puzzle.clues[slot.dir]?.[group]?.[offset];
+  if(typeof clue!=="string"||!pairs.get(answer).has(clue.trim()))return false;
+  next[slot.dir].set(group,offset+1);
+ }
+ return true;
+}
 function render(data){
- if(!validateComplete(data))throw Error("جدول ناقص یا ناسازگار است و نمایش داده نمی‌شود.");
+ if(!validateWithBank(data,typeof entries!=="undefined"?entries:[]))throw Error("جواب‌ها یا سؤال‌های جدول با بانک محلی تطابق ندارند؛ نمایش متوقف شد.");
  last=data;
  const grid=$("demoGrid"),section=$("demoResult"),clues=$("demoClues"),size=data.puzzle.grid.length;
  section.hidden=false;grid.replaceChildren();clues.replaceChildren();
@@ -364,8 +387,8 @@ function init(){
   a.href=url;a.download="jadval-solver-report.json";a.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
- $("downloadDemo").onclick=()=>{if(!last||!validateComplete(last))return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+ $("downloadDemo").onclick=()=>{if(!last||!validateWithBank(last,typeof entries!=="undefined"?entries:[]))return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
-window.JadvalSparse={slotsFor,validMask,patterns,slotLengths,maskScore,solve,validateComplete,compare};
+window.JadvalSparse={slotsFor,validMask,patterns,slotLengths,maskScore,solve,validateComplete,validateWithBank,compare};
 })();
