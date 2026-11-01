@@ -8,3 +8,6 @@ window.JADVAL_FIREBASE_CONFIG = {
   projectId: "",
   appId: ""
 };
+if (["apiKey","authDomain","projectId","appId"].every(k=>window.JADVAL_FIREBASE_CONFIG[k])) {
+  document.documentElement.classList.add("cloud-locked");
+}
