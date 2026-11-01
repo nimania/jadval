@@ -12,6 +12,9 @@ on:
       - bank-tools.js
       - classic-solver-worker.js
       - verified-sample-15.js
+      - firebase-config.js
+      - cloud-bridge.js
+      - firebase/firestore.rules
       - import_puzzles.py
       - build_database.py
       - generate.py
@@ -52,6 +55,9 @@ jobs:
           node --check bank-tools.js
           node --check classic-solver-worker.js
           node --check verified-sample-15.js
+          node --check firebase-config.js
+          node --check cloud-bridge.js
+          node tests/test_cloud_bridge.cjs
           node tests/test_verified_sample_15.cjs
           node tests/test_classic_solver.cjs
           node tests/test_classic_patterns.cjs
