@@ -37,10 +37,10 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   const published=()=>({
    id:publicId,title:'جدول شماره یک',size:7,publishedAt:serverTimestamp(),
    approvedBy:'owner',editorApproved:true,
-   puzzle:{version:3,grid:Array.from({length:7},()=>Array(7).fill('ا')),
+   puzzleJson:JSON.stringify({version:3,grid:Array.from({length:7},()=>Array(7).fill('ا')),
     clues:{horizontal:{'1':['پرسش بانک']},vertical:{'1':['پرسش بانک']}},
     meta:{title:'جدول شماره یک',size:{rows:7,cols:7},
-     language:'fa',direction:'rtl',status:'published',method:'editor-approved'}}
+     language:'fa',direction:'rtl',status:'published',method:'editor-approved'}})
   });
   const pubOwner=doc(owner,'publishedPuzzles',publicId);
   await ok(getDocs(collection(anon,'publishedPuzzles')));
@@ -50,7 +50,9 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   await no(setDoc(pubOwner,{...published(),privateEntries:['must not leak']}));
   await no(setDoc(pubOwner,{...published(),editorApproved:false}));
   await ok(setDoc(pubOwner,published()));
-  await ok(getDoc(doc(anon,'publishedPuzzles',publicId)));
+  const publicSnap=await getDoc(doc(anon,'publishedPuzzles',publicId));checks++;
+  assert.equal(JSON.parse(publicSnap.data().puzzleJson).version,3);
+  assert(!Object.hasOwn(publicSnap.data(),'privateEntries'));
   await ok(getDocs(collection(anon,'publishedPuzzles')));
   await no(updateDoc(pubOwner,{title:'replaced'}));
   await no(deleteDoc(pubOwner));
