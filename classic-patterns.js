@@ -43,11 +43,24 @@ function valid(mask){
  if([...rows,...cols].some(x=>x<1||x>=n))return false;
  return runs(mask).every(x=>x.length>=2);
 }
+function uniqueLengthCounts(bank){
+ const wordsByLength=new Map();
+ for(const e of bank){
+  const w=String(e?.answer||"").replace(/[يى]/g,"ی").replace(/ك/g,"ک")
+   .replace(/[\u064b-\u065f\u0670\s\u200c\u200d\-ـ]/g,"");
+  if(!w)continue;
+  if(!wordsByLength.has(w.length))wordsByLength.set(w.length,new Set());
+  wordsByLength.get(w.length).add(w);
+ }
+ return new Map([...wordsByLength].map(([len,words])=>[len,words.size]));
+}
 function build(n,seed,count=8,bank=[]){
  if(![10,15,20].includes(n))return [];
- const frequency=new Map(),clean=s=>String(s||"").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\s\u200c\u200d\-]/g,"");
- for(const entry of bank){const w=clean(entry.answer);if(w)frequency.set(w.length,(frequency.get(w.length)||0)+1);}
- const maxAvailable=[...frequency.keys()].filter(len=>(frequency.get(len)||0)>=15).sort((a,b)=>b-a)[0]||12;
+ const frequency=uniqueLengthCounts(bank);
+ // A length with many repeated clues but few distinct answers is not
+ // well-supported: each distinct solution may appear only once in a puzzle.
+ const coverageThreshold=Math.max(15,Math.floor(bank.length*.01));
+ const maxAvailable=[...frequency.keys()].filter(len=>(frequency.get(len)||0)>=coverageThreshold).sort((a,b)=>b-a)[0]||12;
  const maxLen=Math.min(maxAvailable,12);
  const random=rand(seed),out=[],seen=new Set();
  for(let trial=0;trial<Math.max(6,count*3);trial++){
@@ -75,9 +88,7 @@ function build(n,seed,count=8,bank=[]){
  return out.sort((a,b)=>a.score-b.score).slice(0,count).map(x=>x.mask);
 }
 function assess(mask,bank){
- const clean=s=>String(s||"").replace(/[يى]/g,"ی").replace(/ك/g,"ک").replace(/[\s\u200c\u200d\-]/g,"");
- const frequency=new Map();
- for(const e of bank){const n=clean(e.answer).length;if(n)frequency.set(n,(frequency.get(n)||0)+1);}
+ const frequency=uniqueLengthCounts(bank);
  const segments=runs(mask);
  const missing=[...new Set(segments.map(s=>s.length).filter(len=>(frequency.get(len)||0)===0))].sort((a,b)=>a-b);
  const scarce=[...new Set(segments.map(s=>s.length).filter(len=>(frequency.get(len)||0)>0&&(frequency.get(len)||0)<15))].sort((a,b)=>a-b);
