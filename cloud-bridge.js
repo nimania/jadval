@@ -195,7 +195,7 @@ async function publishPuzzle(publication){
  const ref=api.doc(db,'publishedPuzzles',publication.id);
  const payload={id:publication.id,title:publication.title,size:publication.size,
   publishedAt:api.serverTimestamp(),approvedBy:uid,editorApproved:true,
-  puzzle:publication.puzzle};
+  puzzleJson:JSON.stringify(publication.puzzle)};
  await api.setDoc(ref,payload); // Firestore rules permit CREATE only; no overwrites.
  if(!still(token,uid))throw Error('حساب پس از درخواست انتشار تغییر کرده است؛ وضعیت صفحهٔ عمومی را بررسی کن.');
  return {id:publication.id,url:'https://nimania.github.io/payamejadval/?id='+encodeURIComponent(publication.id)};
