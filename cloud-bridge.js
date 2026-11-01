@@ -60,8 +60,8 @@ async function loadCentral(){
   if(!remoteCount){
    remoteReady=false;
    state("پایگاه مرکزی هنوز خالی است. بانکِ ذخیره‌شدهٔ این مرورگر را می‌توان یک بار منتقل کرد.");
-   retainedLocal=window.JadvalApp?.getLocal?.()||[];
-   summary("بانک همین مرورگر: "+retainedLocal.length+" مدخل؛ هنوز چیزی ارسال نشده است.");
+   if(!retainedLocal?.length)retainedLocal=window.JadvalApp?.getLocal?.()||[];
+   summary("بانک همین مرورگر: "+(window.JadvalApp?.getLocal?.()?.length||retainedLocal.length)+" مدخل؛ هنوز چیزی ارسال نشده است.");
    return;
   }
   if(control?.status!=="ready"){
@@ -88,6 +88,11 @@ async function loadCentral(){
 async function authStateChanged(user){
  administrator=null;remoteReady=false;cloudRows=[];setButtons();
  if(!user){
+  if(configured){
+   const before=window.JadvalApp?.getLocal?.()||[];
+   if(before.length&&!retainedLocal?.length)retainedLocal=before;
+   window.JadvalApp?.hideCloudRows?.();
+  }
   state(configured?"برای دسترسی به بانک خصوصی، با حساب مدیر وارد شو.":"اتصال مرکزی تنظیم نشده است.");
   return;
  }
@@ -101,7 +106,7 @@ async function authStateChanged(user){
   }
   administrator={uid:user.uid,email:user.email||""};
   window.JadvalApp?.grantEditorView?.();
-  retainedLocal=window.JadvalApp?.getLocal?.()||[];
+  if(!retainedLocal?.length)retainedLocal=window.JadvalApp?.getLocal?.()||[];
   await loadCentral();
  }catch(err){state("بررسی مجوز مدیر ناموفق بود: "+(err.code||err.message));}
  finally{setButtons();}
@@ -140,7 +145,8 @@ async function saveEntry(entry){
 }
 async function importBrowser(){
  if(!administrator||loading||remoteReady)return;
- const local=retainedLocal?.length?retainedLocal:(window.JadvalApp?.getLocal?.()||[]);
+ const liveLocal=window.JadvalApp?.getLocal?.()||[];
+ const local=liveLocal.length?liveLocal:(retainedLocal||[]);
  if(!local.length){state("بانک مرورگر خالی است؛ ابتدا از دستگاه اصلی با بانک موجود وارد شو.");return;}
  if(!confirm("انتقال اولیهٔ "+local.length+" مدخل به Firestore آغاز شود؟ این کار ممکن است هزینهٔ سرویس داشته باشد. هیچ سند موجودی بازنویسی نمی‌شود و بانک محلی محفوظ می‌ماند."))return;
  loading=true;setButtons();
