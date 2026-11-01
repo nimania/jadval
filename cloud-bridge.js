@@ -185,11 +185,26 @@ async function importBrowser(){
  }catch(e){remoteReady=false;state('انتقال متوقف شد؛ داده‌های محلی محفوظ‌اند: '+(e.code||e.message));}
  finally{loading=false;buttons();}
 }
+// Public publication is independent of the private bank migration.
+// Only a completely reviewed, whitelisted puzzle leaves the browser.
+async function publishPuzzle(publication){
+ if(!administrator||!auth?.currentUser||loading)throw Error('برای انتشار، با حساب مدیر وارد شو.');
+ if(!publication||publication.editorApproved!==true||!publication.id||!publication.title||
+    !publication.puzzle||!Number.isInteger(publication.size))throw Error('بستهٔ انتشار یا تأیید ویراستار معتبر نیست.');
+ const uid=administrator.uid,token=epoch;
+ const ref=api.doc(db,'publishedPuzzles',publication.id);
+ const payload={id:publication.id,title:publication.title,size:publication.size,
+  publishedAt:api.serverTimestamp(),approvedBy:uid,editorApproved:true,
+  puzzle:publication.puzzle};
+ await api.setDoc(ref,payload); // Firestore rules permit CREATE only; no overwrites.
+ if(!still(token,uid))throw Error('حساب پس از درخواست انتشار تغییر کرده است؛ وضعیت صفحهٔ عمومی را بررسی کن.');
+ return {id:publication.id,url:'https://nimania.github.io/payamejadval/?id='+encodeURIComponent(publication.id)};
+}
 async function bootstrap(){
  if(!configured){state('اتصال مرکزی تنظیم نشده است.');buttons();return;}
  try{const [a,b,c]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);const app=a.initializeApp(config,'jadval-private');api={...b,...c};auth=b.getAuth(app);db=c.getFirestore(app);b.onAuthStateChanged(auth,authChanged);buttons();}catch(e){state('بارگذاری Firebase ناموفق: '+e.message);}
 }
-window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),saveEntry,loadCentral,configIsReady:()=>configured};
+window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading,publishPuzzle,saveEntry,loadCentral,configIsReady:()=>configured};
 function init(){ $('cloudLogin').onclick=login;$('cloudLogout').onclick=()=>api.signOut(auth);$('cloudReload').onclick=()=>administrator?loadCentral():authChanged(auth.currentUser);$('cloudImport').onclick=importBrowser;buttons();Promise.resolve(window.JadvalApp?.localReady).then(bootstrap);setInterval(()=>{if(remoteReady&&!loading&&document.visibilityState==='visible'&&!document.querySelector('dialog[open]'))loadCentral();},90000);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
