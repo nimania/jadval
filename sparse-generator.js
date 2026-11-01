@@ -53,6 +53,25 @@ function maskScore(mask,availableLengths){
  }
  return score;
 }
+// Safe structural fallback for the legacy proof-of-concept generator.
+// It is a black-cell template only: never a solved or publishable puzzle.
+// Odd sizes begin with a verified 7x7 seed; remaining rows/columns use
+// paired 2x2 black cells. Every line has 1-2 black cells, no white
+// singleton, and no completely black row or column.
+function fallbackPattern(n){
+ if(![7,10,15,20].includes(n))return null;
+ const mask=Array.from({length:n},()=>Array(n).fill(false));
+ let start=0;
+ if(n%2){
+  const seed=[[2],[2],[0],[0,1],[3,4],[6],[5,6]];
+  for(let r=0;r<seed.length;r++)for(const c of seed[r])mask[r][c]=true;
+  start=7;
+ }
+ for(let k=start;k<n;k+=2){
+  for(let r=k;r<k+2;r++)for(let c=k;c<k+2;c++)mask[r][c]=true;
+ }
+ return mask;
+}
 function patterns(n,seed,count,availableLengths){
  const rand=rng(seed),results=[],seen=new Set();
  if(n<5)return [];
@@ -83,6 +102,7 @@ function patterns(n,seed,count,availableLengths){
   if(!seen.has(key)){seen.add(key);results.push({mask:best,score:bestScore});}
   if(results.length>=count&&results.some(x=>x.score===0))break;
  }
+ if(!results.length){const fallback=fallbackPattern(n);if(fallback&&validMask(fallback))results.push({mask:fallback,score:maskScore(fallback,availableLengths)});}
  return results.sort((a,b)=>a.score-b.score).slice(0,count).map(x=>x.mask);
 }
 function solve(mask,source,budget=7000,seed=1){
