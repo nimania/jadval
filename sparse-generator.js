@@ -273,19 +273,20 @@ function render(data){
  $("demoMeta").textContent="جدول کامل: "+data.slots+" پاسخ — شبکهٔ "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ الگوی آزاد.";
  section.scrollIntoView({behavior:"smooth",block:"start"});
 }
-function solveClassicInWorker(masks,source,seed){
+function solveClassicInWorker(masks,source,seed,budgetMs=12000){
  return new Promise(resolve=>{
   const worker=new Worker("./classic-solver-worker.js");
-  const id=String(seed),watchdog=setTimeout(()=>{worker.terminate();resolve({status:"timeout",reports:[]});},15500);
+  const id=String(seed),watchdog=setTimeout(()=>{worker.terminate();resolve({status:"timeout",reports:[]});},budgetMs+3500);
   const finish=message=>{clearTimeout(watchdog);worker.terminate();resolve(message);};
   worker.onmessage=event=>{if(event.data?.id===id)finish(event.data)};
   worker.onerror=event=>finish({status:"error",message:"خطای اجرای حل‌گر جداگانه"});
   worker.postMessage({action:"solve",id,masks,entries:source.map(e=>({id:e.id,answer:e.answer,clue:e.clue})),
-                      options:{totalMs:12000,seed}});
+                      options:{totalMs:budgetMs,seed}});
  });
 }
 async function generateSample(){
  const btn=$("buildDemo"),size=Number($("demoSize").value),category=$("demoFilter").value;
+ const budgetMs=Math.min(60000,Math.max(12000,Number($("solverBudget")?.value)||12000));
  const bank=(typeof entries!=="undefined"&&entries.length)?entries:[];
  if(!bank.length){$("demoNote").textContent="اول بانک سؤال‌وجواب خودت را وارد کن.";return;}
  const filtered=category?bank.filter(e=>(e.category||"دسته‌بندی‌نشده")===category):bank;
@@ -305,10 +306,10 @@ async function generateSample(){
    if(selected&&!masks.some(mask=>JSON.stringify(mask)===JSON.stringify(selected)))masks.unshift(selected);
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
-    const report=await solveClassicInWorker(masks,filtered,Date.now());
+    const report=await solveClassicInWorker(masks,filtered,Date.now(),budgetMs);
     updateReport({
      schema:1,type:"jadval-solver-diagnostics",timestamp:new Date().toISOString(),
-     size,style:"classic",category:category||"all",bankEntries:bank.length,
+     size,style:"classic",category:category||"all",searchBudgetMs:budgetMs,bankEntries:bank.length,
      filteredEntries:filtered.length,attemptedMasks:masks.length,
      reports:(report.reports||[]).map(x=>({
        status:x.status,slotCount:x.slotCount,bestDepth:x.bestDepth,nodes:x.nodes,
