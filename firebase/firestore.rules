@@ -1,33 +1,75 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedInEditor() {
+    function isEditor() {
       return request.auth != null &&
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
     }
 
+    function validEntry(d) {
+      return d.keys().hasAll(['id', 'answer', 'clue', 'letters', 'reviewed', 'revision']) &&
+        d.keys().hasOnly(['id','answer','clue','letters','category','difficulty',
+                          'reviewed','source','license','revision','createdAt','updatedAt']) &&
+        d.id is string && d.id.size() > 0 &&
+        d.answer is string && d.answer.size() > 0 && d.answer.size() <= 160 &&
+        d.clue is string && d.clue.size() > 0 && d.clue.size() <= 1500 &&
+        d.letters is int && d.letters >= 2 && d.letters <= 30 &&
+        d.reviewed is int && (d.reviewed == 0 || d.reviewed == 1) &&
+        d.revision is int && d.revision >= 1 &&
+        d.get('category','') is string &&
+        d.get('difficulty','') is string &&
+        d.get('source','') is string &&
+        d.get('license','') is string;
+    }
+
+    // Provision accounts via Firebase Console/Admin SDK only.
+    // Authentication alone NEVER grants access to the question bank.
     match /admins/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if false; // Assign editors only with trusted Admin SDK.
+      allow create, update, delete: if false;
     }
 
     match /entries/{entryId} {
-      allow read: if signedInEditor();
-      allow create: if signedInEditor()
-        && request.resource.data.keys().hasAll(['answer', 'clue', 'reviewed']);
-      allow update: if signedInEditor()
-        && request.resource.data.keys().hasAll(['answer', 'clue', 'reviewed']);
-      allow delete: if false; // Preserve history; use reviewed/status flags.
+      allow read: if isEditor();
+      allow create: if isEditor() &&
+        validEntry(request.resource.data) &&
+        request.resource.data.revision == 1;
+      allow update: if isEditor() &&
+        validEntry(request.resource.data) &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.get('createdAt','') == resource.data.get('createdAt','') &&
+        request.resource.data.revision == resource.data.revision + 1;
+      allow delete: if false;
+    }
+
+    // A browser migration may be resumed after a network interruption.
+    // No one can seed or finalize a bank without an explicit editor grant.
+    match /meta/{metaId} {
+      allow read: if isEditor() && metaId == 'bank';
+      allow create: if isEditor() && metaId == 'bank' &&
+        request.resource.data.status == 'importing' &&
+        request.resource.data.owner == request.auth.uid &&
+        request.resource.data.expected is int &&
+        request.resource.data.expected > 0;
+      allow update: if isEditor() && metaId == 'bank' &&
+        resource.data.owner == request.auth.uid &&
+        request.resource.data.owner == resource.data.owner &&
+        request.resource.data.expected == resource.data.expected &&
+        resource.data.status == 'importing' &&
+        (request.resource.data.status == 'importing' ||
+         request.resource.data.status == 'ready');
+      allow delete: if false;
     }
 
     match /puzzles/{puzzleId} {
-      allow read, create, update: if signedInEditor();
+      allow read: if isEditor();
+      allow create, update: if isEditor();
       allow delete: if false;
     }
 
     match /auditLogs/{eventId} {
-      allow read: if signedInEditor();
-      allow write: if false; // Only trusted backend creates immutable logs.
+      allow read: if isEditor();
+      allow write: if false;
     }
 
     match /{document=**} {
