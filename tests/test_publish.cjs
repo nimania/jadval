@@ -1,0 +1,30 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm');
+const window={},document={readyState:'loading',addEventListener(){}};
+const context={window,document,Date,Math,Map,Set,crypto:require('node:crypto').webcrypto};
+for(const file of ['sparse-generator.js','verified-sample-15.js','publish.js'])
+ vm.runInNewContext(fs.readFileSync(file,'utf8'),context,{filename:file});
+const api=window.JadvalSparse,make=window.JadvalPublish.preparedPuzzle;
+const rows=window.JadvalVerified15.getRows(0).map(s=>[...s].reverse().map(c=>c==='■'?'':c));
+const slots=api.slotsFor(rows.map(row=>row.map(c=>!c)));
+const bank=slots.map((s,i)=>({id:'bank-'+i,answer:s.cells.map(([r,c])=>rows[r][c]).join(''),
+ clue:'پرسش '+i,source:'private archive',source_puzzle_ids:['never-public'],license:'owner'}));
+const generated=window.JadvalVerified15.build(bank,0);
+assert(generated.result,generated.error);
+const publication=make(generated.result,bank,'  جدول   شماره ۱  ');
+assert.equal(publication.title,'جدول شماره ۱');
+assert.equal(publication.editorApproved,false,'A fresh draft must never be pre-approved');
+assert.deepEqual(Object.keys(publication.puzzle).sort(),['clues','grid','meta','version']);
+assert.deepEqual(Object.keys(publication.puzzle.meta).sort(),['direction','language','method','size','status','title']);
+assert.equal(publication.puzzle.meta.status,'published');
+assert.equal(publication.puzzle.meta.method,'editor-approved');
+assert(!JSON.stringify(publication).includes('never-public'));
+assert(!JSON.stringify(publication).includes('private archive'));
+assert(!JSON.stringify(publication).includes('bank-'));
+assert(api.validateComplete(generated.result));
+assert.throws(()=>make(generated.result,bank.slice(1),'جدول'),/تطابق/);
+assert.throws(()=>make(generated.result,bank,' '),/عنوان/);
+const invalid=JSON.parse(JSON.stringify(generated.result));
+invalid.puzzle.clues.horizontal['1'][0]='پرسش ساختگی';
+assert.throws(()=>make(invalid,bank,'جدول'),/تطابق/);
+console.log('Editor approval required; exact public whitelist; bank remains private.');
