@@ -21,6 +21,25 @@ for(let variant=0;variant<variants;variant++){
  assert(api.validateComplete(result.result),'15x15 proof must be fully solved');
 
  assert(api.validateWithBank(result.result,bank),'Every answer and matching source clue must be present in bank');
+ // A numbered line may have several clues; order is determined by the
+ // underlying right-to-left / top-to-bottom slot traversal.
+ for(const direction of ['horizontal','vertical']){
+  const lines=api.groupedClueLines(result.result.puzzle,direction);
+  assert(lines.some(line=>line.questions.length>1),'At least one multi-answer numbered line');
+  const ordered=api.slotsFor(mask).filter(slot=>slot.dir===direction);
+  const index=new Map();
+  for(const slot of ordered){
+   const number=slot.group,offset=index.get(number)||0;
+   const answer=slot.cells.map(([r,c])=>grid[r][c]).join('');
+   const line=lines.find(item=>item.number===number);
+   assert.equal(line.questions[offset],'سرنخ بانک '+words.indexOf(answer),
+    'Ordered question must match word position');
+   index.set(number,offset+1);
+  }
+  for(const line of lines){
+   assert.equal(line.text.split(' - ').length,line.questions.length+1);
+  }
+ }
  const tampered=JSON.parse(JSON.stringify(result.result));
  const firstSlot=api.slotsFor(tampered.mask)[0];
  tampered.puzzle.clues[firstSlot.dir][String(firstSlot.group)][0]='سرنخِ ساختگی و خارج از بانک';
