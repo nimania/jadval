@@ -48,10 +48,12 @@ function openReview(){
  const status=$('publishStatus'),dialog=$('publishDialog'),data=currentBoard();
  status.textContent='';
  if(!data||!root.JadvalSparse.validateWithBank(data,currentBank())){
-  status.textContent='برای انتشار، ابتدا جدول کامل با سرنخ‌های معتبر بساز.';return;
+  const msg='برای انتشار، ابتدا جدول کامل با سرنخ‌های معتبر بساز.';
+  status.textContent=msg;if($('demoNote'))$('demoNote').textContent=msg;return;
  }
  if(!root.JadvalCloud?.canPublish?.()){
-  status.textContent='ابتدا با حساب مدیر جدول‌ساز در بخش پایگاه مرکزی وارد شو.';return;
+  const msg='ابتدا با حساب مدیر جدول‌ساز در بخش پایگاه مرکزی وارد شو.';
+  status.textContent=msg;if($('demoNote'))$('demoNote').textContent=msg;return;
  }
  const n=data.puzzle.grid.length;
  $('publishTitle').value='جدول فارسی '+n+'×'+n;
