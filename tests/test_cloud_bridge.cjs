@@ -15,8 +15,8 @@ const document={readyState:'loading',getElementById:get,
  addEventListener:(kind,handler)=>{if(kind==='DOMContentLoaded')boot=handler}};
 const context={window,document,Promise,Date,Math,Set,Map,JSON,console,setInterval:()=>0};
 const migration=src.slice(src.indexOf('async function importBrowser()'),src.indexOf('async function bootstrap()'));
-assert(!/\\b(?:prompt|confirm)\\s*\\(/.test(migration),'Migration must use in-page controls, not native browser dialogs');
-const testSource=src.replace(/\\n\\}\\)\\(\\);\\s*$/, '\\nwindow.__parseCount=parseConfirmedCount;\\n})();');
+assert(!/\b(?:prompt|confirm)\s*\(/.test(migration),'Migration must use in-page controls, not native browser dialogs');
+const testSource=src.replace(/\n\}\)\(\);\s*$/, '\nwindow.__parseCount=parseConfirmedCount;\n})();');
 assert.notEqual(testSource,src,'Expose numeric parser in test sandbox only');
 vm.runInNewContext(testSource,context,{filename:'cloud-bridge.js'});
 assert.equal(window.__parseCount('۱۹٬۸۰۴'),19804);
