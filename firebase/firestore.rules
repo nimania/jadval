@@ -66,17 +66,12 @@ service cloud.firestore {
       getAfter(/databases/$(database)/documents/entries/$(request.resource.data.lastEntry)).data.generation==request.resource.data.generation));
    allow delete: if false;
   }
-  // Only explicitly approved, minimal puzzle documents are public.
-  // No bank entries, private metadata, drafts or administrator data are exposed.
+  // Public visibility applies only to editorially approved, minimal puzzle
+  // documents. The private bank, drafts and admin records remain protected.
   function validPublicPuzzle(d, puzzleId) {
    return d.keys().hasAll(['id','title','size','publishedAt','approvedBy','editorApproved','puzzle']) &&
     d.keys().hasOnly(['id','title','size','publishedAt','approvedBy','editorApproved','puzzle']) &&
-    d.id == puzzleId && d.id is string && d.id.matches('^pub_[A-Za-z0-9_-]{12,80}
-  match /auditLogs/{id} { allow read: if isEditor(); allow write: if false; }
-  match /{document=**} { allow read,write: if false; }
- }
-}
-) &&
+    d.id == puzzleId && d.id is string && d.id.matches('^pub_[A-Za-z0-9_-]{12,80}$') &&
     d.title is string && d.title.size()>0 && d.title.size()<=120 &&
     d.size is int && d.size in [7,10,15,20] &&
     d.publishedAt == request.time && d.approvedBy == request.auth.uid &&
