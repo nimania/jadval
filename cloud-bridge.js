@@ -71,7 +71,7 @@ async function loadCentral(){
   state("در حال دریافت بانک مرکزی ("+remoteCount+" مدخل)...");
   const snapshots=await api.getDocsFromServer(api.collection(db,"entries"));
   const data=snapshots.docs.map(rawToLocal);
-  const pending=await window.JadvalApp?.pendingCount?.();
+  const pending=await Promise.resolve(window.JadvalApp?.pendingCount?.()).catch(()=>0);
   if(pending){remoteReady=false;state("در این مرورگر "+pending+" ویرایش ناموفقِ همگام‌سازی وجود دارد؛ پیش از دریافت بانک مرکزی، نسخهٔ پشتیبان بگیر و تعارض‌ها را بررسی کن.");return;}
   await window.JadvalApp?.backupBeforeCloud?.();
   cloudRows=data;
@@ -163,6 +163,10 @@ async function importBrowser(){
   for(const e of local){
    const norm=normalizedItem(e),id=firestoreId(e);
    if(!norm.id||!norm.answer||!norm.clue)throw new Error("بانک دارای مدخل بدون شناسه، جواب یا سؤال است.");
+   if(norm.letters<2||norm.letters>30||norm.answer.length>160||norm.clue.length>1500)
+    throw new Error("مدخل با طول یا ساختار نامعتبر برای Firestore پیدا شد: "+id);
+   if(norm.letters!==[...String(norm.answer).replace(/[\u200c\s\-]/g,"")].length)
+    throw new Error("طول جواب ثبت‌شده با متن جواب متفاوت است: "+id);
    const identity=norm.id+"|"+norm.answer+"|"+norm.clue;
    if(unique.has(id)&&unique.get(id)!==identity)throw new Error("تداخل شناسهٔ مدخل‌ها: "+id);
    unique.set(id,identity);
