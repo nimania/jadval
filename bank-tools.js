@@ -37,11 +37,20 @@ async function addEntry(event){
  const existing=bank().find(x=>clean(x.answer)===answer&&String(x.clue||'').trim()===clue);
  if(existing){$('longError').textContent='این سؤال‌وجواب قبلاً در بانک وجود دارد.';return;}
  const id='manual-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*1e8).toString(36);
- bank().push({id,clue,answer,letters:length,category:$('newCategory').value,difficulty:'unknown',reviewed:0,
- source,license:'user-supplied',addedAt:new Date().toISOString()});
- try{await save();updateCategories();applyFilters();diagnostics();
+ const item={id,clue,answer,letters:length,category:$('newCategory').value,difficulty:'unknown',reviewed:0,
+ source,license:'user-supplied',addedAt:new Date().toISOString()};
+ bank().push(item);
+ try{
+  let syncError=null;
+  if(window.JadvalCloud?.isReady()){
+   try{await window.JadvalCloud.saveEntry(item)}
+   catch(err){syncError=err;await window.JadvalApp?.backupPendingEntry(item)}
+  }else await save();
+  updateCategories();applyFilters();diagnostics();
   $('longEntryDialog').close();$('newEntryForm').reset();
-  status('مدخل '+length+'حرفی ذخیره شد. هنوز بازبینی نشده است؛ از کل بانک خروجی پشتیبان بگیر.');
+  status(syncError?'مدخل فقط در این دستگاه محفوظ است؛ همگام‌سازی انجام نشد: '+syncError.message:
+   window.JadvalCloud?.isReady()?'مدخل در بانک مرکزی ذخیره شد و نیازمند بازبینی است.':
+    'مدخل در بانک مرورگر ذخیره شد؛ از فایل JSON پشتیبان بگیر.');
  }catch(err){$('longError').textContent='ذخیره‌سازی ناموفق: '+err.message;}
 }
 function init(){
