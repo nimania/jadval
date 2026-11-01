@@ -19,6 +19,15 @@ for(let variant=0;variant<variants;variant++){
  assert(result.result,result.error);
  assert.equal(result.result.puzzle.meta.sampleVariant,variant+1);
  assert(api.validateComplete(result.result),'15x15 proof must be fully solved');
+
+ assert(api.validateWithBank(result.result,bank),'Every answer and matching source clue must be present in bank');
+ const tampered=JSON.parse(JSON.stringify(result.result));
+ const firstSlot=api.slotsFor(tampered.mask)[0];
+ tampered.puzzle.clues[firstSlot.dir][String(firstSlot.group)][0]='سرنخِ ساختگی و خارج از بانک';
+ assert(!api.validateWithBank(tampered,bank),'Made-up clue must be rejected even on a full grid');
+ assert(!api.validateWithBank(result.result,bank.slice(1)),'Missing source-backed answer must be rejected');
+ assert(!api.validateWithBank(result.result,[]),'Empty bank must never authorize a complete puzzle');
+
  assert(grid.every(row=>row.some(Boolean)),'No removed row');
  for(let c=0;c<15;c++)assert(grid.some(row=>row[c]),'No removed column');
  assert.equal(mask.flat().filter(Boolean).length,58);
