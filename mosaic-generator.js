@@ -91,7 +91,7 @@ function generate(entries,size,seed){
  const positions=layout(size,seed);
  if(!positions)return {error:"اندازه پشتیبانی نمی‌شود."};
  const indexes=new Map(),random=rand(seed),grid=Array.from({length:size},()=>Array(size).fill("")),
-       clues={horizontal:{},vertical:{}},used=new Set(),tiles=[];
+       used=new Set(),tiles=[];
  for(const {top,right,tileSize} of positions){
   if(!indexes.has(tileSize))indexes.set(tileSize,buildIndex(entries,tileSize));
   const idx=indexes.get(tileSize);
@@ -106,10 +106,7 @@ function generate(entries,size,seed){
     if(grid[top+r][col])return {error:"هم‌پوشانی نامعتبر خانه‌ها."};
     grid[top+r][col]=rows[r][c];
    }
-   (clues.horizontal[String(top+r+1)]??=[]).push(idx.words.get(rows[r]).clue);
-  }
-  for(let c=0;c<tileSize;c++){
-   (clues.vertical[String(right+c+1)]??=[]).push(idx.words.get(columns[c]).clue);
+
   }
   tiles.push({top,right,rows,columns,tileSize});
  }
@@ -117,6 +114,16 @@ function generate(entries,size,seed){
  const mask=grid.map(row=>row.map(ch=>ch===""));
  const slots=window.JadvalSparse?.slotsFor(mask);
  if(!slots)return {error:"شبکه شامل جایگاه یک‌حرفی یا نامعتبر است."};
+ // Clues must follow *physical* reading order, never the order of tile
+ // generation. In a numbered row: right to left. In a numbered column:
+ // top to bottom. Multiple answers share the same row/column number.
+ const clues={horizontal:{},vertical:{}};
+ for(const slot of slots){
+  const answer=slot.cells.map(([r,c])=>grid[r][c]).join("");
+  const source=indexes.get(slot.cells.length)?.words.get(answer);
+  if(!source)return {error:"برای یکی از جایگاه‌های جدول، سرنخ معتبر و هم‌جهت پیدا نشد."};
+  (clues[slot.dir][String(slot.group)]??=[]).push(source.clue);
+ }
  const puzzle={version:3,grid,clues,meta:{
   title:"جدول آزمایشی "+size+"×"+size,
   language:"fa",direction:"rtl",size:{rows:size,cols:size},
