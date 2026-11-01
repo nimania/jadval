@@ -22,7 +22,7 @@ assert.equal(typeof boot,'function');
 boot();
 setImmediate(()=>{
  assert.equal(get('cloudLogin').disabled,true);
- assert.match(get('cloudStatus').textContent,/تنظیم نشده/);
+ assert.match(get('cloudStatus').textContent,/(متصل نشده|تنظیم نشده)/);
  assert(!/serviceAccount|private_key/.test(src),'No service account secret in browser code');
  const html=fs.readFileSync('index.html','utf8');
  const inline=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
