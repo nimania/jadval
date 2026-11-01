@@ -30,6 +30,7 @@ function diagnostics(){
 function openForm(){$('longEntryDialog').showModal();}
 async function addEntry(event){
  event.preventDefault();
+ if(window.JadvalCloud?.configIsReady()&&!window.JadvalCloud?.canEdit()){ $('longError').textContent='بانک مرکزی آماده نیست؛ افزودن مدخل متوقف شد.';return;}
  const clue=$('newClue').value.trim(),answer=clean($('newAnswer').value),source=$('newSource').value.trim(),length=[...answer].length;
  if(length<2||length>30||!valid.test(answer)||!clue||!source){
   $('longError').textContent='سؤال، پاسخ فارسی ۲ تا ۳۰حرفی و منبع را کامل وارد کن.';return;

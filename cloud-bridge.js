@@ -1,225 +1,154 @@
-/* Jadval private Firestore bridge. No Firebase SDK is loaded unless configured.
-   This module never deletes the IndexedDB bank or uploads it without confirmation.
-   Dedicated Firebase Auth + Firestore Rules must be enabled by the owner first. */
+/* Private Firestore bank. Migration is explicit, backed up, content-checked and create-only. */
 (function(){
-"use strict";
-const $=id=>document.getElementById(id);
-const config=window.JADVAL_FIREBASE_CONFIG||{};
-const configured=["apiKey","authDomain","projectId","appId"].every(key=>typeof config[key]==="string"&&config[key].trim());
-let auth=null,db=null,api=null,administrator=null,remoteReady=false,loading=false,remoteCount=0;
-let retainedLocal=null,cloudRows=[],lastLoadError=null;
-const SDK="https://www.gstatic.com/firebasejs/12.19.0/";
-const state=message=>{if($("cloudStatus"))$("cloudStatus").textContent=message;};
-const summary=message=>{if($("cloudProgress"))$("cloudProgress").textContent=message;};
-const setButtons=()=>{
- if($("cloudLogin"))$("cloudLogin").disabled=!configured||!!administrator;
- if($("cloudLogout"))$("cloudLogout").disabled=!administrator;
- if($("cloudReload"))$("cloudReload").disabled=!administrator||loading;
- if($("cloudImport"))$("cloudImport").disabled=!administrator||loading||remoteReady;
-};
-function normalizedItem(entry){
- return {
-  id:String(entry.id||""),
-  answer:String(entry.answer||"").trim(),clue:String(entry.clue||"").trim(),
-  letters:Number(entry.letters||[...String(entry.answer||"")].length),
-  category:String(entry.category||"دسته‌بندی‌نشده"),
-  difficulty:String(entry.difficulty||"unknown"),
-  reviewed:entry.reviewed?1:0,
-  source:String(entry.source||""),license:String(entry.license||""),
-  revision:Number(entry.revision||entry._cloudRevision||1)
- };
+'use strict';
+const $=id=>document.getElementById(id),S=window.JadvalSafety,B=window.JadvalBackup;
+const config=window.JADVAL_FIREBASE_CONFIG||{},configured=['apiKey','authDomain','projectId','appId'].every(k=>typeof config[k]==='string'&&config[k].trim());
+const SDK='https://www.gstatic.com/firebasejs/12.19.0/';
+let auth=null,db=null,api=null,administrator=null,remoteReady=false,loading=false,source='locked',epoch=0,cache=null,verifiedSecurity=false;
+const state=s=>{$('cloudStatus').textContent=s;},summary=s=>{$('cloudProgress').textContent=s;};
+function buttons(){ $('cloudLogin').disabled=!api||!!auth?.currentUser; $('cloudLogout').disabled=!auth?.currentUser||loading; $('cloudReload').disabled=!administrator||loading; $('cloudImport').disabled=!administrator||loading||remoteReady; }
+const bankRef=()=>api.doc(db,'meta','bank');
+const rawToLocal=s=>{const d=s.data();return {...d.legacy,...d,id:d.id,reviewed:d.reviewed,_cloudId:s.id,_cloudRevision:d.revision};};
+const still=(token,uid)=>token===epoch&&administrator?.uid===uid;
+async function cacheRows(rows,generation,uid){cache={uid,generation,entries:rows};await B.put('cloud-cache',cache);}
+async function showPending(){
+ const box=$('cloudPending');box.replaceChildren();if(!administrator)return;
+ const stored=await B.readState(),pending=stored['pending-cloud-edits']?.entries||[];
+ for(const item of pending){
+  const line=document.createElement('div');line.className='note';
+  const label=document.createElement('p');label.textContent='ویرایش معلق: '+item.id+' — '+item.answer;line.append(label);
+  const button=document.createElement('button');button.className='btn';button.textContent='بررسی و حل تعارض';
+  button.onclick=()=>resolvePending(item).catch(e=>state(e.message));line.append(button);box.append(line);
+ }
 }
-function firestoreId(entry){
- const id=String(entry.id||"");
- if(/^[A-Za-z0-9_-]{1,180}$/.test(id)&&!/^__.*__$/.test(id))return id;
- // Legacy entries without safe IDs get a reproducible composite 32-bit checksum.
- // Such IDs are checked for collisions before any writes are committed.
- let h1=2166136261,h2=0x9e3779b9;
- const str=id+"|"+String(entry.answer||"")+"|"+String(entry.clue||"");
- for(let i=0;i<str.length;i++){const ch=str.charCodeAt(i);h1=Math.imul(h1^ch,16777619);h2=Math.imul(h2+ch,2246822519);}
- return "legacy_"+(h1>>>0).toString(16).padStart(8,"0")+(h2>>>0).toString(16).padStart(8,"0");
+async function finishPending(item,choice){
+ const stored=await B.readState(),p=stored['pending-cloud-edits']||{entries:[],history:[]};
+ p.history=p.history||[];p.history.push({item,choice,resolvedAt:new Date().toISOString()});p.entries=p.entries.filter(x=>x.id!==item.id);
+ await B.put('pending-cloud-edits',p);await showPending();
 }
-const rawToLocal=(snap)=>{
- const e=snap.data();
- return {...e,id:e.id||snap.id,reviewed:e.reviewed?1:0,_cloudId:snap.id,_cloudRevision:Number(e.revision||1)};
-};
+async function resolvePending(item){
+ if(!administrator||loading)return;
+ const id=item._cloudId||await S.docId(item),snap=await api.getDocFromServer(api.doc(db,'entries',id));
+ const server=snap.exists()?rawToLocal(snap):null;
+ B.download({schema:1,exportedAt:new Date().toISOString(),local:item,server},'jadval-conflict-'+id+'.json');
+ if(!confirm('نسخهٔ این دستگاه:\n'+JSON.stringify(S.record(item),null,2)+'\n\nنسخهٔ سرور:\n'+JSON.stringify(server?S.record(server):null,null,2)+'\n\nنسخهٔ این دستگاه پس از مقایسه جای نسخهٔ سرور ثبت شود؟'))return;
+ const candidate={...item,_cloudId:id,_cloudRevision:server?server._cloudRevision:0};
+ await saveEntry(candidate,true);await finishPending(item,'local-after-review');await loadCentral();
+}
 async function loadCentral(){
  if(!administrator||loading)return;
- loading=true;setButtons();state("در حال بررسی پایگاه دادهٔ مرکزی...");
+ const token=epoch,uid=administrator.uid;loading=true;remoteReady=false;source='locked';buttons();
  try{
-  const marker=await api.getDoc(api.doc(db,"meta","bank"));
-  const control=marker.exists()?marker.data():null;
-  const count=await api.getCountFromServer(api.collection(db,"entries"));
-  remoteCount=count.data().count;
-  if(control?.status==="importing"){
-   remoteReady=false;
-   state("انتقال اولیه ناتمام است. از همان دستگاه با بانک اصلی، انتقال را ادامه بده.");
-   summary("رکوردهای منتقل‌شده تا این لحظه: "+remoteCount+"؛ انتظار: "+(control.expected||"نامعلوم"));
-   return;
+  const pending=await window.JadvalApp.pendingCount();
+  if(pending){state(pending+' ویرایش معلق محفوظ است. پیش از دریافت تغییرات، تعارض‌ها را بررسی کن.');await showPending();return;}
+  const marker=await api.getDocFromServer(bankRef()),control=marker.exists()?marker.data():null;
+  if(!still(token,uid))return;
+  if(control?.status!=='ready'){
+   const stored=await B.readState();window.JadvalApp.useCloudRows(stored.bank?.entries||[]);window.JadvalApp.grantEditorView();source='local';
+   state(control?.status==='importing'?'انتقال اولیه ناتمام است؛ ادامه فقط با همان بانک و پشتیبان تأییدشده مجاز است.':'بانک مرکزی هنوز راه‌اندازی نشده است.');
+   summary('بانک ذخیره‌شدهٔ این مرورگر: '+(stored.bank?.entries?.length||0)+' مدخل. هیچ انتقال خودکاری انجام نمی‌شود.');await B.refresh();return;
   }
-  if(!remoteCount){
-   remoteReady=false;
-   state("پایگاه مرکزی هنوز خالی است. بانکِ ذخیره‌شدهٔ این مرورگر را می‌توان یک بار منتقل کرد.");
-   if(!retainedLocal?.length)retainedLocal=window.JadvalApp?.getLocal?.()||[];
-   summary("بانک همین مرورگر: "+(window.JadvalApp?.getLocal?.()?.length||retainedLocal.length)+" مدخل؛ هنوز چیزی ارسال نشده است.");
-   return;
+  if(control.schema!==2||!Number.isInteger(control.generation))throw Error('نسخهٔ بانک مرکزی با این برنامه سازگار نیست؛ دریافت متوقف شد.');
+  const stored=await B.readState();cache=cache?.uid===uid?cache:stored['cloud-cache'];
+  const usable=cache?.uid===uid&&Array.isArray(cache.entries)&&Number.isInteger(cache.generation)&&cache.generation<=control.generation;
+  let rows=usable?cache.entries:[];
+  if(!usable||cache.generation!==control.generation){
+   state('در حال دریافت بانک خصوصی...');
+   const q=usable?api.query(api.collection(db,'entries'),api.where('generation','>',cache.generation)):api.collection(db,'entries');
+   const docs=await api.getDocsFromServer(q),merged=new Map(rows.map(r=>[r._cloudId,r]));for(const d of docs.docs)merged.set(d.id,rawToLocal(d));rows=[...merged.values()];
   }
-  if(control?.status!=="ready"){
-   remoteReady=false;state("مدخل‌های ابری موجودند، اما وضعیت انتقال اولیه تأیید نشده است. برای جلوگیری از جایگزینی اطلاعات، همگام‌سازی متوقف شد.");
-   return;
-  }
-  state("در حال دریافت بانک مرکزی ("+remoteCount+" مدخل)...");
-  const snapshots=await api.getDocsFromServer(api.collection(db,"entries"));
-  const data=snapshots.docs.map(rawToLocal);
-  const pending=await Promise.resolve(window.JadvalApp?.pendingCount?.()).catch(()=>0);
-  if(pending){remoteReady=false;state("در این مرورگر "+pending+" ویرایش ناموفقِ همگام‌سازی وجود دارد؛ پیش از دریافت بانک مرکزی، نسخهٔ پشتیبان بگیر و تعارض‌ها را بررسی کن.");return;}
-  await window.JadvalApp?.backupBeforeCloud?.();
-  cloudRows=data;
-  window.JadvalApp?.useCloudRows?.(data);
-  remoteReady=true;
-  lastLoadError=null;
-  state("متصل به بانک مرکزی: "+data.length+" مدخل — "+(administrator.email||"مدیر"));
-  summary("ویرایش‌ها پس از ذخیره در Firestore روی دستگاه دیگر با ورود یا «دریافت آخرین تغییرات» نمایش داده می‌شوند.");
- }catch(err){
-  lastLoadError=err;remoteReady=false;
-  state("دسترسی یا دریافت بانک مرکزی ناموفق بود: "+(err.code||err.message));
- }finally{loading=false;setButtons();}
+  if(!still(token,uid))return;
+  if(rows.length<control.count)throw Error('تعداد رکوردهای دریافت‌شده کمتر از شمارش مرکزی است؛ نسخهٔ محلی جایگزین نشد.');
+  await cacheRows(rows,control.generation,uid);
+  if(!still(token,uid))return;
+  window.JadvalApp.useCloudRows(rows);window.JadvalApp.grantEditorView();remoteReady=true;source='cloud';
+  state('متصل به بانک مرکزی: '+rows.length+' مدخل — '+administrator.email);
+  summary('آخرین دریافت موفق: '+new Date().toLocaleTimeString('fa-IR')+'؛ تغییرات هر ۹۰ ثانیه و با دکمهٔ دریافت به‌روز می‌شوند.');
+ }catch(e){state('دریافت متوقف شد؛ داده‌های محلی محفوظ‌اند: '+(e.code||e.message));}
+ finally{loading=false;buttons();}
 }
-async function authStateChanged(user){
- administrator=null;remoteReady=false;cloudRows=[];setButtons();
- if(!user){
-  if(configured){
-   const before=window.JadvalApp?.getLocal?.()||[];
-   if(before.length&&!retainedLocal?.length)retainedLocal=before;
-   window.JadvalApp?.hideCloudRows?.();
-  }
-  state(configured?"برای دسترسی به بانک خصوصی، با حساب مدیر وارد شو.":"اتصال مرکزی تنظیم نشده است.");
-  return;
- }
- state("در حال بررسی مجوز دسترسی...");
+async function authChanged(user){
+ const token=++epoch;administrator=null;remoteReady=false;source='locked';cache=null;verifiedSecurity=false;window.JadvalApp.hideCloudRows();buttons();
+ if(!user){state('برای دسترسی به بانک خصوصی، با حساب مدیر وارد شو.');return;}
+ state('در حال بررسی مجوز مدیر...');
  try{
-  const admin=await api.getDoc(api.doc(db,"admins",user.uid));
-  if(!admin.exists()||admin.data().enabled!==true){
-   state("حساب وارد شده مجوز مدیریت ندارد. شناسهٔ مدیر (UID): "+user.uid+" — دسترسی به بانک داده نشد.");
-   summary("مدیر پروژه باید سند admins/"+user.uid+" با enabled=true را در Firebase Console ایجاد کند.");
-   return;
-  }
-  administrator={uid:user.uid,email:user.email||""};
-  window.JadvalApp?.grantEditorView?.();
-  if(!retainedLocal?.length)retainedLocal=window.JadvalApp?.getLocal?.()||[];
-  await loadCentral();
- }catch(err){state("بررسی مجوز مدیر ناموفق بود: "+(err.code||err.message));}
- finally{setButtons();}
+  const snap=await api.getDocFromServer(api.doc(db,'admins',user.uid));if(token!==epoch)return;
+  if(!user.emailVerified||user.providerData.every(p=>p.providerId!=='google.com')||!snap.exists()||snap.data().enabled!==true){state('این حساب مجوز ندارد. UID: '+user.uid);summary('پس از ایجاد سند مدیر در Firebase، «دریافت آخرین تغییرات» یا ورود مجدد را امتحان کن.');return;}
+  administrator={uid:user.uid,email:user.email};await loadCentral();await showPending();
+ }catch(e){state('بررسی مجوز ناموفق: '+(e.code||e.message)+' — UID: '+user.uid);}
+ finally{buttons();}
 }
-async function login(){
- if(!configured||!api)return;
- try{await api.signInWithPopup(auth,new api.GoogleAuthProvider());}
- catch(err){state("ورود ناموفق بود: "+(err.code||err.message));}
-}
-async function logout(){
- if(!auth)return;
- await api.signOut(auth);
- administrator=null;remoteReady=false;
- window.JadvalApp?.hideCloudRows?.();
- state("از حساب مدیریتی خارج شدی. داده‌های ابری دیگر نمایش داده نمی‌شوند.");
- setButtons();
-}
-async function saveEntry(entry){
- if(!remoteReady||!administrator)throw Error("بانک مرکزی هنوز آمادهٔ ثبت ویرایش نیست.");
- const id=entry._cloudId||firestoreId(entry);
- const ref=api.doc(db,"entries",id),previous=Number(entry._cloudRevision||0);
- const raw=normalizedItem(entry);
- await api.runTransaction(db,async tx=>{
-  const old=await tx.get(ref);
-  if(old.exists()){
-   const rev=Number(old.data().revision||1);
-   if(previous!==rev)throw new Error("تعارض نسخه: این مدخل در دستگاه دیگری تغییر کرده؛ ابتدا آخرین نسخه را دریافت کن.");
-   tx.update(ref,{...raw,revision:rev+1,updatedAt:new Date().toISOString()});
-  }else if(!previous){
-   tx.set(ref,{...raw,revision:1,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
-  }else throw new Error("این مدخل در بانک مرکزی پیدا نشد.");
+async function login(){try{await api.signInWithPopup(auth,new api.GoogleAuthProvider());}catch(e){state('ورود ناموفق: '+(e.code||e.message)+(e.code==='auth/popup-blocked'?'؛ پنجره‌های بازشو را برای این سایت مجاز کن و دوباره دکمهٔ ورود را بزن.':''));}}
+async function saveEntry(entry,resolving=false){
+ if(!administrator||loading||(!remoteReady&&!resolving))throw Error('بانک مرکزی آمادهٔ ثبت نیست.');
+ const uid=administrator.uid,token=epoch,id=entry._cloudId||await S.docId(entry),ref=api.doc(db,'entries',id),prior=Number(entry._cloudRevision||0),raw=S.validate(S.record(entry));
+ const result=await api.runTransaction(db,async tx=>{
+  const [meta,old]=await Promise.all([tx.get(bankRef()),tx.get(ref)]);
+  if(!still(token,uid)||!meta.exists()||meta.data().status!=='ready')throw Error('بانک آماده نیست.');
+  if(old.exists()&&prior!==old.data().revision)throw Error('تعارض نسخه: این مدخل در دستگاه دیگر تغییر کرده است.');
+  if(!old.exists()&&prior)throw Error('مدخل مورد انتظار در سرور نیست.');
+  const generation=meta.data().generation+1,revision=old.exists()?prior+1:1;
+  const value={...raw,revision,generation,createdAt:old.exists()?old.data().createdAt:api.serverTimestamp(),updatedAt:api.serverTimestamp()};
+  tx.set(ref,value);tx.update(bankRef(),{generation,count:meta.data().count+(old.exists()?0:1),lastEntry:id});return {revision,generation};
  });
- entry._cloudId=id;entry._cloudRevision=previous?previous+1:1;
- summary("ویرایش «"+entry.answer+"» در پایگاه مرکزی ذخیره شد.");
- return true;
+ entry._cloudId=id;entry._cloudRevision=result.revision;entry.revision=result.revision;entry.generation=result.generation;
+ // Do not advance the cache cursor here: another device may have committed an earlier generation.
+ summary('ویرایش «'+entry.answer+'» در سرور ثبت شد.');return true;
+}
+async function assertPrivate(){
+ const [appSdk,authSdk,storeSdk]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);
+ const probe=appSdk.initializeApp(config,'jadval-anonymous-check-'+Date.now());const probeAuth=authSdk.initializeAuth(probe,{persistence:authSdk.inMemoryPersistence});const probeDb=storeSdk.getFirestore(probe);
+ try{
+  if(probeAuth.currentUser)throw Error('آزمون ناشناس معتبر نیست.');
+  for(const path of [['entries','__access_probe__'],['meta','bank']]){
+   let denied=false;try{await storeSdk.getDocFromServer(storeSdk.doc(probeDb,...path));}catch(e){if(e.code==='permission-denied')denied=true;else throw e;}
+   if(!denied)throw Error('قواعد خصوصی نیستند؛ خواندن ناشناس مجاز شد. انتقال مسدود است.');
+  }
+  verifiedSecurity=true;
+ }finally{await storeSdk.terminate(probeDb);await appSdk.deleteApp(probe);}
 }
 async function importBrowser(){
  if(!administrator||loading||remoteReady)return;
- const liveLocal=window.JadvalApp?.getLocal?.()||[];
- const local=liveLocal.length?liveLocal:(retainedLocal||[]);
- if(!local.length){state("بانک مرورگر خالی است؛ ابتدا از دستگاه اصلی با بانک موجود وارد شو.");return;}
- if(!confirm("انتقال اولیهٔ "+local.length+" مدخل به Firestore آغاز شود؟ این کار ممکن است هزینهٔ سرویس داشته باشد. هیچ سند موجودی بازنویسی نمی‌شود و بانک محلی محفوظ می‌ماند."))return;
- loading=true;setButtons();
+ loading=true;source='locked';buttons();const uid=administrator.uid,token=epoch;
  try{
-  const markerRef=api.doc(db,"meta","bank");
-  const marker=await api.getDoc(markerRef);
-  const info=marker.exists()?marker.data():null;
-  if(info?.status==="ready")throw new Error("بانک مرکزی قبلاً راه‌اندازی شده است. واردسازی مجدد مجاز نیست.");
-  if(info?.status==="importing"&&info.owner!==administrator.uid)throw new Error("مهاجرت در حساب مدیر دیگری آغاز شده است.");
-  const docs=await api.getDocsFromServer(api.collection(db,"entries"));
-  if(docs.size>0&&info?.status!=="importing")throw new Error("سندهای مرکزی موجودند اما وضعیت مهاجرت مشخص نیست؛ انتقال ایمن متوقف شد.");
-  const existing=new Set(docs.docs.map(s=>s.id));
-  const prepared=[],unique=new Map();
-  for(const e of local){
-   const norm=normalizedItem(e),id=firestoreId(e);
-   if(!norm.id||!norm.answer||!norm.clue)throw new Error("بانک دارای مدخل بدون شناسه، جواب یا سؤال است.");
-   if(norm.letters<2||norm.letters>30||norm.answer.length>160||norm.clue.length>1500)
-    throw new Error("مدخل با طول یا ساختار نامعتبر برای Firestore پیدا شد: "+id);
-   if(norm.letters!==[...String(norm.answer).replace(/[\u200c\s\-]/g,"")].length)
-    throw new Error("طول جواب ثبت‌شده با متن جواب متفاوت است: "+id);
-   const identity=norm.id+"|"+norm.answer+"|"+norm.clue;
-   if(unique.has(id)&&unique.get(id)!==identity)throw new Error("تداخل شناسهٔ مدخل‌ها: "+id);
-   unique.set(id,identity);
-   if(!existing.has(id))prepared.push({id,record:norm});
+  const stored=await B.assertVerified();if(stored['pending-cloud-edits']?.entries?.length)throw Error('ویرایش معلق موجود است؛ ابتدا تعارض‌ها را بررسی کن.');
+  const plan=await S.prepare(stored.bank?.entries||[]);
+  const expected=prompt('تعداد مدخل‌های بانک اصلی را برای تطبیق وارد کن (تعداد این مرورگر: '+plan.count+'):');
+  if(expected===null)return;if(!/^\d+$/.test(expected)||Number(expected)!==plan.count)throw Error('تعداد تأییدشده با بانک مرورگر یکسان نیست.');
+  await assertPrivate();
+  const marker=await api.getDocFromServer(bankRef()),info=marker.exists()?marker.data():null;
+  if(info&&(info.status!=='importing'||info.schema!==2||info.owner!==uid||info.expected!==plan.count||info.fingerprint!==plan.fingerprint))throw Error('بانک یا مهاجرت دیگری موجود است؛ انتقال مسدود شد.');
+  const docs=await api.getDocsFromServer(api.collection(db,'entries'));
+  if(docs.size&&!info)throw Error('سرور دارای دادهٔ قبلی بدون نشانگر معتبر است؛ هیچ سندی بازنویسی نمی‌شود.');
+  const missing=S.reconcile(plan.prepared,docs.docs.map(d=>({id:d.id,record:d.data()})));
+  const budgetInput=prompt('سهمیهٔ نوشتنِ باقی‌ماندهٔ امروز را پس از بررسی Usage در Firebase وارد کن. سقف رایگان ۲۰۰۰۰ است؛ این برنامه ۱۰۰ عملیات ذخیره نگه می‌دارد. تعداد رکورد جدید: '+missing.length+'.','');
+  if(budgetInput===null)return;const budget=Number(budgetInput);
+  if(!/^\d+$/.test(budgetInput)||budget>20000||budget<103)throw Error('سهمیهٔ تأییدشده معتبر نیست.');
+  const allowance=Math.min(missing.length,budget-102);
+  if(!confirm('پشتیبان تأیید و دسترسی ناشناس رد شد. '+plan.count+' مدخل؛ '+docs.size+' رکورد موجودِ مطابق؛ '+allowance+' رکورد جدید در این نوبت. بدون بازنویسی رکورد موجود، انتقال به jadval-studio آغاز شود؟'))return;
+  if(!still(token,uid))throw Error('حساب تغییر کرده است.');
+  // Freeze the exact source: a second tab's edits invalidate the verified backup.
+  await B.assertVerified();
+  if(!info)await api.runTransaction(db,async tx=>{const current=await tx.get(bankRef());if(current.exists())throw Error('مهاجرت هم‌زمان آغاز شده؛ دوباره بررسی کن.');tx.set(bankRef(),{schema:2,status:'importing',owner:uid,expected:plan.count,fingerprint:plan.fingerprint,startedAt:api.serverTimestamp()});});
+  for(let i=0;i<allowance;i+=100){
+   if(!still(token,uid))throw Error('حساب تغییر کرده است.');
+   const batch=api.writeBatch(db);for(const x of missing.slice(i,Math.min(i+100,allowance)))batch.set(api.doc(db,'entries',x.id),{...x.record,revision:1,generation:0,createdAt:api.serverTimestamp(),updatedAt:api.serverTimestamp()});
+   // Rules prohibit ALL updates while importing, including racing batch.set calls.
+   await batch.commit();summary('انتقال: '+(docs.size+Math.min(i+100,allowance))+' از '+plan.count);
   }
-  if(!info)await api.setDoc(markerRef,{status:"importing",owner:administrator.uid,expected:local.length,startedAt:new Date().toISOString()});
-  let uploaded=0;
-  for(let i=0;i<prepared.length;i+=100){
-   const batch=api.writeBatch(db);
-   for(const {id,record} of prepared.slice(i,i+100)){
-    batch.set(api.doc(db,"entries",id),{...record,revision:1,
-      createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
-   }
-   await batch.commit();uploaded+=Math.min(100,prepared.length-i);
-   summary("انتقال: "+(existing.size+uploaded)+" از "+local.length+" مدخل");
-   await new Promise(resolve=>setTimeout(resolve,0));
-  }
-  const final=await api.getCountFromServer(api.collection(db,"entries"));
-  const total=final.data().count;
-  if(total!==unique.size)throw new Error("تعداد مدخل‌های مرکزی ("+total+") با تعداد شناسه‌های یکتای محلی ("+unique.size+") یکسان نیست؛ وضعیت انتقال باز می‌ماند.");
-  await api.setDoc(markerRef,{status:"ready",owner:administrator.uid,expected:unique.size,count:total,completedAt:new Date().toISOString()});
-  state("انتقال بانک مرکزی انجام شد: "+total+" مدخل.");
- }catch(err){remoteReady=false;state("انتقال متوقف شد؛ بانک محلی حفظ شده است. "+(err.code||err.message));}
- finally{loading=false;setButtons();}
- if(administrator)await loadCentral();
+  if(allowance<missing.length){state('انتقال برای حفظ سهمیه متوقف شد؛ پس از بازنشانی سهمیه، با همان پشتیبان ادامه بده.');return;}
+  const final=await api.getDocsFromServer(api.collection(db,'entries'));
+  if(final.size!==plan.count||S.reconcile(plan.prepared,final.docs.map(d=>({id:d.id,record:d.data()}))).length)throw Error('تطبیق کامل تعداد/محتوا موفق نبود؛ بانک آماده اعلام نشد.');
+  await api.runTransaction(db,async tx=>{const current=await tx.get(bankRef()),m=current.data();if(m.status!=='importing'||m.owner!==uid||m.fingerprint!==plan.fingerprint)throw Error('نشانگر انتقال تغییر کرده است.');tx.update(bankRef(),{status:'ready',count:plan.count,generation:0,completedAt:api.serverTimestamp()});});
+  const rows=final.docs.map(rawToLocal);await cacheRows(rows,0,uid);window.JadvalApp.useCloudRows(rows);window.JadvalApp.grantEditorView();remoteReady=true;source='cloud';state('انتقال و تطبیق کامل موفق: '+rows.length+' مدخل. بانک اصلی مرورگر محفوظ است.');
+ }catch(e){remoteReady=false;state('انتقال متوقف شد؛ داده‌های محلی محفوظ‌اند: '+(e.code||e.message));}
+ finally{loading=false;buttons();}
 }
 async function bootstrap(){
- if(!$("cloudStatus"))return;
- if(!configured){state("Firebase هنوز به این سایت متصل نشده است. پیکربندی پروژهٔ خصوصی لازم است.");setButtons();return;}
- try{
-  const [appSdk,authSdk,storeSdk]=await Promise.all([
-   import(SDK+"firebase-app.js"),import(SDK+"firebase-auth.js"),import(SDK+"firebase-firestore.js")]);
-  const app=appSdk.initializeApp(config,"jadval-private");
-  auth=authSdk.getAuth(app);db=storeSdk.getFirestore(app);
-  api={...authSdk,...storeSdk};
-  api.onAuthStateChanged(auth,authStateChanged);
-  setButtons();
- }catch(err){state("بارگذاری سرویس Firebase ناموفق بود: "+(err.message||err));}
+ if(!configured){state('اتصال مرکزی تنظیم نشده است.');buttons();return;}
+ try{const [a,b,c]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);const app=a.initializeApp(config,'jadval-private');api={...b,...c};auth=b.getAuth(app);db=c.getFirestore(app);b.onAuthStateChanged(auth,authChanged);buttons();}catch(e){state('بارگذاری Firebase ناموفق: '+e.message);}
 }
-window.JadvalCloud={
- isReady:()=>remoteReady&&!!administrator,
- isConnected:()=>!!administrator,
- saveEntry,loadCentral,
- getLocalSnapshot:()=>retainedLocal?.slice()||[],
- configIsReady:()=>!!configured
-};
-function init(){
- if($("cloudLogin"))$("cloudLogin").onclick=login;
- if($("cloudLogout"))$("cloudLogout").onclick=logout;
- if($("cloudReload"))$("cloudReload").onclick=loadCentral;
- if($("cloudImport"))$("cloudImport").onclick=importBrowser;
- setButtons();
- Promise.resolve(window.JadvalApp?.localReady).then(bootstrap);
-}
-if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
+window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),saveEntry,loadCentral,configIsReady:()=>configured};
+function init(){ $('cloudLogin').onclick=login;$('cloudLogout').onclick=()=>api.signOut(auth);$('cloudReload').onclick=()=>administrator?loadCentral():authChanged(auth.currentUser);$('cloudImport').onclick=importBrowser;buttons();Promise.resolve(window.JadvalApp?.localReady).then(bootstrap);setInterval(()=>{if(remoteReady&&!loading&&document.visibilityState==='visible'&&!document.querySelector('dialog[open]'))loadCentral();},90000);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

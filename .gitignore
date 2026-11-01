@@ -11,3 +11,9 @@ jadval_entries_*.json
 *.db
 .env
 .env.*
+
+
+node_modules/
+*-debug.log
+jadval-*backup*.json
+jadval-conflict-*.json

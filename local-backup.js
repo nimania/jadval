@@ -1,0 +1,17 @@
+/* Full, lossless local backup. Export is available even before Firebase login. */
+(function(){
+'use strict';
+const $=id=>document.getElementById(id),S=window.JadvalSafety;
+let verified=null;
+function open(){return new Promise((resolve,reject)=>{const r=indexedDB.open('jadval-studio',1);r.onupgradeneeded=()=>r.result.createObjectStore('state');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+async function readState(){const db=await open();try{return await new Promise((resolve,reject)=>{const state={},tx=db.transaction('state','readonly'),r=tx.objectStore('state').openCursor();r.onsuccess=()=>{const c=r.result;if(c){state[c.key]=c.value;c.continue();}};tx.oncomplete=()=>resolve(state);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('خواندن پشتیبان متوقف شد.'));});}finally{db.close();}}
+async function put(key,value){const db=await open();try{await new Promise((resolve,reject)=>{const tx=db.transaction('state','readwrite');tx.objectStore('state').put(value,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('ذخیره محلی متوقف شد.'));});}finally{db.close();}}
+function download(value,name){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
+async function refresh(){const state=await readState();const n=state.bank?.entries?.length||0,p=state['pending-cloud-edits']?.entries?.length||0;$('localBackupStatus').textContent='بانک ذخیره‌شدهٔ این مرورگر: '+n+' مدخل؛ ویرایش معلق: '+p+'.';return state;}
+async function exportFull(){const state=await readState();const payload={schema:2,project:'jadval-studio',exportedAt:new Date().toISOString(),state,visibleEntries:window.JadvalApp?.getLocal?.()||[]};payload.checksum=await S.digest({state:payload.state,visibleEntries:payload.visibleEntries});download(payload,'jadval-full-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json');verified=null;$('localBackupStatus').textContent='دانلود پشتیبان کامل درخواست شد. فایل ذخیره‌شده را با «بررسی فایل پشتیبان» انتخاب کن تا سلامت و تطابق آن تأیید شود.';}
+async function verifyFile(event){try{const file=event.target.files[0];if(!file)return;const payload=JSON.parse(await file.text());const state=await readState();S.verifyBackup(payload,state);if(payload.checksum!==await S.digest({state:payload.state,visibleEntries:payload.visibleEntries}))throw Error('اثر انگشت فایل پشتیبان صحیح نیست.');verified=await S.digest(state);$('localBackupStatus').textContent='پشتیبان کامل با SHA-256 تأیید شد؛ '+(state.bank?.entries?.length||0)+' مدخل و تمام ویرایش‌های معلق محفوظ‌اند.';}catch(e){verified=null;$('localBackupStatus').textContent='تأیید پشتیبان ناموفق: '+e.message;}finally{event.target.value='';}}
+async function assertVerified(){const state=await readState();if(!verified||verified!==await S.digest(state))throw Error('ابتدا پشتیبان کامل تازه بگیر و فایل ذخیره‌شده را دوباره برای بررسی انتخاب کن.');return state;}
+window.JadvalBackup={readState,put,download,refresh,exportFull,assertVerified};
+$('cloudBackup').onclick=()=>exportFull().catch(e=>{$('localBackupStatus').textContent=e.message;});$('cloudVerifyBackup').onchange=verifyFile;
+Promise.resolve(window.JadvalApp?.localReady).then(refresh).catch(e=>{$('localBackupStatus').textContent='خطا در خواندن بانک مرورگر: '+e.message;});
+})();

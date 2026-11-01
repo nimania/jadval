@@ -1,79 +1,73 @@
 rules_version = '2';
 service cloud.firestore {
-  match /databases/{database}/documents {
-    function isEditor() {
-      return request.auth != null &&
-        get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
-    }
-
-    function validEntry(d) {
-      return d.keys().hasAll(['id', 'answer', 'clue', 'letters', 'reviewed', 'revision']) &&
-        d.keys().hasOnly(['id','answer','clue','letters','category','difficulty',
-                          'reviewed','source','license','revision','createdAt','updatedAt']) &&
-        d.id is string && d.id.size() > 0 &&
-        d.answer is string && d.answer.size() > 0 && d.answer.size() <= 160 &&
-        d.clue is string && d.clue.size() > 0 && d.clue.size() <= 1500 &&
-        d.letters is int && d.letters >= 2 && d.letters <= 30 &&
-        d.reviewed is int && (d.reviewed == 0 || d.reviewed == 1) &&
-        d.revision is int && d.revision >= 1 &&
-        d.get('category','') is string &&
-        d.get('difficulty','') is string &&
-        d.get('source','') is string &&
-        d.get('license','') is string;
-    }
-
-    // Provision accounts via Firebase Console/Admin SDK only.
-    // Authentication alone NEVER grants access to the question bank.
-    match /admins/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow create, update, delete: if false;
-    }
-
-    match /entries/{entryId} {
-      allow read: if isEditor();
-      allow create: if isEditor() &&
-        validEntry(request.resource.data) &&
-        request.resource.data.revision == 1;
-      allow update: if isEditor() &&
-        validEntry(request.resource.data) &&
-        request.resource.data.id == resource.data.id &&
-        request.resource.data.get('createdAt','') == resource.data.get('createdAt','') &&
-        request.resource.data.revision == resource.data.revision + 1;
-      allow delete: if false;
-    }
-
-    // A browser migration may be resumed after a network interruption.
-    // No one can seed or finalize a bank without an explicit editor grant.
-    match /meta/{metaId} {
-      allow read: if isEditor() && metaId == 'bank';
-      allow create: if isEditor() && metaId == 'bank' &&
-        request.resource.data.status == 'importing' &&
-        request.resource.data.owner == request.auth.uid &&
-        request.resource.data.expected is int &&
-        request.resource.data.expected > 0;
-      allow update: if isEditor() && metaId == 'bank' &&
-        resource.data.owner == request.auth.uid &&
-        request.resource.data.owner == resource.data.owner &&
-        request.resource.data.expected == resource.data.expected &&
-        resource.data.status == 'importing' &&
-        (request.resource.data.status == 'importing' ||
-         request.resource.data.status == 'ready');
-      allow delete: if false;
-    }
-
-    match /puzzles/{puzzleId} {
-      allow read: if isEditor();
-      allow create, update: if isEditor();
-      allow delete: if false;
-    }
-
-    match /auditLogs/{eventId} {
-      allow read: if isEditor();
-      allow write: if false;
-    }
-
-    match /{document=**} {
-      allow read, write: if false;
-    }
+ match /databases/{database}/documents {
+  function isEditor() {
+   return request.auth != null && request.auth.token.email_verified == true &&
+    request.auth.token.firebase.sign_in_provider == 'google.com' &&
+    get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.enabled == true;
   }
+  function bank() { return get(/databases/$(database)/documents/meta/bank).data; }
+  function bankAfter() { return getAfter(/databases/$(database)/documents/meta/bank).data; }
+  function validEntry(d) {
+   return d.keys().hasAll(['id','answer','clue','letters','category','difficulty','reviewed','source','license','legacy','revision','generation','createdAt','updatedAt']) &&
+    d.keys().hasOnly(['id','answer','clue','letters','category','difficulty','reviewed','source','license','legacy','revision','generation','createdAt','updatedAt']) &&
+    d.id is string && d.id.size()>0 && d.id.size()<=500 &&
+    d.answer is string && d.answer.size()>0 && d.answer.size()<=160 &&
+    d.clue is string && d.clue.size()>0 && d.clue.size()<=1500 &&
+    d.letters is int && d.letters>=1 && d.letters<=30 &&
+    d.category is string && d.difficulty is string && d.source is string && d.license is string && d.legacy is map &&
+    d.reviewed is int && d.reviewed in [0,1] && d.revision is int && d.revision>=1 &&
+    d.generation is int && d.generation>=0 && d.createdAt is timestamp && d.updatedAt==request.time;
+  }
+  function editing(entryId,added) {
+   return bank().status=='ready' && bankAfter().status=='ready' &&
+    bankAfter().generation==bank().generation+1 &&
+    request.resource.data.generation==bankAfter().generation &&
+    bankAfter().lastEntry==entryId && bankAfter().count==bank().count+added;
+  }
+  match /admins/{uid} {
+   allow get: if request.auth!=null && request.auth.uid==uid;
+   allow list,create,update,delete: if false;
+  }
+  match /entries/{entryId} {
+   allow read: if isEditor();
+   allow create: if isEditor() && validEntry(request.resource.data) && request.resource.data.revision==1 &&
+    request.resource.data.createdAt==request.time &&
+    ((bank().status=='importing' && bank().owner==request.auth.uid && request.resource.data.generation==0) || editing(entryId,1));
+   // During migration batch.set may create only: it can NEVER overwrite a racing or existing document.
+   allow update: if isEditor() && validEntry(request.resource.data) && editing(entryId,0) &&
+    request.resource.data.id==resource.data.id && request.resource.data.createdAt==resource.data.createdAt &&
+    request.resource.data.revision==resource.data.revision+1;
+   allow delete: if false;
+  }
+  function validMeta(d) {
+   return d.keys().hasAll(['schema','status','owner','expected','fingerprint','startedAt']) &&
+    d.keys().hasOnly(['schema','status','owner','expected','fingerprint','startedAt','completedAt','count','generation','lastEntry']) &&
+    d.schema==2 && d.owner is string && d.expected is int && d.expected>0 &&
+    d.fingerprint is string && d.fingerprint.matches('^[a-f0-9]{64}$') && d.startedAt is timestamp;
+  }
+  match /meta/bank {
+   allow read: if isEditor();
+   allow create: if isEditor() && validMeta(request.resource.data) &&
+    request.resource.data.status=='importing' && request.resource.data.owner==request.auth.uid &&
+    request.resource.data.startedAt==request.time;
+   allow update: if isEditor() && validMeta(request.resource.data) &&
+    request.resource.data.owner==resource.data.owner && request.resource.data.expected==resource.data.expected &&
+    request.resource.data.fingerprint==resource.data.fingerprint && request.resource.data.startedAt==resource.data.startedAt &&
+    ((resource.data.status=='importing' && resource.data.owner==request.auth.uid &&
+      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','count','generation','completedAt']) &&
+      request.resource.data.status=='ready' && request.resource.data.count==resource.data.expected &&
+      request.resource.data.generation==0 && request.resource.data.completedAt==request.time) ||
+     (resource.data.status=='ready' && request.resource.data.status=='ready' &&
+      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['count','generation','lastEntry']) &&
+      request.resource.data.generation==resource.data.generation+1 &&
+      request.resource.data.count is int && request.resource.data.count>=resource.data.count && request.resource.data.count<=resource.data.count+1 &&
+      request.resource.data.lastEntry is string &&
+      getAfter(/databases/$(database)/documents/entries/$(request.resource.data.lastEntry)).data.generation==request.resource.data.generation));
+   allow delete: if false;
+  }
+  match /puzzles/{id} { allow read: if isEditor(); allow write: if false; }
+  match /auditLogs/{id} { allow read: if isEditor(); allow write: if false; }
+  match /{document=**} { allow read,write: if false; }
+ }
 }

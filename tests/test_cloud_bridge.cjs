@@ -13,7 +13,7 @@ const window={
 let boot;
 const document={readyState:'loading',getElementById:get,
  addEventListener:(kind,handler)=>{if(kind==='DOMContentLoaded')boot=handler}};
-const context={window,document,Promise,Date,Math,Set,Map,JSON,console};
+const context={window,document,Promise,Date,Math,Set,Map,JSON,console,setInterval:()=>0};
 vm.runInNewContext(src,context,{filename:'cloud-bridge.js'});
 assert.equal(typeof window.JadvalCloud.saveEntry,'function');
 assert.equal(window.JadvalCloud.isReady(),false);
@@ -31,3 +31,4 @@ setImmediate(()=>{
  assert(html.includes('src="./cloud-bridge.js"'));
  console.log('Cloud bridge is safe by default and UI integration is present');
 });
+

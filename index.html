@@ -70,8 +70,12 @@ html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:n
 <button class="btn" id="cloudReload" disabled>دریافت آخرین تغییرات</button>
 <button class="btn" id="cloudImport" disabled>انتقال بانک این مرورگر به سرور</button>
 <button class="btn" id="cloudLogout" disabled>خروج از حساب</button>
+<button class="btn" id="cloudBackup">پشتیبان کامل این مرورگر ↓</button>
+<label class="btn" for="cloudVerifyBackup">بررسی فایل پشتیبان</label><input id="cloudVerifyBackup" type="file" accept=".json,application/json">
 </div>
-<p class="muted small">قبل از انتقال اولیه از «خروجی و پشتیبان JSON» استفاده کن. داده‌ها بدون تأیید تو به سرور فرستاده نمی‌شوند.</p>
+<p id="localBackupStatus" class="note" role="status"></p>
+<div id="cloudPending"></div>
+<p class="muted small">قبل از انتقال اولیه از «پشتیبان کامل این مرورگر» استفاده و فایل دانلودشده را با «بررسی فایل پشتیبان» تأیید کن. داده‌ها بدون تأیید تو به سرور فرستاده نمی‌شوند.</p>
 </section>
 <div class="stats"><div class="stat"><span class="num" id="total">۰</span><span class="label">مدخل‌های بانک</span></div><div class="stat"><span class="num" id="approved">۰</span><span class="label">بازبینی‌شده</span></div><div class="stat"><span class="num" id="answers">۰</span><span class="label">پاسخ متفاوت</span></div><div class="stat"><span class="num" id="visible">۰</span><span class="label">نتیجه جست‌وجو</span></div></div>
 <section class="panel" id="lengthManagement">
@@ -86,9 +90,9 @@ html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:n
 <div id="classicPreview" hidden><p id="classicPreviewMeta" class="muted small"></p><div class="demo-grid" id="classicPreviewGrid" aria-label="پیش‌نمایش الگوی خام، نه جدول کامل"></div><p class="note">این فقط طرح خانه‌های سیاه است؛ خانه‌های سفید هنوز پاسخ ندارند و این طرح قابل انتشار یا دانلود به‌عنوان جدول نیست.</p></div><div id="demoResult" hidden><p id="demoMeta" class="muted small"></p><div class="demo-layout"><div><div class="demo-grid" id="demoGrid"></div><div class="toolbar" style="align-items:center"><label><input type="checkbox" id="showAnswers" checked> نمایش جواب‌ها</label><button class="btn" id="downloadDemo">دریافت فایل JSON جدول</button></div></div><div id="demoClues"></div></div></div>
 </section>
 <section class="panel"><h2>جست‌وجو و فیلتر</h2><div class="filters"><input type="text" id="search" placeholder="جست‌وجو در سؤال، جواب یا شناسه…" aria-label="جست‌وجو"><select id="category" aria-label="موضوع"><option value="">همه موضوع‌ها</option></select><select id="reviewed" aria-label="وضعیت بازبینی"><option value="">همه وضعیت‌ها</option><option value="0">نیازمند بازبینی</option><option value="1">بازبینی‌شده</option></select><select id="difficulty" aria-label="درجه سختی"><option value="">همه درجه‌های سختی</option><option value="easy">آسان</option><option value="medium">متوسط</option><option value="hard">سخت</option><option value="unknown">نامشخص</option></select></div>
-<p id="message" class="note" role="status">برای شروع فایل jadval_entries_19804.json را وارد کنید. داده‌ها به سرور ارسال نمی‌شوند و فقط در همین مرورگر ذخیره می‌شوند.</p></section>
+<p id="message" class="note" role="status">پس از ورود مدیر، بانک خصوصی از سرور دریافت می‌شود. انتقال اولیه فقط پس از بررسی پشتیبان و تطبیق داده‌ها انجام می‌شود.</p></section>
 <section class="panel"><div class="toolbar" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">فهرست سؤال‌ها</h2><button class="btn" id="suggest" disabled>دسته‌بندی پیشنهادی برای مدخل‌های بدون موضوع</button></div><div id="empty" class="empty">هنوز بانک سؤال‌وجواب وارد نشده است.</div><div id="tableArea" hidden><div class="table-scroll"><table><thead><tr><th>سؤال</th><th>جواب</th><th>موضوع</th><th>تعداد حروف</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="rows"></tbody></table></div><div class="pager"><button class="btn" id="prev">صفحهٔ قبل</button><span id="page"></span><button class="btn" id="next">صفحهٔ بعد</button></div></div></section>
-<p class="muted small">این محیط ابزار داخلی است. بارگذاری داده و تغییرات در حافظهٔ همین مرورگر انجام می‌شود؛ برای پشتیبان دائمی از «خروجی JSON» استفاده کنید. پاک‌شدن دادهٔ مرورگر ممکن است تغییرات محلی را از بین ببرد.</p>
+<p class="muted small">بانک مرکزی خصوصی است؛ ویرایش موفق در Firestore ثبت می‌شود. ویرایش ناموفق جداگانه در همین مرورگر محفوظ می‌ماند و نیاز به رسیدگی دارد. نسخهٔ پشتیبان مستقل را نگه دارید.</p>
 </main>
 <dialog id="longEntryDialog"><form id="newEntryForm">
 <h2>افزودن مدخل جدید به بانک</h2>
@@ -96,7 +100,7 @@ html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:n
 <div class="field"><label for="newAnswer">جواب (۲ تا ۳۰ حرف)</label><input id="newAnswer" required type="text"></div>
 <div class="field"><label for="newSource">منبع و مستندات پاسخ</label><input id="newSource" required type="text" placeholder="مثلاً واژه‌نامه، منبع تاریخی یا تألیف شخصی"></div>
 <div class="field"><label for="newCategory">موضوع</label><select id="newCategory"><option>عمومی</option><option>ادبیات و زبان</option><option>تاریخ</option><option>جغرافیا</option><option>علم و فناوری</option><option>سینما و هنر</option><option>ورزش</option><option>موسیقی</option><option>سایر</option></select></div>
-<p class="muted small">مدخل با وضعیت «بررسی‌نشده» ثبت می‌شود. داده فقط در مرورگر ذخیره می‌شود؛ از بانک نسخهٔ پشتیبان بگیر.</p>
+<p class="muted small">مدخل با وضعیت «بررسی‌نشده» در بانک مرکزی ثبت می‌شود. خطای ذخیره به‌صورت ویرایش معلق حفظ خواهد شد.</p>
 <p id="longError" role="alert" style="color:#b34334"></p>
 <div class="dialog-actions"><button class="btn" id="closeLongEntry" type="button">انصراف</button><button class="btn primary" type="submit">افزودن به بانک</button></div>
 </form></dialog>
@@ -138,19 +142,20 @@ $('page').textContent=nf.format(filtered.length? page+1:0)+' / '+nf.format(Math.
 function selectEntry(id){let x=entries.find(v=>v.id===id);if(!x)return;$('editId').value=x.id;$('editClue').value=x.clue;$('editAnswer').value=x.answer;$('editCategory').value=categories.includes(x.category)?x.category:'سایر';$('editDifficulty').value=['easy','medium','hard'].includes(x.difficulty)?x.difficulty:'unknown';$('editReviewed').checked=!!x.reviewed;$('editor').showModal()}
 $('rows').addEventListener('click',e=>{let b=e.target.closest('button[data-edit]');if(b)selectEntry(b.dataset.edit)});
 $('cancel').onclick=()=>$('editor').close();
-$('editForm').onsubmit=async e=>{e.preventDefault();let x=entries.find(v=>v.id===$('editId').value);if(!x)return;let answer=normalize($('editAnswer').value);if(!answer){status('پاسخ معتبر نیست.');return}x.clue=$('editClue').value.trim();x.answer=answer;x.letters=[...answer].length;x.category=$('editCategory').value;x.difficulty=$('editDifficulty').value;x.reviewed=$('editReviewed').checked?1:0;dirty=true;let cloudError=null;
+$('editForm').onsubmit=async e=>{e.preventDefault();if(window.JadvalCloud?.configIsReady()&&!window.JadvalCloud?.canEdit()){status('بانک مرکزی آماده نیست؛ ویرایش متوقف شد.');return;}let x=entries.find(v=>v.id===$('editId').value);if(!x)return;let answer=normalize($('editAnswer').value);if(!answer){status('پاسخ معتبر نیست.');return}x.clue=$('editClue').value.trim();x.answer=answer;x.letters=[...answer].length;x.category=$('editCategory').value;x.difficulty=$('editDifficulty').value;x.reviewed=$('editReviewed').checked?1:0;dirty=true;let cloudError=null;
 if(window.JadvalCloud?.isReady()){try{await window.JadvalCloud.saveEntry(x)}catch(err){cloudError=err;await window.JadvalApp.backupPendingEntry(x);}}
 else await save();
 $('editor').close();updateCategories();applyFilters();
 status(cloudError?'ویرایش فقط در این دستگاه ذخیره شد؛ همگام‌سازی ناموفق: '+cloudError.message:
   window.JadvalCloud?.isReady()?'ویرایش در بانک مرکزی ذخیره شد.':'ویرایش در مرورگر ذخیره شد؛ از بانک نسخهٔ پشتیبان بگیر.')};
 $('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;
+ if(window.JadvalCloud?.configIsReady()&&!window.JadvalCloud?.canEdit()){status('بانک آماده نیست؛ واردسازی متوقف شد.');e.target.value='';return}
  if(window.JadvalCloud?.isReady()){status('در حالت بانک مرکزی، فایل JSON را جایگزین بانک نکن. برای انتقال از دکمهٔ انتقال بانک استفاده کن.');e.target.value='';return}
  if(window.JadvalCloud?.configIsReady()&&!window.JadvalCloud?.isConnected()){status('برای واردکردن بانک ابتدا با حساب مدیر وارد شو.');e.target.value='';return}
  try{let data=JSON.parse(await f.text());let arr=Array.isArray(data)?data:data.entries;if(!Array.isArray(arr)||!arr.length||arr.some(x=>!x.id||typeof x.clue!=='string'||typeof x.answer!=='string'))throw Error('فرمت بانک معتبر نیست.');if(entries.length&&!confirm('بانک کنونی با فایل جدید جایگزین شود؟ ابتدا خروجی پشتیبان بگیرید.'))return;entries=arr.map(x=>({...x,category:x.category||'دسته‌بندی‌نشده',difficulty:x.difficulty||'unknown',reviewed:x.reviewed?1:0}));await save();dirty=false;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل وارد و در مرورگر ذخیره شد.')}catch(err){status('خطای خواندن فایل: '+err.message)}finally{e.target.value=''}};
 $('export').onclick=()=>{let payload=JSON.stringify({schema:1,exportedAt:new Date().toISOString(),entries},null,2);let blob=new Blob([payload],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='jadval-bank-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);dirty=false;status('فایل پشتیبان دانلود شد.')};
 $('clear').onclick=async()=>{if(window.JadvalCloud?.configIsReady()){status('پاک‌کردن بانک از این صفحه در حالت مرکزی مسدود است.');return}if(!confirm('بانک و تمام تغییرات ذخیره‌شده در این مرورگر پاک شود؟ این کار برگشت‌پذیر نیست.'))return;entries=[];await save();updateCategories();applyFilters();status('بانک مرورگر پاک شد.')};
-$('suggest').onclick=async()=>{if(window.JadvalCloud?.isReady()){status('دسته‌بندی گروهی در حالت مرکزی تا تکمیل ثبت نسخه‌دار غیرفعال است.');return}let n=0;for(const x of entries){if(x.category&&x.category!=='دسته‌بندی‌نشده')continue;let hit=rules.find(([cat,re])=>re.test(x.clue));if(hit){x.category=hit[0];n++}}if(n){await save();updateCategories();applyFilters()}status(nf.format(n)+' مدخل دسته‌بندی پیشنهادی دریافت کردند؛ این دسته‌بندی ماشینی است و نیاز به بازبینی دارد.')};
+$('suggest').onclick=async()=>{if(window.JadvalCloud?.configIsReady()){status('دسته‌بندی گروهی در حالت مرکزی تا تکمیل ثبت نسخه‌دار غیرفعال است.');return}let n=0;for(const x of entries){if(x.category&&x.category!=='دسته‌بندی‌نشده')continue;let hit=rules.find(([cat,re])=>re.test(x.clue));if(hit){x.category=hit[0];n++}}if(n){await save();updateCategories();applyFilters()}status(nf.format(n)+' مدخل دسته‌بندی پیشنهادی دریافت کردند؛ این دسته‌بندی ماشینی است و نیاز به بازبینی دارد.')};
 for(const id of ['search','category','reviewed','difficulty'])$(id).addEventListener(id==='search'?'input':'change',applyFilters);
 $('prev').onclick=()=>{page=Math.max(0,page-1);render()};$('next').onclick=()=>{page++;render()};
 window.JadvalApp={
@@ -160,10 +165,11 @@ window.JadvalApp={
   try{await new Promise((resolve,reject)=>{
    const tx=db.transaction("state","readwrite"),store=tx.objectStore("state");
    const req=store.get("pending-cloud-edits");
-   req.onsuccess=()=>{const pending=req.result?.entries||[];
+   req.onsuccess=()=>{const pending=req.result?.entries||[],history=req.result?.history||[];
+    history.push({item:{...item},savedAt:new Date().toISOString()});
     const duplicate=pending.findIndex(x=>x.id===item.id);
     if(duplicate>=0)pending[duplicate]={...item};else pending.push({...item});
-    store.put({entries:pending,createdAt:new Date().toISOString()},"pending-cloud-edits");
+    store.put({entries:pending,history,createdAt:new Date().toISOString()},"pending-cloud-edits");
    };
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);
   })}finally{db.close()}
@@ -192,4 +198,4 @@ window.JadvalApp.localReady=restore().then(data=>{
  if(data?.entries?.length){entries=data.entries;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل از حافظهٔ مرورگر بازیابی شد.')}
  else render();
 }).catch(e=>status('ذخیره‌سازی محلی در این مرورگر فعال نیست: '+e.message));
-</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script><script src="./bank-tools.js"></script><script src="./verified-sample-15.js"></script><script src="./cloud-bridge.js"></script></body></html>
+</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script><script src="./bank-tools.js"></script><script src="./verified-sample-15.js"></script><script src="./cloud-safety.js"></script><script src="./local-backup.js"></script><script src="./cloud-bridge.js"></script></body></html>
