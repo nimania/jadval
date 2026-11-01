@@ -212,7 +212,11 @@ function solve(mask,entries,{limitMs=9000,limitNodes=140000,seed=0}={}){
   direction:'rtl',language:'fa',method:'classic-csp-ac3'}},mask};
 }
 function tryMasks(masks,entries,opts={}){
- const budget=opts.totalMs||12000,start=Date.now(),reports=[];
+ const requested=Number(opts.totalMs),budget=Number.isFinite(requested)?Math.max(500,Math.min(60000,requested)):12000;
+ const start=Date.now(),reports=[];
+ // Longer user-selected sessions give promising candidate masks deeper search,
+ // without making the default 12-second worker more expensive.
+ const perMaskLimit=budget>12000?Math.min(24000,Math.max(4800,Math.floor(budget/4))):4800;
  // Pre-check every candidate grid. A geometrically valid mask can still be
  // useless if the bank does not support one or more crossing positions.
  const ranked=masks.map((mask,index)=>({mask,index,assessment:inspect(mask,entries)}))
@@ -225,7 +229,7 @@ function tryMasks(masks,entries,opts={}){
                  score:assessment.score,missingLengths:assessment.missingLengths||[]});
    continue;
   }
-  const r=solve(mask,entries,{limitMs:Math.min(4800,remaining),limitNodes:120000,seed:(opts.seed||0)+index});
+  const r=solve(mask,entries,{limitMs:Math.min(perMaskLimit,remaining),limitNodes:120000,seed:(opts.seed||0)+index});
   reports.push({status:r.status,slotCount:r.slotCount,bestDepth:r.bestDepth,nodes:r.nodes,
                 initialPruned:r.initialPruned||0,score:assessment.score,
                 missingLengths:r.missingLengths||[],elapsedMs:r.elapsedMs||0});
