@@ -20,6 +20,8 @@ assert(Number.isInteger(solution.initialPruned),'Pruning diagnostics must be rep
 assert(solution.puzzle.grid.every(row=>row.every(Boolean)));
 const solution2=tryMasks([grid],entries,{totalMs:1500});
 assert.equal(solution2.status,'solved');
+const deepSolution=tryMasks([grid],entries,{totalMs:60000,seed:42});
+assert.equal(deepSolution.status,'solved','Deep mode must keep complete-only behavior');
 const empty=solve(grid,[],{limitMs:100});
 assert.equal(empty.status,'missing-lengths');
 assert.equal(inspect(grid,[]).status,'missing-lengths');
