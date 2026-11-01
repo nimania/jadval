@@ -15,6 +15,7 @@ on:
       - import_puzzles.py
       - build_database.py
       - generate.py
+      - tools/**
       - tests/**
       - .github/workflows/validate.yml
   workflow_dispatch:
@@ -29,7 +30,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Check Python importer unit tests
-        run: python3 -m unittest discover -s tests -v
+        run: |
+          python3 -m py_compile generate.py tools/convert_claude_crossword.py
+          python3 -m unittest discover -s tests -v
       - name: Check browser JavaScript syntax
         run: |
           python3 - <<'PY'
