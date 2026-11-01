@@ -31,6 +31,30 @@ const fs=require('node:fs'),assert=require('node:assert/strict');
   await ok(write(second,2,'device two'));assert.equal((await getDoc(ref)).data().revision,3);checks++;
   const bad=writeBatch(owner);bad.update(ref,{revision:4,id:'changed',generation:3,updatedAt:serverTimestamp()});bad.update(meta,{generation:3,lastEntry:'one'});await no(bad.commit());
   await no(setDoc(doc(anon,'entries','attack'),row('attack')));await no(setDoc(doc(stranger,'entries','attack'),row('attack')));
-  console.log('PASS: '+checks+' security/version checks; create-only migration batch of 100; two isolated clients see each other’s edits; stale edits denied.');
+  // The public catalogue is readable by everyone; only a verified editor
+  // may CREATE an explicitly approved minimal puzzle (never update or delete).
+  const publicId='pub_'+'a'.repeat(24);
+  const published=()=>({
+   id:publicId,title:'جدول شماره یک',size:7,publishedAt:serverTimestamp(),
+   approvedBy:'owner',editorApproved:true,
+   puzzle:{version:3,grid:Array.from({length:7},()=>Array(7).fill('ا')),
+    clues:{horizontal:{'1':['پرسش بانک']},vertical:{'1':['پرسش بانک']}},
+    meta:{title:'جدول شماره یک',size:{rows:7,cols:7},
+     language:'fa',direction:'rtl',status:'published',method:'editor-approved'}}
+  });
+  const pubOwner=doc(owner,'publishedPuzzles',publicId);
+  await ok(getDocs(collection(anon,'publishedPuzzles')));
+  await no(setDoc(doc(anon,'publishedPuzzles',publicId),published()));
+  await no(setDoc(doc(stranger,'publishedPuzzles',publicId),published()));
+  await no(setDoc(doc(unverified,'publishedPuzzles',publicId),published()));
+  await no(setDoc(pubOwner,{...published(),privateEntries:['must not leak']}));
+  await no(setDoc(pubOwner,{...published(),editorApproved:false}));
+  await ok(setDoc(pubOwner,published()));
+  await ok(getDoc(doc(anon,'publishedPuzzles',publicId)));
+  await ok(getDocs(collection(anon,'publishedPuzzles')));
+  await no(updateDoc(pubOwner,{title:'replaced'}));
+  await no(deleteDoc(pubOwner));
+  await no(setDoc(pubOwner,published()));
+  console.log('PASS: '+checks+' security/version/publication checks; public read only, editor create only, no private bank access.');
  }finally{await env.cleanup();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
