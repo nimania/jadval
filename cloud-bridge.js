@@ -107,25 +107,66 @@ async function assertPrivate(){
   verifiedSecurity=true;
  }finally{await storeSdk.terminate(probeDb);await appSdk.deleteApp(probe);}
 }
+// Browser-native prompt/confirm dialogs can be suppressed by automated browser
+// debugging. Keep migration consent in an accessible, explicit page dialog.
+function migrationConsent(title,description,{number=false,approveLabel='ادامه'}={}){
+ return new Promise((resolve,reject)=>{
+  const dialog=document.createElement('dialog');
+  dialog.setAttribute('aria-label',title);
+  dialog.setAttribute('dir','rtl');
+  dialog.style.cssText='width:min(92vw,560px);max-width:92vw;border:1px solid #d6dfe7;border-radius:15px;padding:24px;background:#fff;color:#1b2734;box-shadow:0 18px 55px #18232d55;';
+  const form=document.createElement('form');
+  form.setAttribute('novalidate','');
+  const heading=document.createElement('h2');heading.textContent=title;
+  const details=document.createElement('p');details.textContent=description;details.style.cssText='white-space:pre-line;line-height:1.9;margin:12px 0;color:#526778;';
+  form.append(heading,details);
+  let field=null;
+  if(number){
+   field=document.createElement('input');field.type='text';field.inputMode='numeric';
+   field.autocomplete='off';field.dir='ltr';field.required=true;
+   field.setAttribute('aria-label',title);field.placeholder='عدد را وارد کن';
+   field.style.cssText='display:block;width:100%;padding:12px;border:1px solid #afbdc9;border-radius:9px;margin:12px 0 18px;text-align:left;';
+   form.append(field);
+  }
+  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;justify-content:flex-start;flex-wrap:wrap;margin-top:20px;';
+  const approve=document.createElement('button');approve.type='submit';approve.className='btn primary';approve.textContent=approveLabel;
+  const cancel=document.createElement('button');cancel.type='button';cancel.className='btn';cancel.textContent='انصراف';
+  actions.append(approve,cancel);form.append(actions);dialog.append(form);
+  let settled=false;
+  const finish=value=>{if(settled)return;settled=true;dialog.close();dialog.remove();resolve(value);};
+  form.addEventListener('submit',event=>{event.preventDefault();if(number&&!field.value.trim()){field.focus();return;}finish(number?field.value:true);});
+  cancel.addEventListener('click',()=>finish(null));
+  dialog.addEventListener('cancel',event=>{event.preventDefault();finish(null);});
+  document.body.append(dialog);
+  try{dialog.showModal();(field||approve).focus();}catch(error){dialog.remove();reject(error);}
+ });
+}
+function parseConfirmedCount(value){
+ const normalized=String(value??'').trim().replace(/[۰-۹٠-٩]/g,ch=>{
+  const code=ch.charCodeAt(0);return String(code>=0x06F0?code-0x06F0:code-0x0660);
+ }).replace(/[\s,٬]/g,'');
+ return /^\d+$/.test(normalized)?Number(normalized):NaN;
+}
 async function importBrowser(){
  if(!administrator||loading||remoteReady)return;
  loading=true;source='locked';buttons();const uid=administrator.uid,token=epoch;
  try{
   const stored=await B.assertVerified();if(stored['pending-cloud-edits']?.entries?.length)throw Error('ویرایش معلق موجود است؛ ابتدا تعارض‌ها را بررسی کن.');
   const plan=await S.prepare(stored.bank?.entries||[]);
-  const expected=prompt('تعداد مدخل‌های بانک اصلی را برای تطبیق وارد کن (تعداد این مرورگر: '+plan.count+'):');
-  if(expected===null)return;if(!/^\d+$/.test(expected)||Number(expected)!==plan.count)throw Error('تعداد تأییدشده با بانک مرورگر یکسان نیست.');
+  const expected=await migrationConsent('تأیید تعداد بانک','برای ادامه باید تعداد دقیق مدخل‌های بانک اصلی را وارد کنی.\nتعداد ذخیره‌شده در این مرورگر: '+plan.count+' مدخل.\nاین مرحله هیچ داده‌ای منتقل نمی‌کند.',{number:true,approveLabel:'تأیید تعداد'});
+  if(expected===null)return;if(parseConfirmedCount(expected)!==plan.count)throw Error('تعداد تأییدشده با بانک مرورگر یکسان نیست. عدد '+plan.count+' را وارد کن.');
   await assertPrivate();
   const marker=await api.getDocFromServer(bankRef()),info=marker.exists()?marker.data():null;
   if(info&&(info.status!=='importing'||info.schema!==2||info.owner!==uid||info.expected!==plan.count||info.fingerprint!==plan.fingerprint))throw Error('بانک یا مهاجرت دیگری موجود است؛ انتقال مسدود شد.');
   const docs=await api.getDocsFromServer(api.collection(db,'entries'));
   if(docs.size&&!info)throw Error('سرور دارای دادهٔ قبلی بدون نشانگر معتبر است؛ هیچ سندی بازنویسی نمی‌شود.');
   const missing=S.reconcile(plan.prepared,docs.docs.map(d=>({id:d.id,record:d.data()})));
-  const budgetInput=prompt('سهمیهٔ نوشتنِ باقی‌ماندهٔ امروز را پس از بررسی Usage در Firebase وارد کن. سقف رایگان ۲۰۰۰۰ است؛ این برنامه ۱۰۰ عملیات ذخیره نگه می‌دارد. تعداد رکورد جدید: '+missing.length+'.','');
-  if(budgetInput===null)return;const budget=Number(budgetInput);
-  if(!/^\d+$/.test(budgetInput)||budget>20000||budget<103)throw Error('سهمیهٔ تأییدشده معتبر نیست.');
+  const budgetInput=await migrationConsent('بررسی سهمیهٔ Firestore','پس از بررسی Usage در Firebase، فقط تعداد نوشتن باقی‌ماندهٔ امروز را وارد کن.\nسقف روزانهٔ رایگان: ۲۰۰۰۰؛ برنامه ۱۰۲ عملیات حاشیهٔ امن نگه می‌دارد.\nتعداد اسناد جدید لازم: '+missing.length+'.\nدر صورت نامشخص بودن سهمیه، انصراف را انتخاب کن.',{number:true,approveLabel:'بررسی سهمیه'});
+  if(budgetInput===null)return;const budget=parseConfirmedCount(budgetInput);
+  if(!Number.isInteger(budget)||budget>20000||budget<103)throw Error('سهمیهٔ تأییدشده معتبر نیست.');
   const allowance=Math.min(missing.length,budget-102);
-  if(!confirm('پشتیبان تأیید و دسترسی ناشناس رد شد. '+plan.count+' مدخل؛ '+docs.size+' رکورد موجودِ مطابق؛ '+allowance+' رکورد جدید در این نوبت. بدون بازنویسی رکورد موجود، انتقال به jadval-studio آغاز شود؟'))return;
+  const approved=await migrationConsent('تأیید نهایی انتقال','پشتیبان SHA-256 بررسی و دسترسی ناشناس رد شده است.\nکل بانک: '+plan.count+' مدخل؛ اسناد موجود و مطابق: '+docs.size+'؛ اسناد جدید برای این نوبت: '+allowance+'.\nهیچ سند موجود بازنویسی نمی‌شود. با تأیید این مرحله نوشتن واقعی در Firestore آغاز می‌شود.',{approveLabel:'تأیید و شروع انتقال'});
+  if(!approved)return;
   if(!still(token,uid))throw Error('حساب تغییر کرده است.');
   // Freeze the exact source: a second tab's edits invalidate the verified backup.
   await B.assertVerified();
