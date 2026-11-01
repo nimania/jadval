@@ -246,6 +246,7 @@ function groupedClueLines(puzzle,direction){
 function render(data){
  if(!validateWithBank(data,typeof entries!=="undefined"?entries:[]))throw Error("جواب‌ها یا سؤال‌های جدول با بانک محلی تطابق ندارند؛ نمایش متوقف شد.");
  last=data;
+ window.JadvalPublish?.onNewPuzzle?.();
  const grid=$("demoGrid"),section=$("demoResult"),clues=$("demoClues"),size=data.puzzle.grid.length;
  section.hidden=false;grid.replaceChildren();clues.replaceChildren();
  grid.style.gridTemplateColumns="repeat("+(size+1)+",minmax(0,1fr))";
@@ -403,5 +404,5 @@ function init(){
  $("downloadDemo").onclick=()=>{if(!last||!validateWithBank(last,typeof entries!=="undefined"?entries:[]))return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
-window.JadvalSparse={slotsFor,validMask,patterns,slotLengths,maskScore,solve,validateComplete,validateWithBank,groupedClueLines,compare};
+window.JadvalSparse={slotsFor,validMask,patterns,slotLengths,maskScore,solve,validateComplete,validateWithBank,groupedClueLines,getCurrentForPublication:()=>last,compare};
 })();
