@@ -232,6 +232,17 @@ function validateWithBank(data,bank){
  }
  return true;
 }
+// One number identifies a whole row (across) or column (down).
+// Keep each answer as its own array element in v3 JSON; join with the
+// requested hyphen only when presenting the printed clue list.
+function groupedClueLines(puzzle,direction){
+ const groups=puzzle?.clues?.[direction]||{};
+ return Object.entries(groups).sort((a,b)=>Number(a[0])-Number(b[0])).map(([num,questions])=>({
+  number:Number(num),
+  questions:[...questions],
+  text:new Intl.NumberFormat("fa-IR").format(Number(num))+" - "+questions.join(" - ")
+ }));
+}
 function render(data){
  if(!validateWithBank(data,typeof entries!=="undefined"?entries:[]))throw Error("جواب‌ها یا سؤال‌های جدول با بانک محلی تطابق ندارند؛ نمایش متوقف شد.");
  last=data;
@@ -262,10 +273,11 @@ function render(data){
  for(const [key,title] of [["horizontal","افقی"],["vertical","عمودی"]]){
   const wrap=document.createElement("div"),h=document.createElement("h3"),ul=document.createElement("ul");
   h.textContent=title;ul.className="demo-questions";
-  for(const [num,list] of Object.entries(data.puzzle.clues[key]).sort((a,b)=>Number(a[0])-Number(b[0]))){
-   for(const question of list){
-    const li=document.createElement("li");li.textContent=num+" — "+question;ul.append(li);
-   }
+  ul.dir="rtl";ul.style.listStyle="none";ul.style.paddingRight="0";
+  for(const line of groupedClueLines(data.puzzle,key)){
+   const li=document.createElement("li");
+   li.textContent=line.text;li.setAttribute("data-axis-number",String(line.number));
+   ul.append(li);
   }
   wrap.append(h,ul);clues.append(wrap);
  }
@@ -391,5 +403,5 @@ function init(){
  $("downloadDemo").onclick=()=>{if(!last||!validateWithBank(last,typeof entries!=="undefined"?entries:[]))return;const blob=new Blob([JSON.stringify(last.puzzle,null,2)],{type:"application/json"}),u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="jadval-draft-v2.json";a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
-window.JadvalSparse={slotsFor,validMask,patterns,slotLengths,maskScore,solve,validateComplete,validateWithBank,compare};
+window.JadvalSparse={slotsFor,validMask,patterns,slotLengths,maskScore,solve,validateComplete,validateWithBank,groupedClueLines,compare};
 })();
