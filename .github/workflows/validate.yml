@@ -16,6 +16,7 @@ on:
       - cloud-bridge.js
       - cloud-safety.js
       - local-backup.js
+      - publish.js
       - firebase/firestore.rules
       - import_puzzles.py
       - build_database.py
@@ -61,8 +62,10 @@ jobs:
           node --check cloud-bridge.js
           node --check cloud-safety.js
           node --check local-backup.js
+          node --check publish.js
           node --test tests/test_cloud_safety.cjs
           node tests/test_cloud_bridge.cjs
+          node tests/test_publish.cjs
           node tests/test_verified_sample_15.cjs
           node tests/test_classic_solver.cjs
           node tests/test_classic_patterns.cjs
