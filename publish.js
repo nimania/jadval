@@ -52,7 +52,9 @@ function openReview(){
   status.textContent=msg;if($('demoNote'))$('demoNote').textContent=msg;return;
  }
  if(!root.JadvalCloud?.canPublish?.()){
-  const msg='ابتدا با حساب مدیر جدول‌ساز در بخش پایگاه مرکزی وارد شو.';
+  const msg=!root.JadvalCloud?.isConnected?.()?
+   'ابتدا با حساب مدیر جدول‌ساز در بخش پایگاه مرکزی وارد شو.':
+   'ابتدا در بخش پایگاه مرکزی روی «بررسی دسترسی انتشار در پیام جدول» بزن و در صورت رد دسترسی، قواعد Firebase را فعال کن.';
   status.textContent=msg;if($('demoNote'))$('demoNote').textContent=msg;return;
  }
  const n=data.puzzle.grid.length;
