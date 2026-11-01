@@ -66,34 +66,18 @@ service cloud.firestore {
       getAfter(/databases/$(database)/documents/entries/$(request.resource.data.lastEntry)).data.generation==request.resource.data.generation));
    allow delete: if false;
   }
-  // Public visibility applies only to editorially approved, minimal puzzle
-  // documents. The private bank, drafts and admin records remain protected.
+  // Published grid data is an editor-reviewed JSON string. Firestore does not
+  // accept nested arrays inside a document (the v3 grid uses row arrays).
+  // Bank entries, drafts and admin data are never made public.
   function validPublicPuzzle(d, puzzleId) {
-   return d.keys().hasAll(['id','title','size','publishedAt','approvedBy','editorApproved','puzzle']) &&
-    d.keys().hasOnly(['id','title','size','publishedAt','approvedBy','editorApproved','puzzle']) &&
+   return d.keys().hasAll(['id','title','size','publishedAt','approvedBy','editorApproved','puzzleJson']) &&
+    d.keys().hasOnly(['id','title','size','publishedAt','approvedBy','editorApproved','puzzleJson']) &&
     d.id == puzzleId && d.id is string && d.id.matches('^pub_[A-Za-z0-9_-]{12,80}$') &&
     d.title is string && d.title.size()>0 && d.title.size()<=120 &&
     d.size is int && d.size in [7,10,15,20] &&
     d.publishedAt == request.time && d.approvedBy == request.auth.uid &&
     d.editorApproved == true &&
-    d.puzzle is map &&
-    d.puzzle.keys().hasAll(['version','grid','clues','meta']) &&
-    d.puzzle.keys().hasOnly(['version','grid','clues','meta']) &&
-    d.puzzle.version == 3 && d.puzzle.grid is list && d.puzzle.grid.size()==d.size &&
-    d.puzzle.grid[0] is list && d.puzzle.grid[0].size()==d.size &&
-    d.puzzle.clues is map &&
-    d.puzzle.clues.keys().hasOnly(['horizontal','vertical']) &&
-    d.puzzle.clues.keys().hasAll(['horizontal','vertical']) &&
-    d.puzzle.clues.horizontal is map && d.puzzle.clues.vertical is map &&
-    d.puzzle.meta is map &&
-    d.puzzle.meta.keys().hasOnly(['title','size','language','direction','status','method']) &&
-    d.puzzle.meta.keys().hasAll(['title','size','language','direction','status','method']) &&
-    d.puzzle.meta.title == d.title && d.puzzle.meta.status == 'published' &&
-    d.puzzle.meta.language == 'fa' && d.puzzle.meta.direction == 'rtl' &&
-    d.puzzle.meta.method == 'editor-approved' &&
-    d.puzzle.meta.size is map &&
-    d.puzzle.meta.size.keys().hasOnly(['rows','cols']) &&
-    d.puzzle.meta.size.rows == d.size && d.puzzle.meta.size.cols == d.size;
+    d.puzzleJson is string && d.puzzleJson.size()>30 && d.puzzleJson.size()<=60000;
   }
   match /publishedPuzzles/{puzzleId} {
    allow get, list: if true;
