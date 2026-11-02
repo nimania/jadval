@@ -8,6 +8,18 @@ const letters=/^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنو�
 const normalize=s=>String(s??'').replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u064b-\u065f\u0670\s\u200c\u200d\-ـ]/g,'');
 const normalizeClue=s=>String(s??'').trim().replace(/\s+/g,' ').replace(/[يى]/g,'ی').replace(/ك/g,'ک');
 const id=(r,c)=>r+','+c;
+const acceptedLicenses=new Set(['author-original','public-domain','permission-granted','licensed-content']);
+function sourceQualified(row,maxLength){
+ if(!row||(row.reviewed!==1&&row.reviewed!==true))return false;
+ if(root?.JadvalBankReadiness?.approved)return root.JadvalBankReadiness.approved(row,maxLength);
+ const answer=normalize(row.answer),source=String(row.source||'').trim();
+ return answer.length>=3&&answer.length<=maxLength &&
+  source.length>=14&&!/^(?:archive|legacy|unknown|نامشخص|آرشیو|جدول|فایل|بانک)[\s:،#\d-]*$/i.test(source)&&
+  acceptedLicenses.has(String(row.license||''))&&
+  ['easy','medium','hard'].includes(row.difficulty)&&
+  !!row.category&&!['عمومی','دسته‌بندی‌نشده','سایر'].includes(row.category);
+}
+
 const supported=new Set([7,10,15,20]);
 function audit(puzzle,bank){
  const errors=[],warnings=[],n=puzzle?.grid?.length;
@@ -129,10 +141,8 @@ function audit(puzzle,bank){
      const slot=items[i],clue=normalizeClue(puzzle.clues?.[dir]?.[group]?.[i]);
      const sources=byPair.get(normalize(slot.answer)+'\u0000'+clue)||[];
      if(!sources.length){fail('unmatched-bank','سرنخ/پاسخ '+dir+' '+group+' با بانک اصلی تطابق ندارد.');continue;}
-     const reviewed=sources.find(row=>(row.reviewed===true||row.reviewed===1)&&
-       typeof row.source==='string'&&row.source.trim()&&
-       typeof row.license==='string'&&row.license.trim());
-     if(!reviewed){fail('unreviewed','پاسخ '+slot.answer+' هنوز منبع و بازبینی انسانی قابل‌قبول ندارد.');continue;}
+     const reviewed=sources.find(row=>sourceQualified(row,n));
+     if(!reviewed){fail('unreviewed','پاسخ '+slot.answer+' هنوز بازبینی، منبع مشخص، مجوز انتشار، موضوع و سطح دشواری قابل‌قبول ندارد.');continue;}
      category.add(String(reviewed.category||'دسته‌بندی‌نشده'));
      difficulty.add(String(reviewed.difficulty||'unknown'));
     }
