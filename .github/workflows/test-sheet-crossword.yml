@@ -1,0 +1,31 @@
+name: Check 15x15 classic Sheets crossword studio
+
+on:
+  push:
+    branches: [feature/sheets-crossword-15-20261102]
+    paths:
+      - 'sheet-crossword-core.js'
+      - 'sheet-crossword.js'
+      - 'sheet-crossword.html'
+      - 'classic-patterns.js'
+      - 'tests/test_sheet_crossword.cjs'
+      - '.github/workflows/test-sheet-crossword.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax validation
+        run: |
+          node --check sheet-crossword-core.js
+          node --check sheet-crossword.js
+      - name: Test private sheet import and 15x15 mask geometry
+        run: node tests/test_sheet_crossword.cjs
