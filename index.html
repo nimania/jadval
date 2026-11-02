@@ -86,8 +86,15 @@ html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:n
 </section>
 <section class="panel" id="bankReadiness" aria-label="آمادگی بانک برای تولید جدول حرفه‌ای">
 <h2>آمادگی بانک برای جدول حرفه‌ای ۱۵×۱۵</h2>
-<p class="muted small">این بررسی فقط روی بانک خصوصی همین مرورگر انجام می‌شود. منبع قدیمی جدول، لزوماً منبع معتبرِ معنی واژه یا مجوز انتشار سرنخ نیست. هیچ مدخلی خودکار تأیید یا ارسال نمی‌شود.</p>
+<p class="muted small">این بررسی فقط روی بانک خصوصی همین مرورگر انجام می‌شود. با تأیید صحت بانک موجود از طرف مالک، برای تولید جدول نیازی به بازبینی تک‌تک مدخل‌ها نیست. هیچ داده‌ای خودکار منتشر یا به سرور ارسال نمی‌شود.</p>
 <p id="bankReadinessSummary" class="note" role="status">در حال بررسی بانک محلی…</p>
+<div style="padding:12px 14px;background:#f1f7fb;border:1px solid #d3e4ed;border-radius:10px;margin:12px 0">
+  <strong>استفاده از بانک موجود بدون بازبینی تک‌تک مدخل‌ها</strong>
+  <p class="muted small">اگر صحت بانک فعلی را تأیید می‌کنی، می‌توانیم همهٔ پاسخ‌ها و سرنخ‌های مناسب را برای جست‌وجوی جدول به‌کار ببریم. هیچ وضعیت `reviewed` تغییر نمی‌کند؛ این انتخاب فقط برای نسخهٔ فعلی بانک در همین مرورگر ذخیره می‌شود. انتشار جدول همچنان کنترل کیفیت و تأیید حقوق متن سرنخ‌ها را لازم دارد.</p>
+  <label style="display:flex;gap:8px;align-items:center"><input id="trustCorpusConsent" type="checkbox"> صحت پاسخ‌ها و سرنخ‌های بانک فعلی را برای استفاده در طراحی تأیید می‌کنم.</label>
+  <div class="toolbar" style="margin-top:10px"><button id="activateTrustedCorpus" type="button" class="btn primary">استفاده از بانک موجود برای طراحی حرفه‌ای</button></div>
+  <p id="trustedCorpusStatus" class="note" role="status">منتظر تأیید بانک موجود</p>
+</div>
 <div class="toolbar"><button type="button" class="btn" id="refreshBankReadiness">محاسبهٔ دوبارهٔ آمادگی</button></div>
 <details><summary>توزیع واژه‌های تأییدشده بر اساس طول</summary>
 <div class="table-scroll"><table><thead><tr><th>تعداد حرف</th><th>پاسخ یکتا در بانک خام</th><th>پاسخ یکتای منبع‌دار و بازبینی‌شده</th></tr></thead>
