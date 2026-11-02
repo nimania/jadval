@@ -35,6 +35,14 @@ class BankStagingTests(unittest.TestCase):
         self.assertEqual(len(items),2)
         self.assertEqual(stage.build_report(items,rejected,dup,set())['distinct_answers'],1)
 
+    def test_unavailable_private_bank_does_not_claim_new_words(self):
+        rows=[item for item in ['کتاب','شیراز']]
+        items,rejected,dup=stage.create_records(rows,'words','source','','MIT',3,20)
+        summary=stage.build_report(items,rejected,dup,None)
+        self.assertIsNone(summary['overlap_with_existing_answers'])
+        self.assertIsNone(summary['new_answers_vs_existing'])
+        self.assertIsNone(summary['existing_answers_count'])
+
     def test_never_overwrites_staging_output_by_default(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)
