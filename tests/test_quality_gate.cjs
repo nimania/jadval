@@ -63,7 +63,7 @@ assert.equal(report.stats.size,15);
 assert.equal(report.stats.slots,sourceSlots.length);
 assert.equal(report.score,null,'Human editorial work must not be scored automatically');
 assert.equal(Q.score(report,{},{}).ready,false,'Editorial sign-off must be explicit');
-const checks=Object.fromEntries(['words','clues','uniqueness','experience','geometry','sources','rights'].map(k=>[k,true]));
+const checks=Object.fromEntries(['words','clues','uniqueness','experience','geometry','variety','difficulty','sources','rights'].map(k=>[k,true]));
 const max={words:10,clues:10,uniqueness:10,experience:5,geometry:5};
 assert.deepEqual(Q.score(report,max,checks,'بازبین آزمون').score,100);
 assert.equal(Q.score(report,{...max,words:0,clues:0},checks,'بازبین آزمون').ready,false);
