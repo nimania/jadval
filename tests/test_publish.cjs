@@ -24,6 +24,12 @@ assert(!JSON.stringify(publication).includes('bank-'));
 assert.throws(()=>make(valid,bank,'جدول'),/امتیاز/);
 assert.throws(()=>make(valid,bank,'جدول',{ready:true,score:89,technical:60}),/امتیاز/);
 assert.throws(()=>make(valid,bank.map(row=>({...row,reviewed:0})),'جدول',review),/دروازهٔ کیفیت/);
+window.JadvalBankReadiness={corpusTrusted:()=>true};
+const ownerBank=bank.map(x=>({...x,reviewed:0,source:'',license:'',category:'دسته‌بندی‌نشده',difficulty:'unknown'}));
+const ownerPub=make(valid,ownerBank,'جدول با تأیید بانک اصلی',review);
+assert.equal(ownerPub.puzzle.meta.status,'published',
+ 'Owner-attested words can pass after the final independent editorial approval');
+window.JadvalBankReadiness={corpusTrusted:()=>false};
 const sample={...valid,sample:true};
 assert.throws(()=>make(sample,bank,'جدول',review),/نمونهٔ آزمایشی/);
 assert.throws(()=>make(valid,bank,' ' ,review),/عنوان/);
