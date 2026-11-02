@@ -50,8 +50,8 @@ for(const [i,slot] of sourceSlots.entries()){
  const answer=slot.cells.map(([r,c])=>grid[r][c]).join('');
  const clue='سرنخ مستقل شمارهٔ '+(i+1);
  (clues[slot.dir][String(slot.group)]??=[]).push(clue);
- bank.push({id:String(i),answer,clue,reviewed:1,source:'synthetic-test-only',
-  license:'synthetic-test-only',category:topics[i%topics.length],difficulty:difficulties[i%3]});
+ bank.push({id:String(i),answer,clue,reviewed:1,source:'فرهنگ آزمونی، مدخل '+answer,
+  license:'author-original',category:topics[i%topics.length],difficulty:difficulties[i%3]});
 }
 const puzzle={version:3,grid,clues,meta:{status:'draft'}};
 const report=Q.audit(puzzle,bank);
