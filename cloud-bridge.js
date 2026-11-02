@@ -216,6 +216,19 @@ async function publishPuzzle(publication){
  if(!publishReadReady)throw Error('دسترسی عمومی تأیید نشده است؛ ابتدا «بررسی دسترسی انتشار» را اجرا کن.');
  if(!publication||publication.editorApproved!==true||!publication.id||!publication.title||
     !publication.puzzle||!Number.isInteger(publication.size))throw Error('بستهٔ انتشار یا تأیید ویراستار معتبر نیست.');
+ const current=window.JadvalSparse?.getCurrentForPublication?.();
+ const bankRows=window.JadvalApp?.getLocal?.()||[];
+ if(!current||current.sample===true||!window.JadvalQuality)
+  throw Error('فقط جدول حرفه‌ای بازبینی‌شده، نه نمونهٔ آزمایشی، اجازهٔ انتشار دارد.');
+ const audit=window.JadvalQuality.audit(current.puzzle,bankRows);
+ if(!audit.technicalPassed||!audit.bankPassed||audit.errors.length)
+  throw Error('دروازهٔ مستقل کنترل کیفیت، انتشار این جدول را رد کرد.');
+ if(JSON.stringify(current.puzzle.grid)!==JSON.stringify(publication.puzzle.grid)||
+    JSON.stringify(current.puzzle.clues)!==JSON.stringify(publication.puzzle.clues))
+  throw Error('جدول انتخاب‌شده با محتوای تأییدشده برای انتشار تفاوت دارد.');
+ if(!Number.isInteger(publication.qualityScore)||publication.qualityScore<90||publication.qualityScore>100||
+    typeof publication.reviewer!=='string'||publication.reviewer.trim().length<3)
+  throw Error('امتیاز ویراستاری حداقل ۹۰ و بازبین مسئول الزامی است.');
  const uid=administrator.uid,token=epoch;
  const ref=api.doc(db,'publishedPuzzles',publication.id);
  const payload={id:publication.id,title:publication.title,size:publication.size,
