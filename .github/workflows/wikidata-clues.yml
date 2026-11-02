@@ -1,0 +1,36 @@
+name: Generate sourced Persian clue candidates from Wikidata (review only)
+
+on:
+  push:
+    branches: [feature/bank-staging-20261102]
+    paths:
+      - '.github/workflows/wikidata-clues.yml'
+      - 'tools/wikidata_fact_candidates.py'
+      - 'tests/test_wikidata_clues.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-fact-clues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check non-approval and fact ambiguity handling
+        run: python -m unittest discover -s tests -p 'test_wikidata_clues.py' -v
+      - name: Read public Wikidata CC0 structured relationships
+        run: |
+          mkdir -p wikidata-staging-output
+          python tools/wikidata_fact_candidates.py --output wikidata-staging-output/country-fact-candidates.jsonl
+      - name: Upload fact candidates, never production entries
+        uses: actions/upload-artifact@v4
+        with:
+          name: wikidata-country-clue-candidates-review-only
+          path: wikidata-staging-output/
+          retention-days: 30
