@@ -85,3 +85,4 @@ assert.equal(publicOnly.bankPassed,false);
 assert(Q.audit(puzzle,bank).stats.blackRatio>=0.12);
 assert.equal(Q.normalize('كي‌تاب'),'کیتاب');
 console.log('Quality gate: symmetric 15x15, 32 black, 3+ letters, source review, editorial score and failure modes verified.');
+module.exports={puzzle,bank,report};
