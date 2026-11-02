@@ -80,6 +80,18 @@ const noReview=bank.map(x=>({...x,reviewed:0}));
 assert(Q.audit(puzzle,noReview).errors.some(e=>e.code==='unreviewed'));
 const noSource=bank.map(x=>({...x,source:''}));
 assert(Q.audit(puzzle,noSource).errors.some(e=>e.code==='unreviewed'));
+const ownerBank=bank.map(x=>({...x,reviewed:0,source:'',license:'',difficulty:'unknown',category:'دسته‌بندی‌نشده'}));
+const trustedAudit=Q.audit(puzzle,ownerBank,{trustedCorpus:true});
+assert.equal(trustedAudit.technicalPassed,true);
+assert.equal(trustedAudit.bankPassed,true,'Owner-attested corpus can be matched without per-row flags');
+assert.equal(trustedAudit.corpusMode,'owner-attested');
+assert.equal(trustedAudit.errors.length,0,'Missing entry tags must not block owner-attested construction');
+assert(trustedAudit.warnings.some(x=>x.includes('دشواری')),'Difficulty needs final editorial verification');
+const wrongClueBank=ownerBank.map((x,i)=>i===0?{...x,clue:'wrong answer clue'}:x);
+assert(Q.audit(puzzle,wrongClueBank,{trustedCorpus:true}).errors.some(e=>e.code==='unmatched-bank'),
+ 'Owner attestation may not override bank/slot mismatches');
+assert.equal(Q.score(trustedAudit,max,checks,'بازبین آزمون').ready,true,
+ 'After all final checks an owner-attested puzzle can pass editorial scoring');
 const publicOnly=Q.audit(puzzle);
 assert.equal(publicOnly.bankPassed,false);
 assert(Q.audit(puzzle,bank).stats.blackRatio>=0.12);
