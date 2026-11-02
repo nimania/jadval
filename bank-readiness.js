@@ -33,6 +33,36 @@ function approved(entry,max=15){
  return !!entry&&(entry.reviewed===1||entry.reviewed===true)&&reviewReasons(entry,max).length===0;
 }
 function approvedEntries(entries,max=15){return (entries||[]).filter(e=>approved(e,max));}
+
+const trustStorageKey='jadval-trusted-corpus-v1';
+function signature(entries){
+ // A lightweight change detector, not a cryptographic integrity checksum.
+ let hash=2166136261;
+ for(const entry of entries||[]){
+  const part=String(entry.id||'')+'\u0000'+normalize(entry.answer)+'\u0000'+String(entry.clue||'')+'\u0001';
+  for(let i=0;i<part.length;i++)hash=Math.imul(hash^part.charCodeAt(i),16777619);
+ }
+ return (entries?.length||0)+':'+(hash>>>0).toString(16);
+}
+function corpusTrusted(entries){
+ if(!Array.isArray(entries)||!entries.length)return false;
+ try{return localStorage.getItem(trustStorageKey)===signature(entries)}catch(_){return false}
+}
+function trustCorpus(entries){
+ if(!Array.isArray(entries)||!entries.length)throw Error('بانک محلی در دسترس نیست.');
+ if(typeof localStorage==='undefined')throw Error('ذخیرهٔ تأیید در این مرورگر در دسترس نیست.');
+ localStorage.setItem(trustStorageKey,signature(entries));
+ return corpusTrusted(entries);
+}
+function candidateEntries(entries,max=15){
+ if(!corpusTrusted(entries))return approvedEntries(entries,max);
+ return (entries||[]).filter(e=>{
+  const word=normalize(e?.answer);
+  return alphabet.test(word)&&word.length>=3&&word.length<=max&&
+   typeof e?.clue==='string'&&!!e.clue.trim();
+ });
+}
+
 function analyze(entries,max=15){
  const data=Array.isArray(entries)?entries:[],ready=approvedEntries(data,max),byLength={},candidates=[],answers=new Set(),sources=new Set();
  for(let n=3;n<=max;n++)byLength[n]={raw:0,approved:0};
@@ -100,10 +130,17 @@ let lastShown=0;
 function refresh(){
  const panel=$('bankReadiness');if(!panel)return;
  const info=analyze(privateEntries());
+ const trusted=corpusTrusted(privateEntries());
+ const status=$('trustedCorpusStatus');
+ if(status)status.textContent=trusted?
+  'تأیید بانک فعلی برای طراحی فعال است؛ این فقط مجوز استفاده از واژه‌ها در جست‌وجوست، نه تأیید خودکار انتشار.':
+  'بانک در حالت بازبینی تک‌مدخل است. برای استفاده از بانک مورد تأییدت در طراحی، گزینهٔ اعتماد به بانک را فعال کن.';
+ const pool=candidateEntries(privateEntries());
  const sum=$('bankReadinessSummary');
  sum.textContent='از '+new Intl.NumberFormat('fa-IR').format(info.total)+' مدخل، '+
   new Intl.NumberFormat('fa-IR').format(info.reviewedFlag)+' دارای نشان بازبینی و فقط '+
-  new Intl.NumberFormat('fa-IR').format(info.approved)+' مدخل دارای اطلاعات کاملِ قابل ورود به حل‌گر حرفه‌ای هستند؛ پاسخ یکتا: '+
+  new Intl.NumberFormat('fa-IR').format(info.approved)+' مدخل با برچسب بازبینی تک‌مدخل هستند؛ تعداد مدخل قابل استفاده برای طراحی با وضعیت فعلی: '+
+  new Intl.NumberFormat('fa-IR').format(pool.length)+'؛ پاسخ یکتای دارای برچسب بازبینی: '+
   new Intl.NumberFormat('fa-IR').format(info.uniqueApproved)+'.';
  const tbody=$('readinessLengths');tbody.replaceChildren();
  for(const [len,item] of Object.entries(info.byLength)){
@@ -114,7 +151,9 @@ function refresh(){
   tbody.append(tr);
  }
  const issues=$('readinessWarnings');issues.replaceChildren();
- const msgs=info.warnings.slice(0,5);
+ const msgs=trusted?
+  ['درستی بانک بنا بر تأیید مالک برای طراحی پذیرفته شده است؛ صحت هندسه، سرنخ‌های جدول نهایی، تنوع و حقوق انتشار همچنان جداگانه کنترل می‌شوند.']:
+  info.warnings.slice(0,5);
  for(const msg of msgs)issues.append(make('p','muted small',msg));
  if(!msgs.length)issues.append(make('p','muted small','شمارش مدخل‌های واجد شرایط آماده است؛ داشتن واژگان کافی، تکمیل جدول و کیفیت معنایی را تضمین نمی‌کند.'));
  const list=$('reviewCandidates');list.replaceChildren();
@@ -134,9 +173,16 @@ function refresh(){
 function init(){
  if(!$('bankReadiness'))return;
  $('refreshBankReadiness').onclick=refresh;
+ const activate=$('activateTrustedCorpus');
+ if(activate)activate.onclick=()=>{
+  const check=$('trustCorpusConsent'),message=$('trustedCorpusStatus');
+  if(!check?.checked){if(message)message.textContent='ابتدا تأیید درستی بانک فعلی را علامت بزن.';return;}
+  try{trustCorpus(privateEntries());check.checked=false;refresh();}
+  catch(err){if(message)message.textContent=err.message;}
+ };
  Promise.resolve(root.JadvalApp?.localReady).then(refresh).catch(()=>{});
 }
-const api={analyze,approved,approvedEntries,reviewReasons,citationOK,refresh,normalize,licences};
+const api={analyze,approved,approvedEntries,candidateEntries,corpusTrusted,trustCorpus,signature,reviewReasons,citationOK,refresh,normalize,licences};
 if(root)root.JadvalBankReadiness=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(typeof document!=='undefined'){
