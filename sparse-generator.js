@@ -362,13 +362,16 @@ async function generateSample(){
    output=builder.generate(filtered,size,Date.now());
   }
   if(!output.result){
-   last=null;$("demoResult").hidden=true;
+   last=null;$("demoResult").hidden=true;window.JadvalPublish?.onNewPuzzle?.();
    $("demoNote").textContent=output.error||"جدول کاملاً پُر پیدا نشد؛ نتیجهٔ ناقص نمایش داده نمی‌شود.";
    return;
   }
   render(output.result);
-  $("demoNote").textContent="شبکه با پاسخ کامل و تقاطع‌های سازگار ساخته شد. قبل از انتشار، متن سرنخ‌ها و شباهت به آرشیو باید بازبینی شود.";
- }catch(err){last=null;$("demoResult").hidden=true;$("demoNote").textContent="خطا: "+err.message;}
+  const audit=window.JadvalQuality?.audit(output.result.puzzle,bank);
+  $("demoNote").textContent=audit?.technicalPassed&&audit?.bankPassed?
+   "پیش‌نویس از دروازهٔ فنی و منبع‌دار گذشت؛ برای انتشار، ارزیابی مستقل ویراستار و امتیاز حداقل ۹۰ لازم است.":
+   "این خروجی فقط پیش‌نویس تشخیصی است و برای انتشار معتبر نیست. گزارش دقیق نقض معیارها زیر جدول نمایش داده شده است.";
+ }catch(err){last=null;$("demoResult").hidden=true;window.JadvalPublish?.onNewPuzzle?.();$("demoNote").textContent="خطا: "+err.message;}
  finally{btn.disabled=false;btn.textContent="تلاش برای طراحی تازه (آزمایشی)";}
 }
 function init(){
@@ -391,7 +394,7 @@ function init(){
   $("demoSize").value="15";
   updateReport(null);
   render(preset.result);
-  $("demoNote").textContent="نمونهٔ کامل شمارهٔ "+(variant+1)+" از بانک محلی نمایش داده شد: ۷۷ جواب یکتا، هیچ خانهٔ سفید خالی نیست. این یک نمونهٔ ازپیش‌ساخته‌شده برای آزمون فنی است، نه نتیجهٔ حل‌گر کلاسیک و نه جدول تأییدشده برای انتشار.";
+  $("demoNote").textContent="نمونهٔ فنی "+(variant+1)+" — این جدول صرفاً برای آزمون و بررسی اشکالات است؛ با معیارهای سخت‌گیرانهٔ جدید تأیید نشده و امکان انتشار مستقیم ندارد.";
  };
  const reportButton=$("downloadSolveReport");
  if(reportButton)reportButton.onclick=()=>{
