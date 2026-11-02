@@ -74,7 +74,7 @@ function reportQuality(){
  }
  const next=document.createElement('p');
  next.textContent=audit.errors.length?
-  'تا رفع همهٔ ایرادها و بازبینی مدخل‌های بانک، امکان انتشار وجود ندارد.':
+  'تا رفع ایرادهای جدول نهایی و تطبیق آن با بانک، امکان انتشار وجود ندارد.':
   'کنترل فنی قبول است؛ امتیاز و تأیید مستقل محتوایی هنوز لازم است.';
  panel.append(next);
 }
@@ -105,7 +105,7 @@ function openReview(){
  for(const input of dialog.querySelectorAll('.qa-attest'))input.checked=false;
  for(const input of dialog.querySelectorAll('.qa-rating'))input.value='';
  $('qaReviewer').value='';
- $('publishSource').textContent='آزمون هندسه و انطباق با مدخل‌های بازبینی‌شده موفق است. یکتایی معنایی، اصالت منابع، روانی سرنخ‌ها، انصاف و تجربهٔ حل را مستقل بررسی و امتیازدهی کن. این موارد با کد اثبات نمی‌شوند.';
+ $('publishSource').textContent='آزمون هندسه و انطباق دقیق با بانک مورد تأیید موفق است. یکتایی معنایی، کیفیت سرنخ‌ها، تنوع، توازن دشواری، حقوق انتشار و تجربهٔ حلِ همین جدول را مستقل بررسی و امتیازدهی کن. این موارد با کد اثبات نمی‌شوند.';
  $('publishConfirm').disabled=false;
  $('publishConfirm').textContent='تأیید ویراستاری و انتشار';
  $('publishResult').replaceChildren();
