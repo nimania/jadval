@@ -8,7 +8,7 @@ for(const file of ['sparse-generator.js','quality-gate.js','publish.js'])
 const api=window.JadvalSparse,make=window.JadvalPublish.preparedPuzzle;
 const valid={puzzle,mask:puzzle.grid.map(row=>row.map(ch=>!ch))};
 assert(api.validateWithBank(valid,bank),'Synthetic 15x15 fixture must pass independent bank matching');
-const checks=Object.fromEntries(['words','clues','uniqueness','experience','geometry','sources','rights'].map(k=>[k,true]));
+const checks=Object.fromEntries(['words','clues','uniqueness','experience','geometry','variety','difficulty','sources','rights'].map(k=>[k,true]));
 const ratings={words:10,clues:10,uniqueness:10,experience:5,geometry:5};
 const review=window.JadvalQuality.score(report,ratings,checks,'ویراستار آزمون');
 assert.equal(review.ready,true);
