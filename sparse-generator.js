@@ -304,8 +304,9 @@ async function generateSample(){
  if(!bank.length){$("demoNote").textContent="اول بانک سؤال‌وجواب خودت را وارد کن.";return;}
  const filtered=category?bank.filter(e=>(e.category||"دسته‌بندی‌نشده")===category):bank;
  const professional=$( "patternStyle" )?.value==="classic";
- const candidatePool=window.JadvalBankReadiness?.candidateEntries(filtered,size)||[];
  const ownerTrusted=window.JadvalBankReadiness?.corpusTrusted(bank)===true;
+ const allCandidates=window.JadvalBankReadiness?.candidateEntries(bank,size)||[];
+ const candidatePool=category?allCandidates.filter(e=>(e.category||"دسته‌بندی‌نشده")===category):allCandidates;
  updateReport(null);
  if(professional&&!candidatePool.length){
   const info=window.JadvalBankReadiness?.analyze(filtered,size);
