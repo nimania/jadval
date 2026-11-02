@@ -55,14 +55,40 @@ function analyze(entries,max=15){
   byLength[n].raw=rawSets.get(n)?.size||0;
   byLength[n].approved=approvedSets.get(n)?.size||0;
  }
- // Short and medium answers supply flexible crossings; include long anchors.
- const priority=n=>n>=4&&n<=9?0:n>=10&&n<=12?1:2;
- candidates.sort((a,b)=>priority(a.length)-priority(b.length)||
-  a.issues-b.issues||a.length-b.length||String(a.id).localeCompare(String(b.id)));
+ // The review queue is a sampling aid, NOT automatic lexical approval.
+ // Prefer specific clues, distribute proposals across different word lengths,
+ // and never fill the list with many duplicates of the same answer.
+ const specificity=e=>{
+  const clue=e.clue.trim();let points=Math.min(clue.length,85)/6;
+  if(clue.length>=9&&clue.length<=75)points+=8;
+  if(/^(?:از نام[‌ ]های|نامی از|یک نوع|نوعی|مخفف|نام|از شهرهای)/.test(clue))points-=10;
+  if(clue.length<7)points-=6;
+  return points-e.issues*2;
+ };
+ candidates.sort((a,b)=>specificity(b)-specificity(a)||String(a.id).localeCompare(String(b.id)));
+ const lengthBuckets=new Map(),answerSeen=new Set(),clueSeen=new Set();
+ for(const candidate of candidates){
+  if(answerSeen.has(candidate.answer)||clueSeen.has(candidate.clue))continue;
+  answerSeen.add(candidate.answer);clueSeen.add(candidate.clue);
+  const arr=lengthBuckets.get(candidate.length)||[];
+  arr.push(candidate);lengthBuckets.set(candidate.length,arr);
+ }
+ const lengthOrder=[4,5,6,7,3,8,9,10,11,12,13,14,15].filter(n=>n<=max);
+ const balanced=[];
+ for(let round=0;balanced.length<24;round++){
+  let added=false;
+  for(const n of lengthOrder){
+   const item=lengthBuckets.get(n)?.[round];
+   if(!item)continue;
+   balanced.push(item);added=true;
+   if(balanced.length===24)break;
+  }
+  if(!added)break;
+ }
  const categories=new Set(ready.map(x=>x.category)),difficulties=new Set(ready.map(x=>x.difficulty));
  return {total:data.length,reviewedFlag:data.filter(e=>e?.reviewed===1||e?.reviewed===true).length,
   approved:ready.length,uniqueApproved:answers.size,byLength,categories:[...categories],
-  difficulties:[...difficulties],sourceCount:sources.size,candidates:candidates.slice(0,24),
+  difficulties:[...difficulties],sourceCount:sources.size,candidates:balanced,
   warnings:!ready.length?['هیچ مدخلِ دارای بازبینی، منبع، مجوز، موضوع و درجهٔ سختی قابل استفاده نیست؛ ساخت حرفه‌ای مسدود است.']:
    Object.entries(byLength).filter(([n,v])=>v.approved<5).map(([n,v])=>'پاسخ '+n+'حرفی منبع‌دار: '+v.approved+' مورد یکتا')};
 }
