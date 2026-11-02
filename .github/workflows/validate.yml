@@ -17,6 +17,7 @@ on:
       - cloud-safety.js
       - local-backup.js
       - publish.js
+      - quality-gate.js
       - firebase/firestore.rules
       - import_puzzles.py
       - build_database.py
@@ -63,8 +64,10 @@ jobs:
           node --check cloud-safety.js
           node --check local-backup.js
           node --check publish.js
+          node --check quality-gate.js
           node --test tests/test_cloud_safety.cjs
           node tests/test_cloud_bridge.cjs
+          node tests/test_quality_gate.cjs
           node tests/test_publish.cjs
           node tests/test_verified_sample_15.cjs
           node tests/test_classic_solver.cjs
