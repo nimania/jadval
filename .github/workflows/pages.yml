@@ -2,7 +2,7 @@ name: Publish Jadval Studio UI
 on:
   push:
     branches: [main]
-    paths: [index.html, demo-generator.js, sparse-generator.js, mosaic-generator.js, classic-patterns.js, classic-preview.js, bank-tools.js, classic-solver-worker.js, verified-sample-15.js, firebase-config.js, cloud-bridge.js, cloud-safety.js, local-backup.js, publish.js, .github/workflows/pages.yml]
+    paths: [index.html, demo-generator.js, sparse-generator.js, mosaic-generator.js, classic-patterns.js, classic-preview.js, bank-tools.js, classic-solver-worker.js, verified-sample-15.js, firebase-config.js, cloud-bridge.js, cloud-safety.js, local-backup.js, publish.js, quality-gate.js, .github/workflows/pages.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -37,6 +37,7 @@ jobs:
           cp cloud-safety.js public/cloud-safety.js
           cp local-backup.js public/local-backup.js
           cp publish.js public/publish.js
+          cp quality-gate.js public/quality-gate.js
           echo 'User-managed private data is not hosted here.' > public/robots.txt
       - uses: actions/upload-pages-artifact@v3
         with:
