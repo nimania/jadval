@@ -304,21 +304,22 @@ async function generateSample(){
  if(!bank.length){$("demoNote").textContent="اول بانک سؤال‌وجواب خودت را وارد کن.";return;}
  const filtered=category?bank.filter(e=>(e.category||"دسته‌بندی‌نشده")===category):bank;
  const professional=$( "patternStyle" )?.value==="classic";
- const approved=window.JadvalBankReadiness?.approvedEntries(filtered,size)||[];
+ const candidatePool=window.JadvalBankReadiness?.candidateEntries(filtered,size)||[];
+ const ownerTrusted=window.JadvalBankReadiness?.corpusTrusted(bank)===true;
  updateReport(null);
- if(professional&&!approved.length){
+ if(professional&&!candidatePool.length){
   const info=window.JadvalBankReadiness?.analyze(filtered,size);
   $("demoNote").textContent="ساخت حرفه‌ای متوقف شد: از "+(info?.total??filtered.length)+
-   " مدخل، هیچ واژهٔ مناسبِ ۳ تا "+size+"حرفی با منبع، مجوز، درجهٔ دشواری و بازبینی واقعی ثبت نشده است."+
-   " ابتدا از «آمادگی بانک» وارد صف بازبینی شو. بانک خام دست‌نخورده باقی می‌ماند.";
+   " مدخل، هنوز مجموعهٔ قابل استفاده برای حل‌گر فعال نشده است."+
+   " در «آمادگی بانک»، تأیید استفاده از بانک فعلی برای طراحی را فعال کن؛ بانک خام دست‌نخورده باقی می‌ماند.";
   last=null;$("demoResult").hidden=true;window.JadvalPublish?.onNewPuzzle?.();
   updateReport({schema:1,type:"jadval-solver-diagnostics",status:"bank-not-reviewed",
-   size,filteredEntries:filtered.length,approvedEntries:0,
-   byLength:info?.byLength||{},reason:"Only editorially reviewed entries may be used in professional generation."});
+   size,filteredEntries:filtered.length,candidateEntries:0,
+   byLength:info?.byLength||{},reason:"Owner corpus trust or individual reviewed entries is required for professional generation."});
   return;
  }
  btn.disabled=true;btn.textContent="در حال طراحی…";
- $("demoNote").textContent=professional?"جست‌وجوی کلاسیک فقط با "+approved.length+" مدخلِ بازبینی‌شده و منبع‌دار…":
+ $("demoNote").textContent=professional?"جست‌وجوی کلاسیک با "+candidatePool.length+" مدخلِ مجاز از بانک مورد تأیید…":
   "در حال ساخت پیش‌نویس آزمایشی با بانک خام؛ این حالت به‌تنهایی مجوز انتشار نمی‌دهد…";
  await new Promise(resolve=>setTimeout(resolve,30));
  try{
@@ -329,15 +330,15 @@ async function generateSample(){
    if(!maker)throw Error("موتور الگوی کلاسیک بارگذاری نشده است.");
    const preview=window.JadvalClassicPreview?.getSelected?.();
    const selected=preview&&preview.length===size&&maker.valid(preview)?preview:null;
-   const masks=maker.build(size,Date.now(),8,approved);
+   const masks=maker.build(size,Date.now(),8,candidatePool);
    if(selected&&!masks.some(mask=>JSON.stringify(mask)===JSON.stringify(selected)))masks.unshift(selected);
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
-    const report=await solveClassicInWorker(masks,approved,Date.now(),budgetMs);
+    const report=await solveClassicInWorker(masks,candidatePool,Date.now(),budgetMs);
     updateReport({
      schema:1,type:"jadval-solver-diagnostics",timestamp:new Date().toISOString(),
      size,style:"classic",category:category||"all",searchBudgetMs:budgetMs,bankEntries:bank.length,
-     filteredEntries:filtered.length,approvedEntries:approved.length,attemptedMasks:masks.length,
+     filteredEntries:filtered.length,candidateEntries:candidatePool.length,ownerTrusted,attemptedMasks:masks.length,
      reports:(report.reports||[]).map(x=>({
        status:x.status,slotCount:x.slotCount,bestDepth:x.bestDepth,nodes:x.nodes,
        elapsedMs:x.elapsedMs,initialPruned:x.initialPruned,score:x.score,
@@ -381,7 +382,7 @@ async function generateSample(){
    return;
   }
   render(output.result);
-  const audit=window.JadvalQuality?.audit(output.result.puzzle,bank);
+  const audit=window.JadvalQuality?.audit(output.result.puzzle,bank,{trustedCorpus:ownerTrusted});
   $("demoNote").textContent=audit?.technicalPassed&&audit?.bankPassed?
    "پیش‌نویس از دروازهٔ فنی و منبع‌دار گذشت؛ برای انتشار، ارزیابی مستقل ویراستار و امتیاز حداقل ۹۰ لازم است.":
    "این خروجی فقط پیش‌نویس تشخیصی است و برای انتشار معتبر نیست. گزارش دقیق نقض معیارها زیر جدول نمایش داده شده است.";
