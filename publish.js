@@ -130,6 +130,8 @@ async function submit(event){
   documentPayload=preparedPuzzle(currentBoard(),currentBank(),$('publishTitle').value,evaluation);
   documentPayload.id=newPublicId();
   documentPayload.editorApproved=true;
+  documentPayload.qualityScore=evaluation.score; // Only the live preflight consumes these fields.
+  documentPayload.reviewer=evaluation.reviewer; // Firestore payload remains whitelisted.
  }catch(error){status.textContent=error.message;return;}
  busy=true;$('publishConfirm').disabled=true;
  status.textContent='امتیاز '+evaluation.score+' از ۱۰۰؛ در حال ثبت جدول تأییدشده در آرشیو عمومی…';
