@@ -100,8 +100,8 @@ html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:n
 <div class="table-scroll"><table><thead><tr><th>تعداد حرف</th><th>پاسخ یکتا در بانک خام</th><th>پاسخ یکتای منبع‌دار و بازبینی‌شده</th></tr></thead>
 <tbody id="readinessLengths"></tbody></table></div></details>
 <div id="readinessWarnings" class="note" role="status"></div>
-<details open><summary>صف بازبینی پیشنهادی (۱۲ مورد)</summary>
-<p class="muted small">پیشنهادها صرفاً برای بررسی هستند، نه تأیید خودکار. روی «بازبینی مدخل» بزن، سرنخ و معنی را با منبع معتبر کنترل کن و اطلاعات مجوز و درجهٔ دشواری را تکمیل کن.</p>
+<details><summary>بازبینی اختیاریِ مدخل‌های منتخب</summary>
+<p class="muted small">این صف اختیاری است. بعد از تأیید بانک موجود برای طراحی، نیازی به بازبینی تک‌تک مدخل‌ها نیست؛ کنترل کیفیت جدول نهایی و حقوق انتشار همچنان لازم‌اند.</p>
 <div id="reviewCandidates"></div></details>
 </section>
 <section class="panel" id="demoStudio"><div class="demo-intro"><div><h2>طراحی آزمایشی جدول</h2><p class="muted small">فعلاً ۱۵×۱۵ اندازهٔ اصلی کارگاه است. چیدمان خانه‌های ویژه پراکنده و متفاوت است، بدون حذف ردیف یا ستون؛ خانه‌های ویژه به‌صورت پیش‌فرض قرمز یکدست هستند و فقط ظاهر خانه‌های سیاه را تغییر می‌دهند.</p></div><span class="status">نسخهٔ آزمایشی</span></div>
@@ -255,10 +255,10 @@ window.JadvalApp.localReady=restore().then(data=>{
 <label style="display:block"><input class="qa-attest" type="checkbox" value="uniqueness"> یکتاییِ راه‌حل با بازبینی مستقل سرنخ‌ها و تقاطع‌ها تأیید شده است.</label>
 <label style="display:block"><input class="qa-attest" type="checkbox" value="experience"> توازن دشواری و تجربهٔ تدریجی حل توسط بازبین ارزیابی شده است.</label>
 <label style="display:block"><input class="qa-attest" type="checkbox" value="geometry"> هندسه، تنوع، چیدمان و خوانایی جدول بازبینی شده است.</label>
-<label style="display:block"><input class="qa-attest" type="checkbox" value="sources"> منابع واژگان و صحت انتساب آن‌ها مستقلاً کنترل شده‌اند.</label>
+<label style="display:block"><input class="qa-attest" type="checkbox" value="sources"> صحت پاسخ‌ها و سرنخ‌های همین جدول با اتکا به بانک مورد تأیید و بازبینی نهایی بررسی شده است.</label>
 <label style="display:block"><input class="qa-attest" type="checkbox" value="rights"> حقوق انتشار همهٔ سؤال‌ها و جواب‌ها بررسی و مجاز است.</label>
 </fieldset>
-<p class="muted small">پس از عبور از تمام الزامات فنی و منبع‌دار، ۶۰ امتیاز فنی ثابت محاسبه می‌شود؛ ۴۰ امتیاز باقی‌مانده از ارزیابی انسانی است. امتیاز کمتر از ۹۰ مانع انتشار می‌شود. ثبت این ارزیابی، اثبات ماشینیِ یکتایی حل نیست.</p>
+<p class="muted small">پس از عبور از الزامات فنی و تطبیق دقیق سؤال‌ها و جواب‌ها با بانک مورد تأیید، ۶۰ امتیاز پایه ثبت می‌شود؛ ۴۰ امتیاز باقی‌مانده از ارزیابی انسانی است. امتیاز کمتر از ۹۰ مانع انتشار می‌شود. ثبت این ارزیابی، اثبات ماشینیِ یکتایی حل نیست.</p>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px;margin:12px 0">
 <label>اعتبار واژگان (۰–۱۰)<input class="qa-rating" name="words" type="number" min="0" max="10" step="1" required placeholder="۰ تا ۱۰"></label>
 <label>کیفیت سؤال‌ها (۰–۱۰)<input class="qa-rating" name="clues" type="number" min="0" max="10" step="1" required placeholder="۰ تا ۱۰"></label>
