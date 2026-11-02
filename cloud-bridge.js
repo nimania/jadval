@@ -220,7 +220,8 @@ async function publishPuzzle(publication){
  const bankRows=window.JadvalApp?.getLocal?.()||[];
  if(!current||current.sample===true||!window.JadvalQuality)
   throw Error('فقط جدول حرفه‌ای بازبینی‌شده، نه نمونهٔ آزمایشی، اجازهٔ انتشار دارد.');
- const audit=window.JadvalQuality.audit(current.puzzle,bankRows);
+ const audit=window.JadvalQuality.audit(current.puzzle,bankRows,{
+  trustedCorpus:window.JadvalBankReadiness?.corpusTrusted(bankRows)===true});
  if(!audit.technicalPassed||!audit.bankPassed||audit.errors.length)
   throw Error('دروازهٔ مستقل کنترل کیفیت، انتشار این جدول را رد کرد.');
  if(JSON.stringify(current.puzzle.grid)!==JSON.stringify(publication.puzzle.grid)||
