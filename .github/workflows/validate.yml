@@ -18,6 +18,7 @@ on:
       - local-backup.js
       - publish.js
       - quality-gate.js
+      - bank-readiness.js
       - firebase/firestore.rules
       - import_puzzles.py
       - build_database.py
@@ -65,8 +66,10 @@ jobs:
           node --check local-backup.js
           node --check publish.js
           node --check quality-gate.js
+          node --check bank-readiness.js
           node --test tests/test_cloud_safety.cjs
           node tests/test_cloud_bridge.cjs
+          node tests/test_bank_readiness.cjs
           node tests/test_quality_gate.cjs
           node tests/test_publish.cjs
           node tests/test_verified_sample_15.cjs
