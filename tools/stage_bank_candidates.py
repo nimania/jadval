@@ -87,9 +87,9 @@ def build_report(items,rejected,duplicates,existing_answers):
         'version':1, 'created_at_utc':datetime.now(timezone.utc).isoformat(),
         'candidate_records':len(items), 'distinct_answers':len(answers),
         'draft_clues':sum(bool(x['clue']) for x in items),
-        'overlap_with_existing_answers':len(answers & existing_answers),
-        'new_answers_vs_existing':len(answers-existing_answers),
-        'existing_answers_count':len(existing_answers),
+        'overlap_with_existing_answers':None if existing_answers is None else len(answers & existing_answers),
+        'new_answers_vs_existing':None if existing_answers is None else len(answers-existing_answers),
+        'existing_answers_count':None if existing_answers is None else len(existing_answers),
         'counts_by_length':{str(k):v for k,v in sorted(lengths.items())},
         'answers_with_multiple_clues':sum(n>1 for n in pairs.values()),
         'duplicates_removed':duplicates, 'rejections':dict(rejected),
@@ -112,7 +112,7 @@ def run(args):
     items,rejected,duplicates=create_records(
         rows,args.mode,args.source_id,args.source_url,args.license,
         args.min_letters,args.max_letters)
-    existing=load_existing_answers(Path(args.existing)) if args.existing else set()
+    existing=load_existing_answers(Path(args.existing)) if args.existing else None
     stats=build_report(items,rejected,duplicates,existing)
     output.parent.mkdir(parents=True,exist_ok=True)
     output.write_text(''.join(json.dumps(x,ensure_ascii=False,sort_keys=True)+'\n'
