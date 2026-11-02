@@ -179,7 +179,7 @@ function score(auditResult,ratings,confirmations,reviewer){
   return {ready:false,score:null,reason:'آزمون‌های ساختاری یا بانک واژگان رد شده‌اند.'};
  const name=String(reviewer||'').trim();
  if(name.length<3)return {ready:false,score:null,reason:'نام بازبین مسئول را وارد کن.'};
- if(!['words','clues','uniqueness','experience','geometry','sources','rights'].every(k=>confirmations?.[k]===true))
+ if(!['words','clues','uniqueness','experience','geometry','variety','difficulty','sources','rights'].every(k=>confirmations?.[k]===true))
   return {ready:false,score:null,reason:'همهٔ تأییدهای محتوایی و حقوق انتشار لازم هستند.'};
  let manual=0;
  for(const [key,max] of Object.entries(editorialFields)){
