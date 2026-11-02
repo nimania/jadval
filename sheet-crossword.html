@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>استودیوی جدول ۱۵×۱۵ | بانک مرکزی فارسی</title>
+<script src="./firebase-config.js"></script>
+<style>
+:root{font-family:"Vazirmatn",Tahoma,Arial,sans-serif;color:#272727;background:#f4f2ee;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}header{background:#fff;border-bottom:1px solid #d7d4cf;padding:17px max(18px,calc((100% - 1160px)/2));display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}
+header strong{font-size:20px}a{color:#225e77;text-decoration:none}a:hover{text-decoration:underline}
+main{max-width:1160px;margin:24px auto 70px;padding:0 18px}.lead{max-width:820px;line-height:1.9;color:#555;margin:8px 0 22px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.panel{background:#fff;border:1px solid #dcd8d1;border-radius:12px;padding:19px;margin-bottom:16px}
+.panel h2{font-size:18px;margin:0 0 12px}.panel p{line-height:1.85}
+button,.btn{border:1px solid #c7c4bd;background:white;border-radius:7px;padding:10px 15px;color:inherit;font:inherit;cursor:pointer;display:inline-block}
+button.primary{background:#282828;color:white;border-color:#282828}
+button:disabled{opacity:.5;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7eb2df;outline-offset:2px}
+fieldset{border:1px solid #eee;border-radius:8px;padding:12px;margin:10px 0}
+label{font-size:13px;color:#555;display:block;line-height:2}input[type=file],select{width:100%;border:1px solid #cfcfcf;padding:10px;background:white;border-radius:7px;font:inherit}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.row button{flex:1}
+.small{font-size:13px;color:#5a5a5a;line-height:1.8}.muted{color:#666}.status{padding:10px 12px;background:#f1f5f7;border-radius:6px;line-height:1.8;white-space:pre-line;font-size:13px}
+.status.error{background:#fff0ed;color:#832d1a}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.metric{background:#f4f2ee;padding:10px;border-radius:8px;text-align:center;font-size:11px}
+.metric strong{display:block;font-size:20px;color:#1b2627}
+.board-wrap{display:flex;justify-content:center;max-width:100%;overflow:auto}
+.board{width:min(680px,100%);aspect-ratio:1;display:grid;grid-template-columns:repeat(15,1fr);direction:ltr;border:2px solid #1d1d1d;background:white;box-shadow:0 7px 26px #0001}
+.cell{min-width:0;min-height:0;border:.5px solid #585858;display:flex;align-items:center;justify-content:center;font-family:Tahoma,Arial,sans-serif;font-size:clamp(10px,1.55vw,19px);font-weight:700;color:#191919;position:relative}
+.cell.black{background:#252525;color:transparent}
+.board.red .cell.black{background:#b80d1a}
+.cell .number{position:absolute;top:1px;right:2px;font-size:7px;font-weight:400}
+.board.preview .cell:not(.black){background:#fdfcf9}
+.clue-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.clue-columns h3{font-size:16px;border-bottom:1px solid #ddd;padding-bottom:8px}
+.clue-columns p{font-size:13px;line-height:1.8;margin:4px 0}
+.hidden{display:none!important}
+.separator{height:1px;background:#e4e0d9;margin:13px 0}
+.download-note{font-size:12px;color:#6b5c55;margin:10px 0 0}
+@media(max-width:950px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.clue-columns{grid-template-columns:1fr}}
+@media print{header,.controls,aside,.lead,button,#status,#qualityText{display:none!important}body{background:white}main{margin:0;padding:0}.layout{display:block}.panel{border:0;padding:0}.board{max-width:17cm}.clue-columns{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header><strong>جدول | استودیوی کلاسیک ۱۵×۱۵</strong><nav class="row"><a href="./index.html">کارگاه اصلی</a><a href="https://docs.google.com/spreadsheets/d/1u0dv4WNjQAz3QYleYDCbUkHDTWrLwxpYVDzCRl78p7E/edit" target="_blank" rel="noopener">Google Sheet بانک</a><a href="https://nimania.github.io/payamejadval/" target="_blank" rel="noopener">پیام جدول</a></nav></header>
+<main>
+<h1>طراحی جدول کلمات متقاطع فارسی</h1>
+<p class="lead">طرح‌های ۱۵×۱۵ با تقارن چرخشی ۱۸۰ درجه، ۱۲ تا ۱۶٫۷٪ سیاه‌خانه، بدون بلوک سیاه ۲×۲ و با همهٔ تقاطع‌های افقی و عمودی. الگوی شبکه مستقل از حل کامل نمایش داده می‌شود؛ جدول ناقص قابل دانلود نیست.</p>
+<div class="layout">
+<section>
+<div class="panel">
+<div class="row" style="justify-content:space-between"><h2>پیش‌نمایش شبکه</h2><label style="display:flex;align-items:center;gap:6px"><input id="redBlocks" type="checkbox"> سیاه‌خانهٔ قرمز</label></div>
+<div class="metrics">
+<div class="metric"><strong id="statBlack">—</strong>خانهٔ سیاه</div>
+<div class="metric"><strong id="statDensity">—</strong>چگالی</div>
+<div class="metric"><strong id="statSlots">—</strong>جایگاه پاسخ</div>
+<div class="metric"><strong id="statGeometry">—</strong>هندسه</div>
+</div>
+<div class="board-wrap"><div id="grid" class="board preview" role="img" aria-label="جدول ۱۵ در ۱۵"></div></div>
+<p id="qualityText" class="small">پیش از انتخاب الگو، داده‌های Google Sheets یا فایل بانک را بارگذاری کنید.</p>
+<div id="clues" class="clue-columns hidden"><div><h3>افقی — راست به چپ</h3><div id="acrossClues"></div></div><div><h3>عمودی — بالا به پایین</h3><div id="downClues"></div></div></div>
+</div>
+</section>
+<aside class="controls">
+<div class="panel">
+<h2>۱. منبع داده</h2>
+<p class="small">خواندن مستقیم <strong>Google Sheet خصوصی</strong> با ورود حساب گوگل دارای دسترسی؛ اطلاعات بانک در مخزن عمومی ذخیره نمی‌شود.</p>
+<button id="readSheet" class="primary" style="width:100%">ورود به گوگل و خواندن شیت</button>
+<div class="separator"></div>
+<label for="bankFile">یا انتخاب فایل CSV / JSON / JSONL (برای ادغام بانک قدیمی)</label>
+<input id="bankFile" type="file" accept=".csv,.json,.jsonl,application/json,text/csv">
+<p id="bankStats" class="small">هنوز اطلاعاتی دریافت نشده است.</p>
+</div>
+<div class="panel">
+<h2>۲. طرح خانه‌های سیاه</h2>
+<p class="small">فقط الگوهای قابل قبول از نظر تقارن، تراکم، طول پاسخ و پیوستگی نمایش داده می‌شوند.</p>
+<div class="row">
+<button id="makeMasks" class="primary" disabled>ساخت چند الگوی استاندارد</button>
+<button id="nextMask" disabled>الگوی بعدی</button>
+</div>
+<p id="maskStatus" class="small"></p>
+</div>
+<div class="panel">
+<h2>۳. حل جدول و سرنخ‌ها</h2>
+<label for="budget">عمق جست‌وجو</label>
+<select id="budget"><option value="12000">معمولی</option><option value="60000">عمیق</option></select>
+<p class="small">تنها پاسخ‌هایی که سرنخ دارند وارد حل‌گر می‌شوند. واژه‌های بدون سرنخ برای کامل‌کردن جدول به‌طور ساختگی به کار نمی‌روند.</p>
+<button id="solve" class="primary" style="width:100%" disabled>ساخت جدول کامل از این الگو</button>
+<div class="row" style="margin-top:10px">
+<button id="download" disabled>دریافت JSON</button>
+<button id="print" disabled>چاپ جدول</button>
+</div>
+<p class="download-note">حل‌گر هیچ جدول نیمه‌کاره‌ای به‌عنوان نتیجهٔ نهایی ارائه نمی‌دهد.</p>
+</div>
+<div id="status" class="status" role="status">سیستم آمادهٔ دریافت اطلاعات است.</div>
+</aside>
+</div>
+</main>
+<script src="./sheet-crossword-core.js"></script>
+<script src="./classic-patterns.js"></script>
+<script src="./quality-gate.js"></script>
+<script src="./sheet-crossword.js"></script>
+</body>
+</html>
