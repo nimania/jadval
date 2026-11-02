@@ -1,0 +1,82 @@
+name: Build review-only candidates from open Persian word list
+
+on:
+  push:
+    branches: [feature/bank-staging-20261102]
+    paths:
+      - '.github/workflows/bank-staging.yml'
+      - 'tools/stage_bank_candidates.py'
+      - 'tools/prepare_review_queue.py'
+      - 'tests/test_bank_staging.py'
+      - 'tests/test_review_queue.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage-public-wordlist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run bank staging and review queue tests
+        run: |
+          python -m unittest discover -s tests -p 'test_bank_staging.py' -v
+          python -m unittest discover -s tests -p 'test_review_queue.py' -v
+
+      - name: Download public MIT-licensed wordlist
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bank-staging-output
+          curl --fail --location --retry 3 --silent --show-error \
+            https://raw.githubusercontent.com/mvalipour/word-list-fa/master/words.txt \
+            -o bank-staging-source.txt
+          sha256sum bank-staging-source.txt > bank-staging-output/source-sha256.txt
+
+      - name: Generate unapproved word candidate bank
+        run: |
+          python tools/stage_bank_candidates.py words \
+            --input bank-staging-source.txt \
+            --output bank-staging-output/wordlist-candidates.jsonl \
+            --source-id mvalipour-word-list-fa \
+            --source-url https://github.com/mvalipour/word-list-fa \
+            --license MIT
+
+      - name: Generate editorial review queue
+        run: |
+          python tools/prepare_review_queue.py \
+            --input bank-staging-output/wordlist-candidates.jsonl \
+            --output bank-staging-output/review-queue.csv \
+            --limit 1500
+
+      - name: Print summary
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os
+          with open('bank-staging-output/wordlist-candidates.report.json',encoding='utf-8') as f:
+              s=json.load(f)
+          t=('## نامزدهای پاسخ، صرفاً برای بازبینی\n'
+             + f"- نامزدهای حاصل از منبع عمومی: {s['candidate_records']:,}\n"
+             + f"- پاسخ‌های منحصربه‌فرد: {s['distinct_answers']:,}\n"
+             + "- تعداد پرسش‌های تأییدشدهٔ افزوده به بانک اصلی: **صفر**\n"
+             + "- بانک خصوصی، Firestore و سایت انتشار: بدون تغییر\n")
+          print(t)
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a',encoding='utf-8') as out:
+              out.write(t)
+          PY
+
+      - name: Archive publicly sourced review-only data
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-word-candidates-review-only
+          path: bank-staging-output/
+          retention-days: 30
