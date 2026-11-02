@@ -10,11 +10,16 @@ for(const size of [15,20]){
  const keys=new Set();
  for(const mask of masks){
   assert(window.JadvalClassic.valid(mask),'Invalid classic mask');
-  assert(mask.every(row=>row.some(v=>!v)&&row.some(Boolean)),'Lost row');
-  for(let c=0;c<size;c++)assert(mask.some(row=>row[c])&&mask.some(row=>!row[c]),'Lost column');
+  assert(mask.every(row=>row.some(v=>!v)),'Lost row');
+  for(let c=0;c<size;c++)assert(mask.some(row=>!row[c]),'Lost column');
+  const black=mask.flat().filter(Boolean).length;
+  assert(black/(size*size)>=.12&&black/(size*size)<=.167,'Black density outside 12-16.7%');
+  for(let r=0;r<size;r++)for(let c=0;c<size;c++)
+   assert.equal(mask[r][c],mask[size-1-r][size-1-c],'180-degree rotational symmetry required');
   const spans=window.JadvalClassic.slots(mask);
-  assert(spans.every(x=>x.length>=2),'One-letter slot');
-  assert(spans.every(x=>x.length<=12),'Do not require unavailable long answers');
+  assert(spans.every(x=>x.length>=3),'Short answers must be at least three letters');
+  // Long slots can be legitimate; the CSP solver must report missing bank lengths honestly.
+  assert(spans.every(x=>x.length<=size),'Slot must fit the grid');
   keys.add(mask.map(row=>row.map(x=>x?'#':'.').join('')).join('/'));
  }
  assert.equal(keys.size,masks.length,'Duplicate masks');
