@@ -14,7 +14,7 @@ function preparedPuzzle(data,bank,title,evaluation){
   throw Error('نمونهٔ آزمایشی یا جدول بدون ارزیابی مستقل قابل انتشار نیست.');
  if(!validator.validateWithBank(data,bank))
   throw Error('جدول کامل نیست یا سرنخ‌ها و جواب‌ها با بانک اصلی تطابق ندارند.');
- const audit=quality.audit(data.puzzle,bank);
+ const audit=quality.audit(data.puzzle,bank,{trustedCorpus:root.JadvalBankReadiness?.corpusTrusted(bank)===true});
  if(!audit.technicalPassed||!audit.bankPassed||audit.errors.length)
   throw Error('دروازهٔ کیفیت رد شد: '+audit.errors.slice(0,3).map(x=>x.detail).join(' | '));
  if(!evaluation?.ready||evaluation.score<90||evaluation.technical!==60)
@@ -47,7 +47,8 @@ function currentBoard(){return root.JadvalSparse?.getCurrentForPublication?.()||
 let busy=false;
 function currentAudit(){
  const data=currentBoard();
- return data&&root.JadvalQuality?root.JadvalQuality.audit(data.puzzle,currentBank()):null;
+ return data&&root.JadvalQuality?root.JadvalQuality.audit(data.puzzle,currentBank(),{
+  trustedCorpus:root.JadvalBankReadiness?.corpusTrusted(currentBank())===true}):null;
 }
 function reportQuality(){
  const panel=$('qaReport'),data=currentBoard(),audit=currentAudit();
