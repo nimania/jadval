@@ -21,7 +21,8 @@ function sourceQualified(row,maxLength){
 }
 
 const supported=new Set([7,10,15,20]);
-function audit(puzzle,bank){
+function audit(puzzle,bank,options={}){
+ const trustedCorpus=options?.trustedCorpus===true;
  const errors=[],warnings=[],n=puzzle?.grid?.length;
  const fail=(code,detail)=>{errors.push({code,detail});};
  const report={schema:1,policy:'strict-persian-crossword-2026',technicalPassed:false,
@@ -125,6 +126,7 @@ function audit(puzzle,bank){
  // Bank verification applies only when the ORIGINAL private source bank is provided.
  // Exact matching alone does not prove a word exists; "reviewed" flags and
  // identifiable sources are required, and they remain subject to human review.
+ report.corpusMode=trustedCorpus?'owner-attested':'entry-reviewed';
  const bankAvailable=Array.isArray(bank);
  if(bankAvailable){
   const byPair=new Map();
@@ -141,7 +143,7 @@ function audit(puzzle,bank){
      const slot=items[i],clue=normalizeClue(puzzle.clues?.[dir]?.[group]?.[i]);
      const sources=byPair.get(normalize(slot.answer)+'\u0000'+clue)||[];
      if(!sources.length){fail('unmatched-bank','سرنخ/پاسخ '+dir+' '+group+' با بانک اصلی تطابق ندارد.');continue;}
-     const reviewed=sources.find(row=>sourceQualified(row,n));
+     const reviewed=sources.find(row=>trustedCorpus||sourceQualified(row,n));
      if(!reviewed){fail('unreviewed','پاسخ '+slot.answer+' هنوز بازبینی، منبع مشخص، مجوز انتشار، موضوع و سطح دشواری قابل‌قبول ندارد.');continue;}
      category.add(String(reviewed.category||'دسته‌بندی‌نشده'));
      difficulty.add(String(reviewed.difficulty||'unknown'));
@@ -150,10 +152,14 @@ function audit(puzzle,bank){
   const distinctLengths=Object.keys(report.stats.lengths).length;
   if(slots.length>=15&&distinctLengths<3)
    fail('length-variety','جدول حداقل به سه طول متفاوت پاسخ نیاز دارد.');
-  if(slots.length>=20&&category.size<4)
-   fail('topic-variety','حداقل چهار حوزهٔ موضوعی بازبینی‌شده لازم است.');
-  if(slots.length>=15&&!['easy','medium','hard'].every(x=>difficulty.has(x)))
-   fail('difficulty-balance','پاسخ‌های آسان، متوسط و دشوار باید همگی حضور داشته باشند.');
+  if(slots.length>=20&&category.size<4){
+   if(trustedCorpus)warnings.push('موضوع‌ها در بانک خام برچسب‌گذاری نشده‌اند؛ تنوع موضوعی جدول باید در مرحلهٔ بازبینی نهایی به‌طور مستقل تأیید شود.');
+   else fail('topic-variety','حداقل چهار حوزهٔ موضوعی بازبینی‌شده لازم است.');
+  }
+  if(slots.length>=15&&!['easy','medium','hard'].every(x=>difficulty.has(x))){
+   if(trustedCorpus)warnings.push('دشواری پاسخ‌ها در بانک خام برچسب‌گذاری نشده است؛ توازن آسان، متوسط و دشوار باید توسط بازبین جدول نهایی تأیید شود.');
+   else fail('difficulty-balance','پاسخ‌های آسان، متوسط و دشوار باید همگی حضور داشته باشند.');
+  }
  }else warnings.push('بدون بانک خصوصی، اعتبار واژگان و سرنخ‌ها قابل احراز نیست.');
  const structural=['grid','letters','symmetry','black-square','black-density','no-white',
   'connected','short-answer','coverage','duplicate-answer','duplicate-clue',
@@ -162,7 +168,9 @@ function audit(puzzle,bank){
  report.bankPassed=bankAvailable&&errors.length===0;
  report.slots=slots;
  if(report.technicalPassed&&report.bankPassed)
-  warnings.push('معنای واژگان، یکتایی معنایی حل، انصاف سرنخ‌ها و تجربهٔ بازی نیاز به تأیید مستقل ویراستار دارند.');
+  warnings.push(trustedCorpus?
+   'بانک بنا بر تأیید مالک برای طراحی پذیرفته شده است، نه به‌عنوان گواه مستقل. کیفیت، موضوع، دشواری، یکتایی معنایی و حقوق انتشار جدول نهایی به تأیید ویراستار نیاز دارند.':
+   'معنای واژگان، یکتایی معنایی حل، انصاف سرنخ‌ها و تجربهٔ بازی نیاز به تأیید مستقل ویراستار دارند.');
  return report;
 }
 const editorialFields={words:10,clues:10,uniqueness:10,experience:5,geometry:5};
