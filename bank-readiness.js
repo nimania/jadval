@@ -110,8 +110,9 @@ function init(){
  $('refreshBankReadiness').onclick=refresh;
  Promise.resolve(root.JadvalApp?.localReady).then(refresh).catch(()=>{});
 }
-root.JadvalBankReadiness={analyze,approved,approvedEntries,reviewReasons,citationOK,refresh,normalize,licences};
-if(typeof module!=='undefined'&&module.exports)module.exports=root.JadvalBankReadiness;
+const api={analyze,approved,approvedEntries,reviewReasons,citationOK,refresh,normalize,licences};
+if(root)root.JadvalBankReadiness=api;
+if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(typeof document!=='undefined'){
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 }
