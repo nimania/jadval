@@ -303,9 +303,23 @@ async function generateSample(){
  const bank=(typeof entries!=="undefined"&&entries.length)?entries:[];
  if(!bank.length){$("demoNote").textContent="اول بانک سؤال‌وجواب خودت را وارد کن.";return;}
  const filtered=category?bank.filter(e=>(e.category||"دسته‌بندی‌نشده")===category):bank;
+ const professional=$( "patternStyle" )?.value==="classic";
+ const approved=window.JadvalBankReadiness?.approvedEntries(filtered,size)||[];
  updateReport(null);
+ if(professional&&!approved.length){
+  const info=window.JadvalBankReadiness?.analyze(filtered,size);
+  $("demoNote").textContent="ساخت حرفه‌ای متوقف شد: از "+(info?.total??filtered.length)+
+   " مدخل، هیچ واژهٔ مناسبِ ۳ تا "+size+"حرفی با منبع، مجوز، درجهٔ دشواری و بازبینی واقعی ثبت نشده است."+
+   " ابتدا از «آمادگی بانک» وارد صف بازبینی شو. بانک خام دست‌نخورده باقی می‌ماند.";
+  last=null;$("demoResult").hidden=true;window.JadvalPublish?.onNewPuzzle?.();
+  updateReport({schema:1,type:"jadval-solver-diagnostics",status:"bank-not-reviewed",
+   size,filteredEntries:filtered.length,approvedEntries:0,
+   byLength:info?.byLength||{},reason:"Only editorially reviewed entries may be used in professional generation."});
+  return;
+ }
  btn.disabled=true;btn.textContent="در حال طراحی…";
- $("demoNote").textContent="در حال ساخت یک جدول کامل با ترکیب جدید پاسخ‌های کوتاه از بانک…";
+ $("demoNote").textContent=professional?"جست‌وجوی کلاسیک فقط با "+approved.length+" مدخلِ بازبینی‌شده و منبع‌دار…":
+  "در حال ساخت پیش‌نویس آزمایشی با بانک خام؛ این حالت به‌تنهایی مجوز انتشار نمی‌دهد…";
  await new Promise(resolve=>setTimeout(resolve,30));
  try{
   const classic=$("patternStyle")?.value==="classic";
@@ -315,15 +329,15 @@ async function generateSample(){
    if(!maker)throw Error("موتور الگوی کلاسیک بارگذاری نشده است.");
    const preview=window.JadvalClassicPreview?.getSelected?.();
    const selected=preview&&preview.length===size&&maker.valid(preview)?preview:null;
-   const masks=maker.build(size,Date.now(),8,filtered);
+   const masks=maker.build(size,Date.now(),8,approved);
    if(selected&&!masks.some(mask=>JSON.stringify(mask)===JSON.stringify(selected)))masks.unshift(selected);
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
-    const report=await solveClassicInWorker(masks,filtered,Date.now(),budgetMs);
+    const report=await solveClassicInWorker(masks,approved,Date.now(),budgetMs);
     updateReport({
      schema:1,type:"jadval-solver-diagnostics",timestamp:new Date().toISOString(),
      size,style:"classic",category:category||"all",searchBudgetMs:budgetMs,bankEntries:bank.length,
-     filteredEntries:filtered.length,attemptedMasks:masks.length,
+     filteredEntries:filtered.length,approvedEntries:approved.length,attemptedMasks:masks.length,
      reports:(report.reports||[]).map(x=>({
        status:x.status,slotCount:x.slotCount,bestDepth:x.bestDepth,nodes:x.nodes,
        elapsedMs:x.elapsedMs,initialPruned:x.initialPruned,score:x.score,
