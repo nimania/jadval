@@ -8,10 +8,17 @@ function cleanTitle(value){
  if(!title||title.length>120)throw Error('عنوان باید بین ۱ تا ۱۲۰ نویسه باشد.');
  return title;
 }
-function preparedPuzzle(data,bank,title){
- const validator=root.JadvalSparse;
- if(!validator||!validator.validateWithBank(data,bank))
-  throw Error('جدول کامل نیست یا سرنخ‌ها و جواب‌ها با بانک اصلی تطابق ندارند. انتشار مجاز نیست.');
+function preparedPuzzle(data,bank,title,evaluation){
+ const validator=root.JadvalSparse,quality=root.JadvalQuality;
+ if(!validator||!quality||!data||data.sample===true||data.puzzle?.meta?.method==='constructed-bank-proof')
+  throw Error('نمونهٔ آزمایشی یا جدول بدون ارزیابی مستقل قابل انتشار نیست.');
+ if(!validator.validateWithBank(data,bank))
+  throw Error('جدول کامل نیست یا سرنخ‌ها و جواب‌ها با بانک اصلی تطابق ندارند.');
+ const audit=quality.audit(data.puzzle,bank);
+ if(!audit.technicalPassed||!audit.bankPassed||audit.errors.length)
+  throw Error('دروازهٔ کیفیت رد شد: '+audit.errors.slice(0,3).map(x=>x.detail).join(' | '));
+ if(!evaluation?.ready||evaluation.score<90||evaluation.technical!==60)
+  throw Error('امتیاز نهاییِ تأییدشده حداقل ۹۰ از ۱۰۰ و گزارش بازبین لازم است.');
  const name=cleanTitle(title),source=data.puzzle,n=source.grid.length;
  if(![7,10,15,20].includes(n))throw Error('اندازهٔ جدول برای انتشار پشتیبانی نمی‌شود.');
  const grid=source.grid.map(row=>row.slice());
@@ -38,51 +45,97 @@ function newPublicId(){
 function currentBank(){return typeof entries!=='undefined'?entries:[];}
 function currentBoard(){return root.JadvalSparse?.getCurrentForPublication?.()||null;}
 let busy=false;
+function currentAudit(){
+ const data=currentBoard();
+ return data&&root.JadvalQuality?root.JadvalQuality.audit(data.puzzle,currentBank()):null;
+}
+function reportQuality(){
+ const panel=$('qaReport'),data=currentBoard(),audit=currentAudit();
+ if(!panel)return;
+ panel.replaceChildren();
+ const heading=document.createElement('strong');heading.textContent='گزارش مستقل کنترل کیفیت (۱۸ معیار)';panel.append(heading);
+ const summary=document.createElement('p');
+ if(!audit){summary.textContent='هنوز جدول کاملی برای بررسی وجود ندارد.';panel.append(summary);return;}
+ const s=audit.stats;
+ summary.textContent='خانهٔ سیاه: '+s.blackCount+' از '+(s.size*s.size)+
+  ' ('+(s.blackRatio*100).toFixed(1)+'٪) — جایگاه پاسخ: '+s.slots+
+  ' — وضعیت: '+(audit.technicalPassed&&audit.bankPassed&&!data.sample?'نیازمند امتیازدهی ویراستار':'غیرقابل انتشار');
+ panel.append(summary);
+ if(data.sample){const sample=document.createElement('p');sample.textContent='این نمونه برای آزمون فنی است و هرگز مستقیماً منتشر نمی‌شود.';panel.append(sample);}
+ if(audit.errors.length){
+  const details=document.createElement('details');details.open=true;
+  const title=document.createElement('summary');title.textContent=audit.errors.length+' ایراد/مدرک تأییدنشده (۱۲ مورد نخست)';details.append(title);
+  const list=document.createElement('ol');
+  for(const error of audit.errors.slice(0,12)){
+   const item=document.createElement('li');item.textContent=error.detail;list.append(item);
+  }
+  details.append(list);panel.append(details);
+ }
+ const next=document.createElement('p');
+ next.textContent=audit.errors.length?
+  'تا رفع همهٔ ایرادها و بازبینی مدخل‌های بانک، امکان انتشار وجود ندارد.':
+  'کنترل فنی قبول است؛ امتیاز و تأیید مستقل محتوایی هنوز لازم است.';
+ panel.append(next);
+}
 function onNewPuzzle(){
- const button=$('preparePublish');
- if(button)button.disabled=false;
+ const button=$('preparePublish'),data=currentBoard(),audit=currentAudit();
+ if(button)button.disabled=!(data&&!data.sample&&audit?.technicalPassed&&audit.bankPassed&&!audit.errors.length);
  const result=$('publishResult');if(result)result.replaceChildren();
  const box=$('publishApproval');if(box)box.checked=false;
+ reportQuality();
 }
 function openReview(){
- const status=$('publishStatus'),dialog=$('publishDialog'),data=currentBoard();
+ const status=$('publishStatus'),dialog=$('publishDialog'),data=currentBoard(),audit=currentAudit();
  status.textContent='';
- if(!data||!root.JadvalSparse.validateWithBank(data,currentBank())){
-  const msg='برای انتشار، ابتدا جدول کامل با سرنخ‌های معتبر بساز.';
-  status.textContent=msg;if($('demoNote'))$('demoNote').textContent=msg;return;
+ if(!data||data.sample||!audit?.technicalPassed||!audit.bankPassed||audit.errors.length){
+  const msg='این جدول هنوز ۱۸ معیار اجباری را نمی‌گذراند. گزارش کنترل کیفیت زیر جدول را ببین.';
+  if($('demoNote'))$('demoNote').textContent=msg;
+  reportQuality();return;
  }
  if(!root.JadvalCloud?.canPublish?.()){
   const msg=!root.JadvalCloud?.isConnected?.()?
    'ابتدا با حساب مدیر جدول‌ساز در بخش پایگاه مرکزی وارد شو.':
-   'ابتدا در بخش پایگاه مرکزی روی «بررسی دسترسی انتشار در پیام جدول» بزن و در صورت رد دسترسی، قواعد Firebase را فعال کن.';
+   'ابتدا دسترسی انتشار در Firebase را بررسی کن.';
   status.textContent=msg;if($('demoNote'))$('demoNote').textContent=msg;return;
  }
  const n=data.puzzle.grid.length;
  $('publishTitle').value='جدول فارسی '+n+'×'+n;
  $('publishApproval').checked=false;
- $('publishSource').textContent=data.sample?
-  'این خروجی از نمونهٔ فنی ساخته شده است. انتشار فقط پس از بازبینی واقعی سؤال‌ها و پاسخ‌ها مجاز است.':
-  'متن تمام سرنخ‌ها، جواب‌ها و تقاطع‌ها را قبل از تأیید بررسی کن.';
+ for(const input of dialog.querySelectorAll('.qa-attest'))input.checked=false;
+ for(const input of dialog.querySelectorAll('.qa-rating'))input.value='';
+ $('qaReviewer').value='';
+ $('publishSource').textContent='آزمون هندسه و انطباق با مدخل‌های بازبینی‌شده موفق است. یکتایی معنایی، اصالت منابع، روانی سرنخ‌ها، انصاف و تجربهٔ حل را مستقل بررسی و امتیازدهی کن. این موارد با کد اثبات نمی‌شوند.';
  $('publishConfirm').disabled=false;
  $('publishConfirm').textContent='تأیید ویراستاری و انتشار';
  $('publishResult').replaceChildren();
  dialog.showModal();
 }
+function evaluateForm(){
+ const checks={};
+ for(const input of $('publishDialog').querySelectorAll('.qa-attest'))checks[input.value]=input.checked;
+ const ratings={};
+ for(const input of $('publishDialog').querySelectorAll('.qa-rating'))ratings[input.name]=input.value;
+ return root.JadvalQuality.score(currentAudit(),ratings,checks,$('qaReviewer').value);
+}
 async function submit(event){
  event.preventDefault();if(busy)return;
  const status=$('publishStatus');
- if(!$('publishApproval').checked){status.textContent='تأیید بازبینی ویراستاری و حقوق انتشار الزامی است.';return;}
+ if(!$('publishApproval').checked){status.textContent='تأیید نهایی انتشار عمومی الزامی است.';return;}
+ const evaluation=evaluateForm();
+ if(!evaluation.ready){
+  status.textContent=evaluation.reason+(evaluation.score===null?'':' — امتیاز: '+evaluation.score+' از ۱۰۰');return;
+ }
  let documentPayload;
  try{
-  documentPayload=preparedPuzzle(currentBoard(),currentBank(),$('publishTitle').value);
+  documentPayload=preparedPuzzle(currentBoard(),currentBank(),$('publishTitle').value,evaluation);
   documentPayload.id=newPublicId();
   documentPayload.editorApproved=true;
  }catch(error){status.textContent=error.message;return;}
  busy=true;$('publishConfirm').disabled=true;
- status.textContent='در حال ثبت یک جدول تأییدشده در آرشیو عمومی…';
+ status.textContent='امتیاز '+evaluation.score+' از ۱۰۰؛ در حال ثبت جدول تأییدشده در آرشیو عمومی…';
  try{
   const result=await root.JadvalCloud.publishPuzzle(documentPayload);
-  status.textContent='جدول در پایگاه عمومی ثبت شد. ممکن است نمایش آن در سایت چند لحظه به‌روزرسانی بخواهد.';
+  status.textContent='جدول با امتیاز ویراستاری '+evaluation.score+' منتشر شد. بازبین مسئول: '+evaluation.reviewer;
   const box=$('publishResult');box.replaceChildren();
   const link=document.createElement('a');link.className='btn primary';
   link.href=result.url;link.target='_blank';link.rel='noopener noreferrer';
@@ -91,7 +144,7 @@ async function submit(event){
   $('publishConfirm').textContent='منتشر شد';
  }catch(error){
   status.textContent=error.code==='permission-denied'?
-   'Firestore اجازهٔ انتشار نمی‌دهد. قواعد publishedPuzzles باید در پروژهٔ Firebase منتشر شوند؛ بانک خصوصی را تغییر نده.':
+   'Firestore اجازهٔ انتشار نمی‌دهد. قواعد publishedPuzzles را بدون تغییر بانک خصوصی بررسی کن.':
    'انتشار ناموفق: '+(error.code||error.message||'خطای نامشخص');
   $('publishConfirm').disabled=false;
  }finally{busy=false;}
