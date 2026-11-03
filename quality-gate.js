@@ -31,6 +31,7 @@ function audit(puzzle,bank,options={}){
  if(!supported.has(n)||!Array.isArray(puzzle.grid)||!puzzle.grid.every(row=>Array.isArray(row)&&row.length===n)){
   fail('grid','شبکه باید مربعی و دارای اندازهٔ پشتیبانی‌شده باشد.');return report;
  }
+ const magazine=puzzle?.meta?.profile==='iran-magazine';
  const grid=puzzle.grid,mask=grid.map(row=>row.map(cell=>cell===''));
  for(let r=0;r<n;r++)for(let c=0;c<n;c++){
   const ch=grid[r][c];
@@ -48,8 +49,9 @@ function audit(puzzle,bank,options={}){
  }
  const total=n*n,white=total-black,ratio=black/total;
  Object.assign(report.stats,{blackCount:black,blackRatio:ratio,whiteCount:white});
- if(ratio<0.12-1e-9||ratio>0.167+1e-9)
-  fail('black-density','چگالی '+(100*ratio).toFixed(1)+'٪ بیرون محدودهٔ ۱۲ تا ۱۶٫۷ درصد است.');
+ const minDensity=magazine?.10:.12,maxDensity=magazine?.22:.167;
+ if(ratio<minDensity-1e-9||ratio>maxDensity+1e-9)
+  fail('black-density','چگالی '+(100*ratio).toFixed(1)+'٪ بیرون محدودهٔ '+(100*minDensity)+' تا '+(100*maxDensity)+' درصد است.');
  if(!white){fail('no-white','جدول هیچ خانهٔ سفیدی ندارد.');return report;}
  const queue=[],visited=new Set();
  outer:for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(!mask[r][c]){queue.push([r,c]);visited.add(id(r,c));break outer;}
@@ -64,7 +66,7 @@ function audit(puzzle,bank,options={}){
  const slots=[],coverage=new Map();
  function addSlot(dir,group,cells){
   if(!cells.length)return;
-  if(cells.length<3)fail('short-answer','پاسخ '+(dir==='horizontal'?'افقی ':'عمودی ')+group+' تنها '+cells.length+' حرف دارد (حداقل ۳).');
+  if(!magazine&&cells.length<3)fail('short-answer','پاسخ '+(dir==='horizontal'?'افقی ':'عمودی ')+group+' تنها '+cells.length+' حرف دارد (حداقل ۳ در حالت سخت‌گیرانه).');
   const answer=cells.map(([r,c])=>grid[r][c]).join('');
   const slot={dir,group,cells,answer};slots.push(slot);
   for(const [r,c] of cells){
@@ -93,6 +95,8 @@ function audit(puzzle,bank,options={}){
   if(!cross||cross.horizontal!==1||cross.vertical!==1)
    fail('coverage','خانهٔ سفید '+(r+1)+'،'+(n-c)+' باید در دقیقاً یک پاسخ افقی و یک پاسخ عمودی باشد.');
  }
+ report.profile=magazine?'iran-magazine':'strict';
+ report.stats.shortSlots=slots.filter(slot=>slot.cells.length<=2).length;
  report.stats.slots=slots.length;
  const groups={horizontal:{},vertical:{}},uniqueAnswers=new Set(),uniqueClues=new Set();
  for(const slot of slots){
