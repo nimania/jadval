@@ -28,6 +28,12 @@ assert.equal(inspect(grid,[]).status,'missing-lengths');
 const isolated=[{answer:'ااا',clue:'یک'},{answer:'ببب',clue:'دو'}];
 const rejected=solve(grid,isolated,{limitMs:200});
 assert(['arc-inconsistent','inconsistent'].includes(rejected.status),'Incompatible crossings must fail');
+// A magazine singleton is a real slot, never an invalid grid shape.
+const magazineMask=[[false,true,false],[false,true,false],[false,true,false]];
+const shortInspection=inspect(magazineMask,entries);
+assert.equal(shortInspection.status,'missing-lengths');
+assert(shortInspection.missingLengths.includes(1));
+assert.equal(solve(magazineMask,entries,{limitMs:100}).status,'missing-lengths');
 const broken=solve([[false]],entries,{limitMs:100});
 assert.equal(broken.status,'invalid-mask');
 console.log('Worker CSP, consistency and failure diagnostics passed');
