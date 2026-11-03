@@ -168,4 +168,4 @@ function validate(item){return inspect(item).publishable&&
 const api={sizes,normalize,blank,positions,startFor,build,inspect,validate,refresh,addEntry,removeEntry,setBlock,finishBlocks};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 if(root)root.PayameClueInCell=api;
-})(typeof window!=='undefined'?window:null);
+})(typeof window!=='undefined'?window:typeof self!=='undefined'?self:null);
