@@ -21,6 +21,28 @@ const MAGAZINE_REFERENCE=[
  '.......#.......'
 ];
 function referenceMask(){return MAGAZINE_REFERENCE.map(line=>[...line].map(ch=>ch==='#'));}
+// Smallest bank-compatible adaptation of the printed layout found in the
+// current geometry search: symmetric, 36 blocks, connected, no one-cell slots.
+// It preserves the magazine visual without inventing single-letter answers.
+const MAGAZINE_ADAPTED=[
+ '.......#..#...#',
+ '..........#....',
+ '..#......#.....',
+ '...#....#..#...',
+ '##....#.....#..',
+ '..#....#.......',
+ '..........##...',
+ '.....#...#.....',
+ '...##..........',
+ '.......#....#..',
+ '..#.....#....##',
+ '...#..#....#...',
+ '.....#......#..',
+ '....#..........',
+ '#...#..#.......'
+];
+function adaptedMask(){return MAGAZINE_ADAPTED.map(line=>[...line].map(ch=>ch==='#'));}
+
 function rand(seed){let s=seed>>>0;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
 function runs(mask){
  const n=mask.length,result=[];
@@ -109,12 +131,13 @@ function uniqueLengthCounts(bank){
 }
 function build(n,seed,count=8,bank=[],profile='strict'){
  if(profile==='iran-magazine'&&n===15){
-  const ref=referenceMask(),frequency=uniqueLengthCounts(bank);
-  const refMissing=runs(ref).some(slot=>bank.length>0&&!(frequency.get(slot.length)||0));
-  // Always keep the printed reference available for preview, but do not
-  // offer it to the CSP when a required answer length is unavailable.
+  const ref=referenceMask(),adapted=adaptedMask(),frequency=uniqueLengthCounts(bank);
+  const supported=mask=>!bank.length||runs(mask).every(slot=>(frequency.get(slot.length)||0)>0);
+  // Exact printed pattern is used when its one-letter entries really exist.
+  // Otherwise prioritize a nearby bank-compatible magazine layout.
+  const magazine=[ref,adapted].filter(mask=>supported(mask)&&valid(mask,'iran-magazine'));
   const fallback=build(n,seed,count,bank,'strict');
-  return (!refMissing||!bank.length?[ref,...fallback]:fallback)
+  return [...magazine,...fallback]
    .slice(0,count).map(mask=>mask.map(row=>row.slice()));
  }
  if(![10,15,20].includes(n))return [];
@@ -166,5 +189,5 @@ function assess(mask,bank){
  const scarce=[...new Set(segments.map(s=>s.length).filter(len=>(frequency.get(len)||0)>0&&(frequency.get(len)||0)<15))].sort((a,b)=>a-b);
  return {blackCells:mask.flat().filter(Boolean).length,slots:segments.length,missingLengths:missing,scarceLengths:scarce,longestRequired:Math.max(...segments.map(s=>s.length)),score:evaluate(mask,frequency,12)};
 }
-window.JadvalClassic={build,valid,referenceMask,slots:runs,assess};
+window.JadvalClassic={build,valid,referenceMask,adaptedMask,slots:runs,assess};
 })();
