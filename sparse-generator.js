@@ -328,7 +328,7 @@ async function generateSample(){
   "در حال ساخت پیش‌نویس آزمایشی با بانک خام؛ این حالت به‌تنهایی مجوز انتشار نمی‌دهد…";
  await new Promise(resolve=>setTimeout(resolve,30));
  try{
-  const classic=$("patternStyle")?.value==="classic";
+  const classic=professional; // magazine and strict both use the genuine CSP solver
   let output;
   if(classic){
    const maker=window.JadvalClassic;
