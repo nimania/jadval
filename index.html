@@ -64,9 +64,18 @@ body.simple-maker #makerQuickstart{border-color:#74a3bb}
 .demo-cell.demo-block.art-plain{background:#282828;border-color:#282828}
 .demo-cell.demo-block.art-red{background:#bd0b1b;border-color:#6e1520}
 .demo-cell.demo-block.art-red::after{content:none}
+.auto-clue-field{display:flex;flex-direction:column;gap:6px;min-width:155px;color:#526573;font-size:12px;font-weight:700}
+.auto-clue-field input,.auto-clue-field select{border:1px solid #c7d3dd;border-radius:9px;padding:9px;font:inherit;min-width:165px}
+.auto-clue-viewport{overflow:auto;max-height:640px;border:1px solid #d7e1e8;background:#e9eff2;border-radius:9px;padding:8px;min-height:46px}
+.auto-clue-grid{display:grid;direction:ltr;width:max-content;margin:0 auto;background:#fff;border:2px solid #32434d}
+.auto-clue-cell{height:30px;width:30px;display:flex;align-items:center;justify-content:center;border:1px solid #b6c3cd;background:#fff;color:#185071;font-weight:800;font-size:14px;text-align:center}
+.auto-clue-cell.empty{background:#e4e9ec;color:#a4b1b9}
+.auto-clue-cell.clue{background:#eadfc2;color:#3f382e;font-size:7px;font-weight:600;padding:1px;direction:rtl;overflow:hidden;word-break:break-word;line-height:1.13}
+.auto-clue-cell.block{background:#292929;border-color:#292929}
+#autoClueReport{line-height:1.9}
 html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:not(#cloudManagement),html.cloud-locked main>p{display:none!important}
 </style><script src="./firebase-config.js"></script></head>
-<body><header><div class="top"><div><div class="brand"><a href="https://nimania.github.io/payamejadval/" aria-label="پیام جدول؛ صفحهٔ اصلی"><img src="https://nimania.github.io/payamejadval/assets/payamejadval-logo.webp" alt="لوگوی پیام جدول" width="150" height="51" loading="eager"></a><span class="subtitle">/ کارگاه طراحی فارسی</span></div></div><div class="toolbar" style="align-items:center"><a href="./clue-in-cell.html" class="btn primary">طراحی شرح در متن ↗</a><a href="https://nimania.github.io/payamejadval/" target="_blank" rel="noopener">پیام جدول ↗</a></div></div></header>
+<body><header><div class="top"><div><div class="brand"><a href="https://nimania.github.io/payamejadval/" aria-label="پیام جدول؛ صفحهٔ اصلی"><img src="https://nimania.github.io/payamejadval/assets/payamejadval-logo.webp" alt="لوگوی پیام جدول" width="150" height="51" loading="eager"></a><span class="subtitle">/ کارگاه طراحی فارسی</span></div></div><div class="toolbar" style="align-items:center"><a href="#clueAuto" class="btn primary">تولید خودکار شرح در متن</a><a href="https://nimania.github.io/payamejadval/" target="_blank" rel="noopener">پیام جدول ↗</a></div></div></header>
 <main>
 <div class="hero"><div><h1>بانک سؤال و جواب</h1><p class="muted">مدیریت، پالایش و آماده‌سازی مدخل‌ها برای تولید جدول‌های تازه</p></div>
 <div class="toolbar"><label class="btn primary" for="file">ورود بانک JSON</label><input id="file" type="file" accept=".json,application/json">
@@ -83,13 +92,32 @@ html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:n
 </div>
 <p class="muted small">همکار جدید برای استفاده از بانک خصوصی روی دستگاه دیگر به حساب مجاز و انتقال امن بانک مرکزی نیاز دارد. این صفحه به‌تنهایی دسترسی سرور را به کسی نمی‌دهد.</p>
 </section>
-<section class="panel" aria-label="طراحی شرح در متن">
- <div class="toolbar" style="justify-content:space-between;align-items:center">
- <div><h2>کارگاه «شرح در متن»</h2>
- <p class="muted small">ساخت شبکهٔ ۳۰×۲۰ افقی یا ۲۰×۱۴ عمودی؛ قرار دادن سؤال در خانه، فلش جهت، تطبیق پاسخ‌های متقاطع، پیش‌نمایش و ذخیرهٔ پیش‌نویس جدا از بانک واژگان.</p></div>
- <a class="btn primary" href="./clue-in-cell.html">بازکردن کارگاه شرح در متن</a>
+<section class="panel" id="clueAuto" aria-label="ساخت خودکار جدول شرح در متن">
+ <div class="toolbar" style="justify-content:space-between;align-items:center;gap:12px">
+  <div><h2>تولید خودکار جدول «شرح در متن»</h2>
+   <p class="muted small">سیستم فقط از نسخهٔ تازهٔ فرهنگ‌نامهٔ مرکزی Firestore استفاده می‌کند. جواب و سرنخ هیچ‌کدام ساخته یا حدس زده نمی‌شوند؛ اگر جدول کامل نشود، انتشار مسدود می‌ماند.</p>
+  </div>
  </div>
- <p class="muted small">هیچ جدول نیمه‌کاره‌ای منتشر نمی‌شود؛ ابتدا باید کنترل فنی و بازبینی ویراستاری کامل شود.</p>
+ <div class="toolbar" style="align-items:end">
+  <label class="auto-clue-field">قالب و ابعاد
+   <select id="autoClueVariant"><option value="horizontal">۳۰×۲۰ افقی</option><option value="vertical">۲۰×۱۴ عمودی</option></select>
+  </label>
+  <label class="auto-clue-field">عنوان پیشنهادی
+   <input id="autoClueTitle" type="text" maxlength="120" value="جدول شرح در متن ـ شمارهٔ ۱">
+  </label>
+  <button id="autoClueRun" class="btn primary" type="button">ساخت خودکار از بانک مرکزی</button>
+  <button id="autoClueCancel" class="btn" type="button" disabled>توقف جست‌وجو</button>
+ </div>
+ <p id="autoClueStatus" class="note" role="status">ابتدا با حساب مدیر به بانک مرکزی متصل شو؛ سپس «ساخت خودکار» را بزن.</p>
+ <div class="toolbar" style="align-items:center;margin:10px 0">
+  <button id="autoClueToggle" class="btn" type="button" disabled>نمایش پاسخ‌ها</button>
+  <button id="autoClueSave" class="btn" type="button" disabled>دانلود بهترین پیش‌نویس</button>
+  <button id="autoClueReview" class="btn primary" type="button" disabled>خروجی آمادهٔ بررسی انتشار</button>
+ </div>
+ <div class="auto-clue-viewport"><div id="autoClueGrid" class="auto-clue-grid" aria-label="پیش‌نمایش شبکهٔ شرح در متن"></div></div>
+ <p id="autoClueMetrics" class="muted small"></p>
+ <p id="autoClueReport" class="muted small"></p>
+ <p class="muted small">ساخت و کنترل کاملاً خودکار است. بانک خصوصی در سرور تغییر نمی‌کند؛ فقط سؤال‌وجواب‌های انتخاب‌شده در پیش‌نویس همان جدول قرار می‌گیرند. انتشار نهایی پس از کنترل کیفیت و تأیید مسئول انجام می‌شود.</p>
 </section>
 <section class="panel" id="cloudManagement" aria-label="پایگاه داده مرکزی">
 <h2>پایگاه دادهٔ مرکزی Jadval</h2>
@@ -313,7 +341,7 @@ window.JadvalApp.localReady=restore().then(data=>{
  if(data?.entries?.length){entries=data.entries;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل از حافظهٔ مرورگر بازیابی شد.')}
  else render();
 }).catch(e=>status('ذخیره‌سازی محلی در این مرورگر فعال نیست: '+e.message));
-</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script><script src="./bank-tools.js"></script><script src="./metrics.js"></script><script src="./bank-metrics.js"></script><script src="./bank-readiness.js"></script><script src="./maker-guide.js"></script><script src="./verified-sample-15.js"></script><script src="./cloud-safety.js"></script><script src="./local-backup.js"></script><script src="./cloud-bridge.js"></script><script src="./bank-migration-stage.js"></script><script src="./studio-novelty.js"></script><script src="./quality-gate.js"></script><script src="./publish.js"></script><dialog id="publishDialog" aria-labelledby="publishDialogHeading" style="width:min(92vw,620px);max-width:92vw;border:1px solid #d6dfe7;border-radius:16px;padding:24px;box-shadow:0 16px 55px #18232d40;color:#1b2734;background:white;max-height:90vh;overflow:auto">
+</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script><script src="./bank-tools.js"></script><script src="./metrics.js"></script><script src="./bank-metrics.js"></script><script src="./bank-readiness.js"></script><script src="./maker-guide.js"></script><script src="./verified-sample-15.js"></script><script src="./cloud-safety.js"></script><script src="./local-backup.js"></script><script src="./cloud-bridge.js"></script><script src="./clue-in-cell.js"></script><script src="./clue-auto-ui.js"></script><script src="./bank-migration-stage.js"></script><script src="./studio-novelty.js"></script><script src="./quality-gate.js"></script><script src="./publish.js"></script><dialog id="publishDialog" aria-labelledby="publishDialogHeading" style="width:min(92vw,620px);max-width:92vw;border:1px solid #d6dfe7;border-radius:16px;padding:24px;box-shadow:0 16px 55px #18232d40;color:#1b2734;background:white;max-height:90vh;overflow:auto">
 <form id="publishForm">
 <h2 id="publishDialogHeading">بازبینی و انتشار در پیام جدول</h2>
 <p class="muted small">این اقدام جدول را برای همهٔ مخاطبان قابل مشاهده و بازی می‌کند. فقط شبکه، پاسخ‌ها و سرنخ‌های همین جدول منتشر می‌شوند؛ بانک خصوصی ارسال نمی‌شود. انتشار پس از ثبت قابل ویرایش یا حذف از پنل نیست.</p>
