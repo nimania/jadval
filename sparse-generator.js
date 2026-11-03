@@ -334,16 +334,20 @@ async function generateSample(){
   if(classic){
    const maker=window.JadvalClassic;
    if(!maker)throw Error("موتور الگوی کلاسیک بارگذاری نشده است.");
+   const selectedTemplate=$("patternTemplate")?.value||"auto";
+   const explicit=selectedTemplate!=="auto"?maker.templateMask?.(selectedTemplate):null;
+   if(explicit&&(explicit.length!==size||!maker.valid(explicit,profile)))
+    throw Error("قالب انتخابی با اندازه یا سبک جدول سازگار نیست؛ قالب مناسب را انتخاب کن.");
    const preview=window.JadvalClassicPreview?.getSelected?.();
-   const selected=preview&&preview.length===size&&maker.valid(preview,profile)?preview:null;
-   const masks=maker.build(size,Date.now(),8,candidatePool,profile);
+   const selected=!explicit&&preview&&preview.length===size&&maker.valid(preview,profile)?preview:null;
+   const masks=explicit?[explicit]:maker.build(size,Date.now(),8,candidatePool,profile);
    if(selected&&!masks.some(mask=>JSON.stringify(mask)===JSON.stringify(selected)))masks.unshift(selected);
    if(!masks.length){output={error:"برای این اندازه الگوی کلاسیک مناسب پیدا نشد."};}
    else{
     const report=await solveClassicInWorker(masks,candidatePool,Date.now(),budgetMs);
     updateReport({
      schema:1,type:"jadval-solver-diagnostics",timestamp:new Date().toISOString(),
-     size,style:profile,category:category||"all",searchBudgetMs:budgetMs,bankEntries:bank.length,
+     size,style:profile,template:selectedTemplate,category:category||"all",searchBudgetMs:budgetMs,bankEntries:bank.length,
      filteredEntries:filtered.length,candidateEntries:candidatePool.length,ownerTrusted,attemptedMasks:masks.length,
      reports:(report.reports||[]).map(x=>({
        status:x.status,slotCount:x.slotCount,bestDepth:x.bestDepth,nodes:x.nodes,
