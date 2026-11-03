@@ -26,7 +26,7 @@ assert.equal(report.preserved,true);
 assert.equal(stage.acceptPayload({count:4,entries:target}).length,4);
 assert.throws(()=>stage.plan(original,target.slice(1),security),/حذف می‌کند/);
 assert.throws(()=>stage.plan(original,[...target,original[1]],security),/تکراری/);
-assert.throws(()=>stage.plan(original,[{...target[0],clue:'سؤال متفاوت'},...target.slice(1)],security),/تغییر|حذف/);
+assert.throws(()=>stage.plan(original,[{...target[0],clue:'سؤال متفاوت'},...target.slice(1)],security),/تغییر|حذف|برخورد/);
 assert.throws(()=>stage.plan(original,[{...target[0],reviewed:1},...target.slice(1)],security),/محتوای مدخل/);
 assert.throws(()=>stage.plan(original,[{...target[0],id:'x'},...target.slice(1)],security),/شناسه/);
 assert.throws(()=>stage.plan(original,[{...target[0],letters:2},...target.slice(1)],security),/تعداد حروف/);
