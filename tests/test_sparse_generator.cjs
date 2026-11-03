@@ -19,4 +19,11 @@ for(const size of [7,10,15,20]){
 const fullMask=engine.patterns(7,1234,1)[0];
 const fake={puzzle:{version:3,grid:fullMask.map(row=>row.map(x=>x?'':' ')),clues:{horizontal:{},vertical:{}}},mask:fullMask};
 assert(!engine.validateComplete(fake),'A complete marker must not mask unfilled cells');
+const windowForPatterns={};
+vm.runInNewContext(fs.readFileSync('classic-patterns.js','utf8'),{window:windowForPatterns,Math});
+const magazineMask=windowForPatterns.JadvalClassic.referenceMask();
+assert.equal(engine.slotsFor(magazineMask),null,'Legacy generator still rejects singleton answers');
+assert.equal(engine.validMask(magazineMask,true),true,'Magazine profile permits genuine singleton cells');
+assert.equal(engine.slotsFor(magazineMask,true).length,96,'Magazine reference slots must remain correctly grouped');
+console.log('Magazine-only singleton allowance and strict legacy compatibility passed');
 console.log('Complete-only preview guards pass');
