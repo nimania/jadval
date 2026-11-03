@@ -4,6 +4,7 @@
 function normalize(s){return String(s||'').replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[\u064b-\u065f\u0670\s\u200c\u200d\-ـ]/g,'').trim();}
 const alphabet=/^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیؤئء]+$/;
 function slotsFor(mask){
+ if(!Array.isArray(mask)||mask.length<2||mask.some(row=>!Array.isArray(row)||row.length!==mask.length))return null;
  const n=mask.length,slots=[],map=new Map();
  for(const dir of ['horizontal','vertical']){
   if(dir==='horizontal'){
