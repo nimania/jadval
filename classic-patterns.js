@@ -43,6 +43,19 @@ const MAGAZINE_ADAPTED=[
 ];
 function adaptedMask(){return MAGAZINE_ADAPTED.map(line=>[...line].map(ch=>ch==='#'));}
 
+// Public design catalogue. New reference layouts can be registered here after
+// checking their dimensions and row/column orientation.
+const TEMPLATES=Object.freeze([
+ {id:'auto',title:'طرح‌های متنوع (خودکار)',description:'انتخاب الگوهای مناسب با بانک واژگان'},
+ {id:'magazine-reference',title:'مجله‌ای شمارهٔ ۱ — تصویر اصلی',description:'چیدمان دقیق مرجع ۱۵×۱۵'},
+ {id:'magazine-adapted',title:'مجله‌ای شمارهٔ ۲ — سازگارتر با بانک',description:'۳۶ خانهٔ سیاه، بدون جایگاه یک‌حرفی'}
+]);
+function templateMask(id){
+ if(id==='magazine-reference')return referenceMask();
+ if(id==='magazine-adapted')return adaptedMask();
+ return null;
+}
+
 function rand(seed){let s=seed>>>0;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
 function runs(mask){
  const n=mask.length,result=[];
@@ -189,5 +202,5 @@ function assess(mask,bank){
  const scarce=[...new Set(segments.map(s=>s.length).filter(len=>(frequency.get(len)||0)>0&&(frequency.get(len)||0)<15))].sort((a,b)=>a-b);
  return {blackCells:mask.flat().filter(Boolean).length,slots:segments.length,missingLengths:missing,scarceLengths:scarce,longestRequired:Math.max(...segments.map(s=>s.length)),score:evaluate(mask,frequency,12)};
 }
-window.JadvalClassic={build,valid,referenceMask,adaptedMask,slots:runs,assess};
+window.JadvalClassic={build,valid,referenceMask,adaptedMask,templates:TEMPLATES,templateMask,slots:runs,assess};
 })();
