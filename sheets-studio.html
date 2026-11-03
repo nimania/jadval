@@ -87,6 +87,8 @@ footer{padding:20px;text-align:center;font-size:12px;color:#6d8190}
 <script>
 (function(){
 'use strict';
+// Public OAuth identifier for jadval-studio; never add a client secret here.
+const CLIENT_ID='63351164855-h4pko3tc2iq0arjrn7jnuvkt7l92pcp9.apps.googleusercontent.com';
 const ID='1u0dv4WNjQAz3QYleYDCbUkHDTWrLwxpYVDzCRl78p7E';
 const TAB="'بانک یکپارچه'";
 const $=id=>document.getElementById(id), fmt=n=>new Intl.NumberFormat('fa-IR').format(n);
@@ -172,7 +174,7 @@ async function readSheet(){
  $('statWords').textContent='صرفاً واژه/فاقد سرنخ قابل استفاده: '+fmt(remoteRows.length-available.length);
  setButtons();
 }
-$('clientId').value=localStorage.getItem('jadval-sheets-oauth-client-id')||'';
+$('clientId').value=CLIENT_ID;
 $('connect').onclick=async()=>{
  $('connect').disabled=true;
  try{await authorize(false);await readSheet();}
