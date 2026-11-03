@@ -98,6 +98,21 @@ html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:n
 <p class="muted small">قبل از انتقال اولیه از «پشتیبان کامل این مرورگر» استفاده و فایل دانلودشده را با «بررسی فایل پشتیبان» تأیید کن. داده‌ها بدون تأیید تو به سرور فرستاده نمی‌شوند.</p>
 </section>
 <div class="stats"><div class="stat"><span class="num" id="total">۰</span><span class="label">مدخل‌های بانک</span></div><div class="stat"><span class="num" id="approved">۰</span><span class="label">بازبینی‌شده</span></div><div class="stat"><span class="num" id="answers">۰</span><span class="label">پاسخ متفاوت</span></div><div class="stat"><span class="num" id="visible">۰</span><span class="label">نتیجه جست‌وجو</span></div></div>
+<section class="panel" id="bankMetrics">
+<h2>آمار دقیق فرهنگ‌نامهٔ مشترک</h2>
+<p class="muted small">تکرار دقیق فقط وقتی است که سؤال و جواب هر دو یکسان باشند. پاسخ یکسان با سؤال متفاوت حفظ می‌شود. آمار این بخش از داده‌های همین نشست گرفته می‌شود؛ نه از یک فایل عمومی قدیمی.</p>
+<div class="stats">
+ <div class="stat"><span class="num" id="metricUniquePairs">—</span><span class="label">سؤال+جواب یکتا</span></div>
+ <div class="stat"><span class="num" id="metricUniqueClues">—</span><span class="label">سؤال یکتا</span></div>
+ <div class="stat"><span class="num" id="metricDuplicateRows">—</span><span class="label">رکورد تکراری کامل</span></div>
+ <div class="stat"><span class="num"><a href="https://nimania.github.io/payamejadval/stats.html" target="_blank" rel="noopener">نمایش</a></span><span class="label">صفحهٔ عمومی آمار</span></div>
+</div>
+<div class="toolbar"><button class="btn" id="bankDedupExport" type="button">دریافت نسخهٔ بدون رکورد تکراری</button>
+<button class="btn" id="bankStatsExport" type="button">دریافت آمار تجمیعی بدون افشای بانک</button></div>
+<p id="bankMetricsStatus" class="note" role="status"></p>
+<details><summary>توزیع رکوردهای یکتای بانک به تفکیک طول پاسخ</summary>
+<table><thead><tr><th>حرف</th><th>تعداد</th></tr></thead><tbody id="bankLengthMetrics"></tbody></table></details>
+</section>
 <section class="panel" id="lengthManagement">
 <h2>گسترش بانک و بررسی طول پاسخ‌ها</h2>
 <p class="muted small">برای طراحی الگوی کلاسیک، تعداد واژه‌های متفاوت در هر طول اهمیت دارد؛ به‌ویژه پاسخ‌های بلند که در آرشیو فعلی کم‌اند.</p>
@@ -188,7 +203,7 @@ function status(msg){$('message').textContent=msg}
 function openDB(){return new Promise((resolve,reject)=>{let q=indexedDB.open('jadval-studio',1);q.onupgradeneeded=()=>q.result.createObjectStore('state');q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)})}
 async function save(){let db=await openDB();try{await new Promise((res,rej)=>{let tx=db.transaction('state','readwrite');tx.objectStore('state').put({entries},'bank');tx.oncomplete=res;tx.onerror=()=>rej(tx.error)})}finally{db.close()}}
 async function restore(){let db=await openDB();try{return await new Promise((res,rej)=>{let tx=db.transaction('state','readonly'),q=tx.objectStore('state').get('bank');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}finally{db.close()}}
-function updateStats(){ $('total').textContent=nf.format(entries.length);$('approved').textContent=nf.format(entries.filter(x=>x.reviewed).length);$('answers').textContent=nf.format(new Set(entries.map(x=>normalize(x.answer))).size);$('visible').textContent=nf.format(filtered.length); for(const id of ['export','clear','suggest'])$(id).disabled=!entries.length }
+function updateStats(){ $('total').textContent=nf.format(entries.length);$('approved').textContent=nf.format(entries.filter(x=>x.reviewed).length);$('answers').textContent=nf.format(new Set(entries.map(x=>normalize(x.answer))).size);$('visible').textContent=nf.format(filtered.length); for(const id of ['export','clear','suggest'])$(id).disabled=!entries.length;window.JadvalBankMetrics?.refresh(entries) }
 function updateCategories(){let all=[...new Set([...categories,...entries.map(x=>x.category||'دسته‌بندی‌نشده')])];let old=$('category').value; $('category').replaceChildren(new Option('همه موضوع‌ها',''),...all.map(x=>new Option(x,x)));$('category').value=all.includes(old)?old:''}
 function applyFilters(){const query=normalize($('search').value).toLowerCase(),cat=$('category').value,reviewed=$('reviewed').value,difficulty=$('difficulty').value;filtered=entries.filter(x=>(!query||normalize(x.clue).toLowerCase().includes(query)||normalize(x.answer).toLowerCase().includes(query)||String(x.id||'').includes(query))&&(!cat||(x.category||'دسته‌بندی‌نشده')===cat)&&(!reviewed?true:(x.reviewed?1:0)===Number(reviewed))&&(!difficulty||(x.difficulty||'unknown')===difficulty));page=0;render()}
 function render(){updateStats();$('empty').hidden=entries.length>0;$('tableArea').hidden=!entries.length;const start=page*perPage;const data=filtered.slice(start,start+perPage);
@@ -265,7 +280,7 @@ window.JadvalApp.localReady=restore().then(data=>{
  if(data?.entries?.length){entries=data.entries;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل از حافظهٔ مرورگر بازیابی شد.')}
  else render();
 }).catch(e=>status('ذخیره‌سازی محلی در این مرورگر فعال نیست: '+e.message));
-</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script><script src="./bank-tools.js"></script><script src="./bank-readiness.js"></script><script src="./maker-guide.js"></script><script src="./verified-sample-15.js"></script><script src="./cloud-safety.js"></script><script src="./local-backup.js"></script><script src="./cloud-bridge.js"></script><script src="./quality-gate.js"></script><script src="./publish.js"></script><dialog id="publishDialog" aria-labelledby="publishDialogHeading" style="width:min(92vw,620px);max-width:92vw;border:1px solid #d6dfe7;border-radius:16px;padding:24px;box-shadow:0 16px 55px #18232d40;color:#1b2734;background:white;max-height:90vh;overflow:auto">
+</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script><script src="./bank-tools.js"></script><script src="./metrics.js"></script><script src="./bank-metrics.js"></script><script src="./bank-readiness.js"></script><script src="./maker-guide.js"></script><script src="./verified-sample-15.js"></script><script src="./cloud-safety.js"></script><script src="./local-backup.js"></script><script src="./cloud-bridge.js"></script><script src="./quality-gate.js"></script><script src="./publish.js"></script><dialog id="publishDialog" aria-labelledby="publishDialogHeading" style="width:min(92vw,620px);max-width:92vw;border:1px solid #d6dfe7;border-radius:16px;padding:24px;box-shadow:0 16px 55px #18232d40;color:#1b2734;background:white;max-height:90vh;overflow:auto">
 <form id="publishForm">
 <h2 id="publishDialogHeading">بازبینی و انتشار در پیام جدول</h2>
 <p class="muted small">این اقدام جدول را برای همهٔ مخاطبان قابل مشاهده و بازی می‌کند. فقط شبکه، پاسخ‌ها و سرنخ‌های همین جدول منتشر می‌شوند؛ بانک خصوصی ارسال نمی‌شود. انتشار پس از ثبت قابل ویرایش یا حذف از پنل نیست.</p>
