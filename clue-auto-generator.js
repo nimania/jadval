@@ -190,7 +190,7 @@ function run(entries,variant,settings={}){
   if(report.publishable){complete=true;break;}
  }
  if(!best)throw Error('در بودجهٔ جست‌وجو هیچ طرحی تولید نشد.');
- best.item.puzzle.meta={...best.item.puzzle.meta,bankRows:prepared.inputCount,
+ best.item.puzzle.meta={...best.item.puzzle.meta,status:'draft',method:'central-bank-generator',bankRows:prepared.inputCount,
   eligibleWords:prepared.pool.length,attempted,complete,source:'central-firestore-authenticated'};
  return {item:best.item,report:best.report,
   diagnostics:{source:'central-firestore-authenticated',
