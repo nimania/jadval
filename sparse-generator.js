@@ -283,7 +283,9 @@ function render(data){
   wrap.append(h,ul);clues.append(wrap);
  }
  const blackCount=data.mask.flat().filter(Boolean).length;
- $("demoMeta").textContent="جدول کامل: "+data.slots+" پاسخ — شبکهٔ "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ الگوی آزاد.";
+ const profileLabel=data.puzzle.meta?.profile==="iran-magazine"?"سبک مجله‌ای ایرانی":
+  data.puzzle.meta?.profile==="strict"?"سبک کلاسیک سخت‌گیرانه":"الگوی آزاد";
+ $("demoMeta").textContent="جدول کامل: "+data.slots+" پاسخ — شبکهٔ "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ "+profileLabel+".";
  section.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function solveClassicInWorker(masks,source,seed,budgetMs=12000){
