@@ -2,7 +2,7 @@ name: Publish Jadval Studio UI
 on:
   push:
     branches: [main]
-    paths: [index.html, demo-generator.js, sparse-generator.js, mosaic-generator.js, classic-patterns.js, classic-preview.js, bank-tools.js, classic-solver-worker.js, verified-sample-15.js, firebase-config.js, cloud-bridge.js, cloud-safety.js, local-backup.js, publish.js, quality-gate.js, bank-readiness.js, metrics.js, bank-metrics.js, bank-migration-stage.js, studio-novelty.js, .github/workflows/pages.yml]
+    paths: [clue-in-cell.html, clue-in-cell.js, clue-editor.js, index.html, demo-generator.js, sparse-generator.js, mosaic-generator.js, classic-patterns.js, classic-preview.js, bank-tools.js, classic-solver-worker.js, verified-sample-15.js, firebase-config.js, cloud-bridge.js, cloud-safety.js, local-backup.js, publish.js, quality-gate.js, bank-readiness.js, metrics.js, bank-metrics.js, bank-migration-stage.js, studio-novelty.js, .github/workflows/pages.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -24,6 +24,9 @@ jobs:
         run: |
           mkdir -p public
           cp index.html public/index.html
+          cp clue-in-cell.html public/clue-in-cell.html
+          cp clue-in-cell.js public/clue-in-cell.js
+          cp clue-editor.js public/clue-editor.js
           cp demo-generator.js public/demo-generator.js
           cp sparse-generator.js public/sparse-generator.js
           cp mosaic-generator.js public/mosaic-generator.js
