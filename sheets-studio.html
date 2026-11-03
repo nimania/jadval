@@ -112,14 +112,14 @@ function loadGIS(){
   script.onload=resolve;script.onerror=()=>reject(Error('بارگذاری ورود گوگل موفق نشد.'));document.head.appendChild(script);
  });
 }
-async function authorize(){
+async function authorize(writeAccess){
  const clientId=$('clientId').value.trim();
  if(!/^[0-9]+-[a-z0-9-]+\.apps\.googleusercontent\.com$/.test(clientId))
   throw Error('OAuth Client ID معتبر از نوع Web application را وارد کن.');
  await loadGIS();
  return new Promise((resolve,reject)=>{
   const client=google.accounts.oauth2.initTokenClient({
-   client_id:clientId,scope:'https://www.googleapis.com/auth/spreadsheets',
+   client_id:clientId,scope:writeAccess?'https://www.googleapis.com/auth/spreadsheets':'https://www.googleapis.com/auth/spreadsheets.readonly',
    callback:response=>{
     if(response.error||!response.access_token){reject(Error(response.error||'مجوز گوگل دریافت نشد.'));return;}
     token=response.access_token;expires=Date.now()+(Number(response.expires_in)||3500)*1000-60000;
@@ -175,7 +175,7 @@ async function readSheet(){
 $('clientId').value=localStorage.getItem('jadval-sheets-oauth-client-id')||'';
 $('connect').onclick=async()=>{
  $('connect').disabled=true;
- try{await authorize();await readSheet();}
+ try{await authorize(false);await readSheet();}
  catch(e){status('sheetStatus','اتصال برقرار نشد: '+e.message);}
  finally{$('connect').disabled=false;setButtons();}
 };
@@ -245,7 +245,10 @@ async function importBackup(){
    '؛ قبل از تلاش دوباره، شیت از سرور مجدداً خوانده و مدخل‌های ثبت‌شده حذف تکرار می‌شوند.');
  }finally{setButtons();}
 }
-$('import').onclick=importBackup;
+$('import').onclick=async()=>{
+ try{await authorize(true);await importBackup();}
+ catch(e){status('importStatus','مجوز نوشتن دریافت نشد: '+e.message);setButtons();}
+};
 function renderGrid(){
  const grid=$('grid');grid.replaceChildren();if(!result)return;
  const item=result.item,model=window.PayameClueInCell,size=model.sizes[item.variant];
@@ -291,7 +294,9 @@ $('generate').onclick=async()=>{
    if(!audit.valid)throw Error(audit.errors[0]||'طرح نامعتبر');
    item.puzzle.meta={...(item.puzzle.meta||{}),source:'private-google-sheets-oauth',
     sheetId:ID,bankSnapshot:generation,editorialApproval:false};
-   result=message.result;showAnswers=false;renderGrid();
+   result=message.result;
+   result.diagnostics={...result.diagnostics,source:'private-google-sheets-oauth'};
+   showAnswers=false;renderGrid();
    status('generatorStatus',audit.publishable?
     'جدول کامل از بانک Google Sheets ساخته شد؛ آمادهٔ بررسی ویراستاری.':
     'بهترین پیش‌نویس هنوز ناقص است؛ انتشار متوقف می‌ماند.');
