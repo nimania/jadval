@@ -11,9 +11,9 @@ function slotsFor(mask) {
  const n=mask.length,slots=[],cellSlots=new Map();
  for(const dir of ["horizontal","vertical"]){
   if(dir==="horizontal"){
-   for(let r=0;r<n;r++){let c=n-1;while(c>=0){if(mask[r][c]){c--;continue}let cells=[];while(c>=0&&!mask[r][c])cells.push([r,c--]);if(cells.length<2)return null;const slot={dir,group:r+1,cells};slots.push(slot);}}
+   for(let r=0;r<n;r++){let c=n-1;while(c>=0){if(mask[r][c]){c--;continue}let cells=[];while(c>=0&&!mask[r][c])cells.push([r,c--]);if(!cells.length)return null;const slot={dir,group:r+1,cells};slots.push(slot);}}
   }else{
-   for(let c=n-1;c>=0;c--){let r=0;while(r<n){if(mask[r][c]){r++;continue}let cells=[];while(r<n&&!mask[r][c])cells.push([r++,c]);if(cells.length<2)return null;const slot={dir,group:n-c,cells};slots.push(slot);}}
+   for(let c=n-1;c>=0;c--){let r=0;while(r<n){if(mask[r][c]){r++;continue}let cells=[];while(r<n&&!mask[r][c])cells.push([r++,c]);if(!cells.length)return null;const slot={dir,group:n-c,cells};slots.push(slot);}}
   }
  }
  slots.forEach((s,i)=>{s.id=i;for(let p=0;p<s.cells.length;p++){const key=s.cells[p].join(",");const arr=cellSlots.get(key)||[];arr.push([i,p]);cellSlots.set(key,arr);}});
