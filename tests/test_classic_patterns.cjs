@@ -30,6 +30,32 @@ for(const size of [15,20]){
 assert(window.JadvalClassic.build(15,31827,4,sample).length>0);
 
 
+// Printed Iranian magazine layout: 36 black cells and 18 genuine short slots.
+const reference=window.JadvalClassic.referenceMask();
+assert.equal(reference.length,15);
+assert.equal(reference.flat().filter(Boolean).length,36);
+assert.equal(window.JadvalClassic.valid(reference,'iran-magazine'),true);
+assert.equal(window.JadvalClassic.valid(reference,'strict'),false);
+const referenceSlots=window.JadvalClassic.slots(reference);
+assert.equal(referenceSlots.filter(x=>x.length===1).length,6);
+assert.equal(referenceSlots.filter(x=>x.length===2).length,12);
+for(let r=0;r<15;r++)for(let c=0;c<15;c++)
+ assert.equal(reference[r][c],reference[14-r][14-c],'Reference must rotate by 180°');
+const adapted=window.JadvalClassic.adaptedMask();
+assert.equal(adapted.flat().filter(Boolean).length,36);
+assert.equal(window.JadvalClassic.valid(adapted,'iran-magazine'),true);
+assert.equal(window.JadvalClassic.slots(adapted).filter(x=>x.length===1).length,0);
+const bankWithoutSingles=Array.from({length:15},(_,i)=>({
+ answer:'ا'.repeat(i+1),clue:'نمونهٔ تست'
+})).filter(x=>x.answer.length>=2);
+const magazineSet=window.JadvalClassic.build(15,20261103,3,bankWithoutSingles,'iran-magazine');
+assert(magazineSet.length>0);
+assert(magazineSet.every(x=>window.JadvalClassic.valid(x,'iran-magazine')));
+assert(magazineSet.every(mask=>window.JadvalClassic.slots(mask).every(x=>x.length>=2)),
+ 'Magazine layouts must not require unavailable one-letter entries');
+assert(magazineSet.some(mask=>JSON.stringify(mask)===JSON.stringify(adapted)),
+ 'The closest bank-compatible photo layout must be included');
+
 // Duplicate clue records do not create additional usable answer strings.
 const twoLetterGrid=Array.from({length:10},()=>Array(10).fill(false));
 twoLetterGrid[0][2]=true;
