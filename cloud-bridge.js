@@ -239,11 +239,24 @@ async function publishPuzzle(publication){
  if(!still(token,uid))throw Error('حساب پس از درخواست انتشار تغییر کرده است؛ وضعیت صفحهٔ عمومی را بررسی کن.');
  return {id:publication.id,url:'https://nimania.github.io/payamejadval/?id='+encodeURIComponent(publication.id)};
 }
+async function recentPublished(max=110){
+ if(!api||!db)throw Error('اتصال آرشیو منتشرشده آماده نیست.');
+ const limit=Math.min(250,Math.max(1,Number(max)||110));
+ const snapshot=await api.getDocsFromServer(api.query(api.collection(db,'publishedPuzzles'),
+  api.orderBy('publishedAt','desc'),api.limit(limit)));
+ return snapshot.docs.flatMap(doc=>{
+  try{
+   const raw=doc.data(),puzzle=JSON.parse(raw.puzzleJson);
+   if(!puzzle?.grid||!puzzle?.clues)return [];
+   return [{id:raw.id||doc.id,title:raw.title,publishedAt:raw.publishedAt,puzzle}];
+  }catch(_){return []}
+ });
+}
 async function bootstrap(){
  if(!configured){state('اتصال مرکزی تنظیم نشده است.');buttons();return;}
  try{const [a,b,c]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);const app=a.initializeApp(config,'jadval-private');api={...b,...c};auth=b.getAuth(app);db=c.getFirestore(app);b.onAuthStateChanged(auth,authChanged);buttons();checkPublicPublishing();}catch(e){state('بارگذاری Firebase ناموفق: '+e.message);}
 }
-window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading&&publishReadReady,checkPublicPublishing,publishPuzzle,saveEntry,loadCentral,configIsReady:()=>configured};
+window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading&&publishReadReady,checkPublicPublishing,publishPuzzle,saveEntry,loadCentral,recentPublished,configIsReady:()=>configured};
 function init(){ $('cloudLogin').onclick=login;$('cloudLogout').onclick=()=>api.signOut(auth);$('cloudReload').onclick=()=>administrator?loadCentral():authChanged(auth.currentUser);$('cloudImport').onclick=importBrowser;if($('cloudCheckPublish'))$('cloudCheckPublish').onclick=checkPublicPublishing;buttons();Promise.resolve(window.JadvalApp?.localReady).then(bootstrap);setInterval(()=>{if(remoteReady&&!loading&&document.visibilityState==='visible'&&!document.querySelector('dialog[open]'))loadCentral();},90000);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
