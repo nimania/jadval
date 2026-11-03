@@ -100,6 +100,18 @@ html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:n
 <p class="muted small">قبل از انتقال اولیه از «پشتیبان کامل این مرورگر» استفاده و فایل دانلودشده را با «بررسی فایل پشتیبان» تأیید کن. داده‌ها بدون تأیید تو به سرور فرستاده نمی‌شوند.</p>
 </section>
 <div class="stats"><div class="stat"><span class="num" id="total">۰</span><span class="label">مدخل‌های بانک</span></div><div class="stat"><span class="num" id="approved">۰</span><span class="label">بازبینی‌شده</span></div><div class="stat"><span class="num" id="answers">۰</span><span class="label">پاسخ متفاوت</span></div><div class="stat"><span class="num" id="visible">۰</span><span class="label">نتیجه جست‌وجو</span></div></div>
+<section class="panel" id="bankMigrationStage" aria-label="آماده‌سازی امن بانک پالایش‌شده">
+<h2>آماده‌سازی امن بانک بدون تکرار برای انتقال اولیه</h2>
+<p class="muted small">این عملیات فقط هنگامی مجاز است که بانک مرکزی هنوز خالی باشد. ابتدا پشتیبان کامل همین مرورگر را دانلود و دوباره تأیید کن. سپس فایل پالایش‌شده را انتخاب کن؛ ترکیب سؤال+جواب همهٔ مدخل‌های اصلی باید حفظ شده باشد. در مرحلهٔ آماده‌سازی هیچ رکوردی به Firestore ارسال نمی‌شود.</p>
+<div class="toolbar" style="align-items:center">
+<label class="btn" for="bankStageFile">انتخاب فایل JSON پالایش‌شده</label>
+<input id="bankStageFile" type="file" accept=".json,application/json">
+<label for="bankStageCount" class="muted small">تأیید تعداد مدخل‌های نسخهٔ جدید</label>
+<input id="bankStageCount" type="text" inputmode="numeric" autocomplete="off" placeholder="تعداد پس از پالایش" style="width:180px">
+<button class="btn primary" type="button" id="bankStageConfirm" disabled>آماده‌سازی نسخهٔ جدید در مرورگر</button>
+</div>
+<p id="bankStageStatus" class="note" role="status">منتظر انتخاب فایل پالایش‌شده. اصل بانک بدون تغییر باقی می‌ماند.</p>
+</section>
 <section class="panel" id="bankMetrics">
 <h2>آمار دقیق فرهنگ‌نامهٔ مشترک</h2>
 <p class="muted small">تکرار دقیق فقط وقتی است که سؤال و جواب هر دو یکسان باشند. پاسخ یکسان با سؤال متفاوت حفظ می‌شود. آمار این بخش از داده‌های همین نشست گرفته می‌شود؛ نه از یک فایل عمومی قدیمی.</p>
@@ -240,7 +252,7 @@ $('editor').close();updateCategories();applyFilters();window.JadvalBankReadiness
 status(cloudError?'ویرایش فقط در این دستگاه ذخیره شد؛ همگام‌سازی ناموفق: '+cloudError.message:
   window.JadvalCloud?.isReady()?'ویرایش در بانک مرکزی ذخیره شد.':'ویرایش در مرورگر ذخیره شد؛ از بانک نسخهٔ پشتیبان بگیر.')};
 $('file').onchange=async e=>{let f=e.target.files[0];if(!f)return;
- if(window.JadvalCloud?.configIsReady()&&!window.JadvalCloud?.canEdit()){status('بانک آماده نیست؛ واردسازی متوقف شد.');e.target.value='';return}
+ if(window.JadvalCloud?.configIsReady()){status('برای پروژهٔ مرکزی، جایگزینی مستقیم بانک ممنوع است. از بخش «آماده‌سازی امن بانک بدون تکرار» استفاده کن.');e.target.value='';return}
  if(window.JadvalCloud?.isReady()){status('در حالت بانک مرکزی، فایل JSON را جایگزین بانک نکن. برای انتقال از دکمهٔ انتقال بانک استفاده کن.');e.target.value='';return}
  if(window.JadvalCloud?.configIsReady()&&!window.JadvalCloud?.isConnected()){status('برای واردکردن بانک ابتدا با حساب مدیر وارد شو.');e.target.value='';return}
  try{let data=JSON.parse(await f.text());let arr=Array.isArray(data)?data:data.entries;if(!Array.isArray(arr)||!arr.length||arr.some(x=>!x.id||typeof x.clue!=='string'||typeof x.answer!=='string'))throw Error('فرمت بانک معتبر نیست.');if(entries.length&&!confirm('بانک کنونی با فایل جدید جایگزین شود؟ ابتدا خروجی پشتیبان بگیرید.'))return;entries=arr.map(x=>({...x,category:x.category||'دسته‌بندی‌نشده',difficulty:x.difficulty||'unknown',reviewed:x.reviewed?1:0}));await save();dirty=false;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل وارد و در مرورگر ذخیره شد.')}catch(err){status('خطای خواندن فایل: '+err.message)}finally{e.target.value=''}};
@@ -290,7 +302,7 @@ window.JadvalApp.localReady=restore().then(data=>{
  if(data?.entries?.length){entries=data.entries;updateCategories();applyFilters();status(nf.format(entries.length)+' مدخل از حافظهٔ مرورگر بازیابی شد.')}
  else render();
 }).catch(e=>status('ذخیره‌سازی محلی در این مرورگر فعال نیست: '+e.message));
-</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script><script src="./bank-tools.js"></script><script src="./metrics.js"></script><script src="./bank-metrics.js"></script><script src="./bank-readiness.js"></script><script src="./maker-guide.js"></script><script src="./verified-sample-15.js"></script><script src="./cloud-safety.js"></script><script src="./local-backup.js"></script><script src="./cloud-bridge.js"></script><script src="./studio-novelty.js"></script><script src="./quality-gate.js"></script><script src="./publish.js"></script><dialog id="publishDialog" aria-labelledby="publishDialogHeading" style="width:min(92vw,620px);max-width:92vw;border:1px solid #d6dfe7;border-radius:16px;padding:24px;box-shadow:0 16px 55px #18232d40;color:#1b2734;background:white;max-height:90vh;overflow:auto">
+</script><script src="./demo-generator.js"></script><script src="./sparse-generator.js"></script><script src="./mosaic-generator.js"></script><script src="./classic-patterns.js"></script><script src="./classic-preview.js"></script><script src="./bank-tools.js"></script><script src="./metrics.js"></script><script src="./bank-metrics.js"></script><script src="./bank-readiness.js"></script><script src="./maker-guide.js"></script><script src="./verified-sample-15.js"></script><script src="./cloud-safety.js"></script><script src="./local-backup.js"></script><script src="./cloud-bridge.js"></script><script src="./bank-migration-stage.js"></script><script src="./studio-novelty.js"></script><script src="./quality-gate.js"></script><script src="./publish.js"></script><dialog id="publishDialog" aria-labelledby="publishDialogHeading" style="width:min(92vw,620px);max-width:92vw;border:1px solid #d6dfe7;border-radius:16px;padding:24px;box-shadow:0 16px 55px #18232d40;color:#1b2734;background:white;max-height:90vh;overflow:auto">
 <form id="publishForm">
 <h2 id="publishDialogHeading">بازبینی و انتشار در پیام جدول</h2>
 <p class="muted small">این اقدام جدول را برای همهٔ مخاطبان قابل مشاهده و بازی می‌کند. فقط شبکه، پاسخ‌ها و سرنخ‌های همین جدول منتشر می‌شوند؛ بانک خصوصی ارسال نمی‌شود. انتشار پس از ثبت قابل ویرایش یا حذف از پنل نیست.</p>
