@@ -112,6 +112,18 @@ async function assertPrivate(){
   verifiedSecurity=true;
  }finally{await storeSdk.terminate(probeDb);await appSdk.deleteApp(probe);}
 }
+// Read-only admission check for staging a clean initial bank. Prevents
+// accidental replacement after another device has started migration.
+async function preflightNewBank(){
+ if(!administrator||!auth?.currentUser||loading||remoteReady)
+  throw Error('برای آماده‌سازی، با حساب مدیر وارد شو و اطمینان حاصل کن بانک مرکزی هنوز راه‌اندازی نشده است.');
+ await assertPrivate();
+ const marker=await api.getDocFromServer(bankRef());
+ if(marker.exists())throw Error('بانک مرکزی یا انتقال نیمه‌تمام از قبل وجود دارد؛ جایگزینی بانک محلی ممنوع است.');
+ const docs=await api.getDocsFromServer(api.query(api.collection(db,'entries'),api.limit(1)));
+ if(!docs.empty)throw Error('دست‌کم یک مدخل روی سرور وجود دارد؛ بدون تطبیق نسخه و پشتیبان نباید عملیات اولیه آغاز شود.');
+ return true;
+}
 // Browser-native prompt/confirm dialogs can be suppressed by automated browser
 // debugging. Keep migration consent in an accessible, explicit page dialog.
 function migrationConsent(title,description,{number=false,approveLabel='ادامه'}={}){
@@ -288,7 +300,7 @@ async function bootstrap(){
  if(!configured){state('اتصال مرکزی تنظیم نشده است.');buttons();return;}
  try{const [a,b,c]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);const app=a.initializeApp(config,'jadval-private');api={...b,...c};auth=b.getAuth(app);db=c.getFirestore(app);b.onAuthStateChanged(auth,authChanged);buttons();checkPublicPublishing();}catch(e){state('بارگذاری Firebase ناموفق: '+e.message);}
 }
-window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading&&publishReadReady,checkPublicPublishing,publishPuzzle,saveEntry,loadCentral,recentPublished,publishBankStats,configIsReady:()=>configured};
+window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading&&publishReadReady,checkPublicPublishing,publishPuzzle,saveEntry,loadCentral,recentPublished,publishBankStats,preflightNewBank,configIsReady:()=>configured};
 function init(){ $('cloudLogin').onclick=login;$('cloudLogout').onclick=()=>api.signOut(auth);$('cloudReload').onclick=()=>administrator?loadCentral():authChanged(auth.currentUser);$('cloudImport').onclick=importBrowser;if($('cloudCheckPublish'))$('cloudCheckPublish').onclick=checkPublicPublishing;
  if($('cloudPublicStatsSync'))$('cloudPublicStatsSync').onclick=()=>publishBankStats(true)
   .catch(e=>{const el=$('cloudPublicStatsStatus');if(el)el.textContent='آمار عمومی به‌روز نشد: '+e.message;});
