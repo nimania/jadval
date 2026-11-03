@@ -81,6 +81,14 @@ p{line-height:1.9;margin:7px 0}.muted{color:#637481;font-size:13px}
    </form>
    <p id="actionStatus" class="note" role="status">با کلیک روی هر خانه، جای سؤال را مشخص کن.</p>
   </section>
+  <section class="card">
+   <h2>انتخاب سؤال از فرهنگ‌نامهٔ خصوصی</h2>
+   <p class="muted">فقط بانک ذخیره‌شدهٔ همین مرورگر خوانده می‌شود؛ هیچ اطلاعاتی برای سایت عمومی ارسال نمی‌شود.</p>
+   <div class="field"><label for="bankSearch">جست‌وجوی سؤال یا جواب</label><input id="bankSearch" placeholder="مثلاً: باران" autocomplete="off"></div>
+   <div class="toolbar" style="margin:8px 0"><button class="btn" type="button" id="bankLookup">جست‌وجو در بانک</button><span id="bankCount" class="muted"></span></div>
+   <ul id="bankResults" style="max-height:260px;overflow:auto;padding:0;list-style:none;margin:0"></ul>
+   <p id="bankLookupStatus" class="muted" role="status"></p>
+  </section>
   <section class="card"><h2>گزارش فنی و آماری</h2><div class="stats" id="gridStats"></div><p class="note" id="qaStatus" role="status"></p></section>
   <section class="card"><h2>سرنخ‌های ثبت‌شده</h2><ul id="entryList"></ul></section>
  </aside>
