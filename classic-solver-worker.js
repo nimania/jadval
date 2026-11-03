@@ -13,7 +13,7 @@ function slotsFor(mask){
      if(mask[r][c]){c--;continue;}
      const cells=[];
      while(c>=0&&!mask[r][c])cells.push([r,c--]);
-     if(cells.length<2)return null;
+     if(!cells.length)return null;
      slots.push({dir,group:r+1,cells});
     }
    }
@@ -24,7 +24,7 @@ function slotsFor(mask){
      if(mask[r][c]){r++;continue;}
      const cells=[];
      while(r<n&&!mask[r][c])cells.push([r++,c]);
-     if(cells.length<2)return null;
+     if(!cells.length)return null;
      slots.push({dir,group:n-c,cells});
     }
    }
