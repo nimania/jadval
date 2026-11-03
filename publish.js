@@ -36,7 +36,7 @@ function preparedPuzzle(data,bank,title,evaluation){
   version:3,grid,clues,meta:{title:name,size:{rows:n,cols:n},
    language:'fa',direction:'rtl',status:'published',method:'editor-approved',
    ...(source.meta?.profile==='iran-magazine'?{profile:'iran-magazine'}:{})
- }};
+ }}};
 }
 function newPublicId(){
  if(typeof crypto.randomUUID==='function')return 'pub_'+crypto.randomUUID();
