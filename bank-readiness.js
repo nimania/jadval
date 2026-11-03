@@ -54,11 +54,11 @@ function trustCorpus(entries){
  localStorage.setItem(trustStorageKey,signature(entries));
  return corpusTrusted(entries);
 }
-function candidateEntries(entries,max=15){
+function candidateEntries(entries,max=15,min=3){
  if(!corpusTrusted(entries))return approvedEntries(entries,max);
  return (entries||[]).filter(e=>{
   const word=normalize(e?.answer);
-  return alphabet.test(word)&&word.length>=3&&word.length<=max&&
+  return alphabet.test(word)&&word.length>=min&&word.length<=max&&
    typeof e?.clue==='string'&&!!e.clue.trim();
  });
 }
