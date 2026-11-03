@@ -168,6 +168,23 @@ $('newDraft').addEventListener('click',()=>{
  if(!confirm('طرح فعلی در این مرورگر با یک طرح خالی جایگزین شود؟ قبل از ادامه از آن خروجی JSON بگیر.'))return;
  selected=null;setItem(api.blank($('variant').value));status('طرح جدید باز شد.');
 });
+$('loadDemo').addEventListener('click',()=>{
+ if(!confirm('نمونهٔ آموزشی جایگزین طرح این دستگاه می‌شود. اگر طرح فعلی را لازم داری ابتدا خروجی JSON بگیر.'))return;
+ try{
+  let example=api.blank($('variant').value);
+  const records=[
+   ['a','رحمت آسمانی','باران','across',[4,6]],
+   ['b','واحدی از زمان','روز','down',[3,3]],
+   ['c','خواندنی چاپی','کتاب','across',[9,12]],
+   ['d','میوهٔ تابستانی','توت','down',[8,10]]
+  ];
+  for(const [id,clue,answer,direction,clueCell] of records)
+   example=api.addEntry(example,{id,clue,answer,direction,clueCell});
+  example.title='نمونهٔ آموزشی شرح در متن ('+api.sizes[example.variant].label+')';
+  selected=null;setItem(example);
+  status('۴ سرنخ با دو تقاطع درست بارگذاری شد. این فقط نمونهٔ آموزشی است، نه جدول کامل و قابل انتشار.');
+ }catch(err){status('نمونه قابل بارگذاری نیست: '+err.message,true);}
+});
 $('toggleBlock').addEventListener('click',()=>{
  if(!selected){status('اول خانهٔ موردنظر را انتخاب کن.',true);return;}
  const [r,c]=selected,kind=item.puzzle.grid[r][c].kind;
