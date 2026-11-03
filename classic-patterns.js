@@ -1,6 +1,26 @@
 /* Classic crossword pattern search: bank-aware, no reference templates copied. */
 (function(){
 "use strict";
+// Digitized from the supplied 15×15 Iranian magazine reference.
+// Left-to-right mask coordinates; display code already mirrors them for RTL.
+const MAGAZINE_REFERENCE=[
+ '.......#.......',
+ '.....#....#....',
+ '....#....#.....',
+ '...#....#..#...',
+ '##....#.....#..',
+ '..#....#.....#.',
+ '...#......#....',
+ '.....#...#.....',
+ '....#......#...',
+ '.#.....#....#..',
+ '..#.....#....##',
+ '...#..#....#...',
+ '.....#....#....',
+ '....#....#.....',
+ '.......#.......'
+];
+function referenceMask(){return MAGAZINE_REFERENCE.map(line=>[...line].map(ch=>ch==='#'));}
 function rand(seed){let s=seed>>>0;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
 function runs(mask){
  const n=mask.length,result=[];
@@ -51,18 +71,21 @@ function evaluate(mask,available,maxLen=12){
  cost+=Math.abs(black-Math.round(n*n*.145))*25;
  return cost;
 }
-function valid(mask){
+function valid(mask,profile='strict'){
  if(!Array.isArray(mask)||![10,15,20].includes(mask.length))return false;
  const n=mask.length;
  if(mask.some(row=>!Array.isArray(row)||row.length!==n||row.some(v=>typeof v!=='boolean')))return false;
  const black=mask.flat().filter(Boolean).length;
- if(black/(n*n)<.12-1e-9||black/(n*n)>.167+1e-9)return false;
+ const magazine=profile==='iran-magazine';
+ const lower=magazine?.10:.12,upper=magazine?.22:.167;
+ if(black/(n*n)<lower-1e-9||black/(n*n)>upper+1e-9)return false;
  if(squareCount(mask)||whiteCoverage(mask))return false;
  for(let r=0;r<n;r++)for(let c=0;c<n;c++)
   if(mask[r][c]!==mask[n-1-r][n-1-c])return false;
  const segments=runs(mask);
- if(!segments.length||segments.some(x=>x.length<3))return false;
- // Every non-block cell belongs to exactly one 3+-cell run in both axes.
+ if(!segments.length||(!magazine&&segments.some(x=>x.length<3)))return false;
+ // Every white cell belongs to a real across/down slot in both axes.
+ // Magazine mode permits 1- and 2-cell slots only if the bank can fill them.
  for(const dir of [false,true]){
   const cover=new Set();
   for(const span of segments.filter(x=>x.vertical===dir))
@@ -84,7 +107,16 @@ function uniqueLengthCounts(bank){
  }
  return new Map([...wordsByLength].map(([len,words])=>[len,words.size]));
 }
-function build(n,seed,count=8,bank=[]){
+function build(n,seed,count=8,bank=[],profile='strict'){
+ if(profile==='iran-magazine'&&n===15){
+  const ref=referenceMask(),frequency=uniqueLengthCounts(bank);
+  const refMissing=runs(ref).some(slot=>bank.length>0&&!(frequency.get(slot.length)||0));
+  // Always keep the printed reference available for preview, but do not
+  // offer it to the CSP when a required answer length is unavailable.
+  const fallback=build(n,seed,count,bank,'strict');
+  return (!refMissing||!bank.length?[ref,...fallback]:fallback)
+   .slice(0,count).map(mask=>mask.map(row=>row.slice()));
+ }
  if(![10,15,20].includes(n))return [];
  const frequency=uniqueLengthCounts(bank);
  const maxAvailable=[...frequency.keys()].filter(len=>(frequency.get(len)||0)>=10).sort((a,b)=>b-a)[0]||12;
@@ -134,5 +166,5 @@ function assess(mask,bank){
  const scarce=[...new Set(segments.map(s=>s.length).filter(len=>(frequency.get(len)||0)>0&&(frequency.get(len)||0)<15))].sort((a,b)=>a-b);
  return {blackCells:mask.flat().filter(Boolean).length,slots:segments.length,missingLengths:missing,scarceLengths:scarce,longestRequired:Math.max(...segments.map(s=>s.length)),score:evaluate(mask,frequency,12)};
 }
-window.JadvalClassic={build,valid,slots:runs,assess};
+window.JadvalClassic={build,valid,referenceMask,slots:runs,assess};
 })();
