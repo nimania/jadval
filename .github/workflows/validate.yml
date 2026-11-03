@@ -21,6 +21,7 @@ on:
       - bank-readiness.js
       - metrics.js
       - bank-metrics.js
+      - bank-migration-stage.js
       - studio-novelty.js
       - firebase/firestore.rules
       - import_puzzles.py
@@ -72,11 +73,13 @@ jobs:
           node --check bank-readiness.js
           node --check metrics.js
           node --check bank-metrics.js
+          node --check bank-migration-stage.js
           node --check studio-novelty.js
           node --test tests/test_cloud_safety.cjs
           node tests/test_cloud_bridge.cjs
           node tests/test_bank_readiness.cjs
           node tests/test_metrics.cjs
+          node tests/test_bank_migration_stage.cjs
           node tests/test_quality_gate.cjs
           node tests/test_publish.cjs
           node tests/test_verified_sample_15.cjs
