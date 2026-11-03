@@ -65,6 +65,10 @@ async function loadCentral(){
   window.JadvalApp.useCloudRows(rows);window.JadvalApp.grantEditorView();remoteReady=true;source='cloud';
   state('متصل به بانک مرکزی: '+rows.length+' مدخل — '+administrator.email);
   summary('آخرین دریافت موفق: '+new Date().toLocaleTimeString('fa-IR')+'؛ تغییرات هر ۹۰ ثانیه و با دکمهٔ دریافت به‌روز می‌شوند.');
+  void publishBankStats().catch(error=>{
+   const indicator=$('cloudPublicStatsStatus');
+   if(indicator)indicator.textContent='آمار محلی تازه است؛ انتشار شمار عمومی انجام نشد: '+(error.message||error);
+  });
  }catch(e){state('دریافت متوقف شد؛ داده‌های محلی محفوظ‌اند: '+(e.code||e.message));}
  finally{loading=false;buttons();}
 }
@@ -239,6 +243,34 @@ async function publishPuzzle(publication){
  if(!still(token,uid))throw Error('حساب پس از درخواست انتشار تغییر کرده است؛ وضعیت صفحهٔ عمومی را بررسی کن.');
  return {id:publication.id,url:'https://nimania.github.io/payamejadval/?id='+encodeURIComponent(publication.id)};
 }
+let publishedStatsFingerprint='';
+async function publishBankStats(force=false){
+ if(!administrator||!remoteReady||source!=='cloud'||!db||!api)
+  throw Error('فقط پس از دریافت کامل بانک مرکزی با حساب مدیر، آمار عمومی به‌روزرسانی می‌شود.');
+ const data=window.JadvalApp?.getLocal?.()||[],m=window.PayameMetrics?.summarize(data);
+ if(!m||data.length===0)throw Error('بانک قابل شمارش در دسترس نیست.');
+ const payload={schema:1,source:'jadval-studio',snapshotAt:api.serverTimestamp(),
+  rawEntries:m.totalEntries,totalEntries:m.uniquePairs,duplicateEntries:m.duplicateEntries,
+  uniquePairs:m.uniquePairs,uniqueAnswers:m.uniqueAnswers,uniqueClues:m.uniqueClues};
+ const signature=[payload.rawEntries,payload.totalEntries,payload.uniqueAnswers,payload.uniqueClues].join(':');
+ if(!force&&signature===publishedStatsFingerprint)return {updated:false,...payload};
+ const ref=api.doc(db,'publicStats','bank');
+ if(!force){
+  try{
+   const old=await api.getDocFromServer(ref),prior=old.data();
+   if(old.exists()&&prior.rawEntries===payload.rawEntries&&prior.totalEntries===payload.totalEntries&&
+      prior.uniqueAnswers===payload.uniqueAnswers&&prior.uniqueClues===payload.uniqueClues){
+    publishedStatsFingerprint=signature;return {updated:false,...payload};
+   }
+  }catch(error){if(error.code==='permission-denied')throw Error('قواعد انتشار آمارِ عمومی هنوز در Firestore فعال نشده است.');throw error}
+ }
+ await api.setDoc(ref,payload);
+ publishedStatsFingerprint=signature;
+ const indicator=$('cloudPublicStatsStatus');
+ if(indicator)indicator.textContent='آمار تجمیعی بانک مرکزی منتشر شد: '+m.uniquePairs+
+  ' مدخل یکتا، '+m.uniqueAnswers+' جواب یکتا، '+m.uniqueClues+' سؤال یکتا. هیچ متن سؤال یا جواب منتشر نشده است.';
+ return {updated:true,...payload};
+}
 async function recentPublished(max=110){
  if(!api||!db)throw Error('اتصال آرشیو منتشرشده آماده نیست.');
  const limit=Math.min(250,Math.max(1,Number(max)||110));
@@ -256,7 +288,10 @@ async function bootstrap(){
  if(!configured){state('اتصال مرکزی تنظیم نشده است.');buttons();return;}
  try{const [a,b,c]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);const app=a.initializeApp(config,'jadval-private');api={...b,...c};auth=b.getAuth(app);db=c.getFirestore(app);b.onAuthStateChanged(auth,authChanged);buttons();checkPublicPublishing();}catch(e){state('بارگذاری Firebase ناموفق: '+e.message);}
 }
-window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading&&publishReadReady,checkPublicPublishing,publishPuzzle,saveEntry,loadCentral,recentPublished,configIsReady:()=>configured};
-function init(){ $('cloudLogin').onclick=login;$('cloudLogout').onclick=()=>api.signOut(auth);$('cloudReload').onclick=()=>administrator?loadCentral():authChanged(auth.currentUser);$('cloudImport').onclick=importBrowser;if($('cloudCheckPublish'))$('cloudCheckPublish').onclick=checkPublicPublishing;buttons();Promise.resolve(window.JadvalApp?.localReady).then(bootstrap);setInterval(()=>{if(remoteReady&&!loading&&document.visibilityState==='visible'&&!document.querySelector('dialog[open]'))loadCentral();},90000);}
+window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading&&publishReadReady,checkPublicPublishing,publishPuzzle,saveEntry,loadCentral,recentPublished,publishBankStats,configIsReady:()=>configured};
+function init(){ $('cloudLogin').onclick=login;$('cloudLogout').onclick=()=>api.signOut(auth);$('cloudReload').onclick=()=>administrator?loadCentral():authChanged(auth.currentUser);$('cloudImport').onclick=importBrowser;if($('cloudCheckPublish'))$('cloudCheckPublish').onclick=checkPublicPublishing;
+ if($('cloudPublicStatsSync'))$('cloudPublicStatsSync').onclick=()=>publishBankStats(true)
+  .catch(e=>{const el=$('cloudPublicStatsStatus');if(el)el.textContent='آمار عمومی به‌روز نشد: '+e.message;});
+ buttons();Promise.resolve(window.JadvalApp?.localReady).then(bootstrap);setInterval(()=>{if(remoteReady&&!loading&&document.visibilityState==='visible'&&!document.querySelector('dialog[open]'))loadCentral();},90000);}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
