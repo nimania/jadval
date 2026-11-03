@@ -28,15 +28,20 @@ function init(){
    $("classicPreview").hidden=true;
    return;
   }
-  const masks=window.JadvalClassic?.build(n,Date.now(),8,(typeof entries!=='undefined'?entries:[]))||[];
+  const bank=(typeof entries!=="undefined"?entries:[]);
+  const magazine=$("patternStyle")?.value==="magazine";
+  const masks=magazine&&n===15?
+   [window.JadvalClassic?.referenceMask?.()].filter(Boolean):
+   window.JadvalClassic?.build(n,Date.now(),8,bank,magazine?"iran-magazine":"strict")||[];
   if(!masks.length){$("classicPreview").hidden=true;$("demoNote").textContent="برای این تلاش الگوی مناسبی یافت نشد؛ دوباره امتحان کن.";return;}
-  const mask=masks[0],bank=(typeof entries!=="undefined"?entries:[]);
+  const mask=masks[0];
   const stats=window.JadvalClassic.assess(mask,bank);
   current=mask;renderMask(mask);
-  $("classicPreviewMeta").textContent="الگوی "+n+"×"+n+" — "+stats.blackCells+" خانهٔ سیاه، "+stats.slots+" جایگاه افقی و عمودی، بیشترین طول موردنیاز "+stats.longestRequired+" حرف. این طرح، جدول تکمیل‌شده نیست.";
+  const shortSlots=window.JadvalClassic.slots(mask).filter(x=>x.length<3).length;
+  $("classicPreviewMeta").textContent="الگوی "+n+"×"+n+" — "+stats.blackCells+" خانهٔ سیاه ("+(100*stats.blackCells/(n*n)).toFixed(1)+"٪)، "+stats.slots+" جایگاه، "+shortSlots+" جایگاه یک‌ یا دوحرفی؛ بلندترین پاسخ "+stats.longestRequired+" حرف. پیش‌نمایش، جدول حل‌شده نیست.";
   $("demoNote").textContent=stats.missingLengths.length?
-   "برای تکمیل این الگو، پاسخ‌هایی با طول "+stats.missingLengths.join("، ")+" حرف در فیلتر بانک پیدا نشد. الگو برای بررسی طراحی نمایش داده شده است.":
-   "پترن نمایش داده شد. داشتن واژه با طول مناسب به معنی تضمین حل همهٔ تقاطع‌ها نیست.";
+   "این تصویر الگوی مرجع است، اما بانک فعلی برای طول‌های "+stats.missingLengths.join("، ")+" حرف پاسخ ندارد؛ در جست‌وجوی واقعی، طرح‌های سازگار دیگری انتخاب می‌شوند و هیچ واژه‌ای ساختگی جایگزین نمی‌شود.":
+   "الگوی مجله‌ای نمایش داده شد. برای هر جایگاه کوتاه نیز پاسخ واقعی و سرنخ مطابق بانک لازم است؛ حل کامل تقاطع‌ها تضمین نشده است.";
   $("classicPreview").scrollIntoView({behavior:"smooth",block:"start"});
  };
 }
