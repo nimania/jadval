@@ -7,27 +7,27 @@ const $=id=>document.getElementById(id);
 let last=null,lastDiagnostic=null,sampleVariant=0;
 function updateReport(report){lastDiagnostic=report;const button=$("downloadSolveReport");if(button)button.disabled=!report;}
 function rng(seed){return ()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
-function slotsFor(mask) {
+function slotsFor(mask,allowSingles=false) {
  const n=mask.length,slots=[],cellSlots=new Map();
  for(const dir of ["horizontal","vertical"]){
   if(dir==="horizontal"){
-   for(let r=0;r<n;r++){let c=n-1;while(c>=0){if(mask[r][c]){c--;continue}let cells=[];while(c>=0&&!mask[r][c])cells.push([r,c--]);if(!cells.length)return null;const slot={dir,group:r+1,cells};slots.push(slot);}}
+   for(let r=0;r<n;r++){let c=n-1;while(c>=0){if(mask[r][c]){c--;continue}let cells=[];while(c>=0&&!mask[r][c])cells.push([r,c--]);if(!cells.length||(!allowSingles&&cells.length<2))return null;const slot={dir,group:r+1,cells};slots.push(slot);}}
   }else{
-   for(let c=n-1;c>=0;c--){let r=0;while(r<n){if(mask[r][c]){r++;continue}let cells=[];while(r<n&&!mask[r][c])cells.push([r++,c]);if(!cells.length)return null;const slot={dir,group:n-c,cells};slots.push(slot);}}
+   for(let c=n-1;c>=0;c--){let r=0;while(r<n){if(mask[r][c]){r++;continue}let cells=[];while(r<n&&!mask[r][c])cells.push([r++,c]);if(!cells.length||(!allowSingles&&cells.length<2))return null;const slot={dir,group:n-c,cells};slots.push(slot);}}
   }
  }
  slots.forEach((s,i)=>{s.id=i;for(let p=0;p<s.cells.length;p++){const key=s.cells[p].join(",");const arr=cellSlots.get(key)||[];arr.push([i,p]);cellSlots.set(key,arr);}});
  for(const s of slots){s.cross=[];for(let p=0;p<s.cells.length;p++){const refs=cellSlots.get(s.cells[p].join(","));for(const [other,q] of refs)if(other!==s.id)s.cross.push([p,other,q]);}}
  return slots;
 }
-function validMask(mask){
+function validMask(mask,allowSingles=false){
  const n=mask?.length;
  if(!Number.isInteger(n)||n<5||mask.some(row=>!Array.isArray(row)||row.length!==n))return false;
  const black=mask.reduce((sum,row)=>sum+row.filter(Boolean).length,0);
  if(black===0||black>=n*n)return false;
  for(let r=0;r<n;r++)if(mask[r].every(Boolean))return false;
  for(let c=0;c<n;c++)if(mask.every(row=>row[c]))return false;
- return !!slotsFor(mask);
+ return !!slotsFor(mask,allowSingles);
 }
 function slotLengths(mask){
  const n=mask.length,all=[];
@@ -191,9 +191,10 @@ function compare(puzzle,reference){
 function validateComplete(data){
  if(!data||data.partial||data.puzzle?.version!==3||!Array.isArray(data.mask))return false;
  const mask=data.mask,grid=data.puzzle.grid,n=mask.length;
- if(!validMask(mask)||!Array.isArray(grid)||grid.length!==n)return false;
+ const allowSingles=data.puzzle.meta?.profile==="iran-magazine";
+ if(!validMask(mask,allowSingles)||!Array.isArray(grid)||grid.length!==n)return false;
  if(grid.some((row,r)=>!Array.isArray(row)||row.length!==n||row.some((letter,c)=>mask[r][c]?letter!=="":typeof letter!=="string"||letter.length!==1||!alphabet.test(letter))))return false;
- const slots=slotsFor(mask);
+ const slots=slotsFor(mask,allowSingles);
  if(!slots)return false;
  const counter={horizontal:{},vertical:{}};
  for(const slot of slots){
@@ -221,7 +222,7 @@ function validateWithBank(data,bank){
   pairs.get(answer).add(clue);
  }
  const used=new Set(),next={horizontal:new Map(),vertical:new Map()};
- for(const slot of slotsFor(data.mask)){
+ for(const slot of slotsFor(data.mask,data.puzzle.meta?.profile==="iran-magazine")){
   const answer=normalize(slot.cells.map(([r,c])=>data.puzzle.grid[r][c]).join(""));
   if(!answer||used.has(answer)||!pairs.has(answer))return false;
   used.add(answer);
@@ -351,8 +352,8 @@ async function generateSample(){
      }))
     });
     const candidate=report.result;
+    if(report.status==="solved"&&candidate)candidate.puzzle.meta.profile=profile;
     if(report.status==="solved"&&candidate&&validateComplete(candidate)){
-     candidate.puzzle.meta.profile=profile;
      output={result:candidate};
     }else{
      const stats=report.reports||[];
