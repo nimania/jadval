@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>جدول‌ساز با بانک Google Sheets | پیام جدول</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap');
+:root{font-family:Vazirmatn,Tahoma,sans-serif;color:#263742;background:#f4f6f8}
+*{box-sizing:border-box}body{margin:0}header{background:#fff;border-bottom:1px solid #dde5ea;padding:16px max(18px,calc((100% - 1120px)/2));display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+main{max-width:1120px;margin:25px auto;padding:0 16px}
+h1{font-size:24px;margin:0 0 7px}h2{font-size:18px;margin:0 0 9px}p{line-height:1.9;margin:6px 0 12px}
+section{border:1px solid #dfe6ea;border-radius:13px;background:#fff;margin:0 0 17px;padding:20px}
+a{color:#146282;text-decoration:none}small,.muted{color:#637681}
+.controls{display:flex;align-items:end;flex-wrap:wrap;gap:9px;margin:13px 0}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+input,select,button{font:inherit}input,select{padding:9px;border-radius:8px;border:1px solid #cbd7dd;max-width:100%}
+input[type=text]{min-width:260px}button{border:1px solid #cdd8df;background:#fff;padding:10px 15px;border-radius:9px;cursor:pointer;color:#233c4b;font-weight:700}
+button.primary{background:#17617e;color:white;border-color:#17617e}button:disabled{opacity:.45;cursor:not-allowed}
+.note{font-size:13px;color:#425a67;padding:10px 13px;background:#eef4f6;border-right:3px solid #3a8aa4;border-radius:6px;line-height:1.85}
+.stats{display:flex;gap:12px;flex-wrap:wrap;margin:15px 0}.stat{background:#f4f8fa;padding:10px 15px;border-radius:8px;font-size:13px}
+.grid-scroll{overflow:auto;max-height:620px;background:#e6edf1;border:1px solid #cbd6de;border-radius:10px;padding:9px}
+.puzzle-grid{display:grid;direction:ltr;width:max-content;margin:auto;border:2px solid #233944}
+.cell{display:flex;align-items:center;justify-content:center;text-align:center;width:30px;height:30px;border:1px solid #aebfc9;background:#fff;color:#24546c;font-size:13px;font-weight:800}
+.cell.clue{background:#eadfc4;color:#342d28;direction:rtl;font-weight:500;font-size:7px;overflow:hidden;word-break:break-word;line-height:1.1;padding:1px}
+.cell.block{background:#252c30;border-color:#252c30}.cell.empty{background:#dfe5e8}
+footer{padding:20px;text-align:center;font-size:12px;color:#6d8190}
+@media(max-width:650px){header{padding:12px}section{padding:13px}input[type=text]{min-width:190px;width:100%}}
+</style>
+</head>
+<body>
+<header><strong>پیام جدول / موتور متصل به Google Sheets</strong><a href="./">کارگاه اصلی</a></header>
+<main>
+<section>
+<h1>ساخت جدول از بانک خصوصی Google Sheets</h1>
+<p class="muted">رابط و موتور تولید در GitHub Pages اجرا می‌شوند. پرسش‌ها و واژه‌ها فقط پس از ورود مجاز مستقیماً از Google Sheets خوانده می‌شوند؛ هیچ بانک خصوصی روی GitHub قرار نمی‌گیرد.</p>
+<a href="https://docs.google.com/spreadsheets/d/1u0dv4WNjQAz3QYleYDCbUkHDTWrLwxpYVDzCRl78p7E/edit" target="_blank" rel="noopener">مشاهدهٔ شیت بانک مرکزی</a>
+<div class="controls">
+<label>شناسهٔ OAuth Client ID گوگل (عمومی، نه Secret)
+<input id="clientId" type="text" autocomplete="off" dir="ltr" placeholder="...apps.googleusercontent.com">
+</label>
+<button id="connect" class="primary">ورود با گوگل و خواندن بانک</button>
+<button id="refresh" disabled>دریافت مجدد از شیت</button>
+<button id="logout" disabled>پاک‌کردن داده‌های جلسه</button>
+</div>
+<p class="muted" style="font-size:12px">برای اتصال، یک OAuth Client از نوع Web application با Authorized JavaScript origin برابر <code>https://nimania.github.io</code> و دسترسی Google Sheets API لازم است. Client ID محرمانه نیست؛ رمز و کلید خصوصی وارد نکن.</p>
+<p id="sheetStatus" class="note" role="status">منتظر ورود با گوگل. بانک خصوصی عمومی نشده است.</p>
+<div class="stats">
+<span class="stat" id="statAll">مدخل‌های شیت: —</span>
+<span class="stat" id="statClues">دارای سؤال و پاسخ: —</span>
+<span class="stat" id="statWords">فقط واژه: —</span>
+</div>
+</section>
+<section id="importSection">
+<h2>انتقال ایمن بانک قدیمی مرورگر</h2>
+<p class="muted">ابتدا در کارگاه اصلی «پشتیبان کامل این مرورگر» را بگیر. فایل پشتیبان JSON نسخهٔ ۲ را اینجا انتخاب کن. انتقال فقط پس از بررسی SHA-256 و تأیید صریح انجام می‌شود؛ داده‌های موجود شیت بازنویسی یا پاک نمی‌شوند و ترکیب‌های سؤال‌وجواب تکراری کنار گذاشته می‌شوند.</p>
+<div class="controls">
+<label>فایل پشتیبان کامل
+<input id="backup" type="file" accept=".json,application/json">
+</label>
+<button id="import" class="primary" disabled>بررسی و افزودن مدخل‌های غیرتکراری به شیت</button>
+</div>
+<p id="importStatus" class="note" role="status">هیچ اطلاعاتی انتقال داده نشده است.</p>
+</section>
+<section>
+<h2>تولید خودکار جدول «شرح در متن»</h2>
+<div class="controls">
+<label>قالب جدول
+<select id="variant"><option value="horizontal">۳۰×۲۰ افقی</option><option value="vertical">۲۰×۱۴ عمودی</option></select>
+</label>
+<label>عنوان
+<input id="title" type="text" value="جدول شرح در متن ـ شمارهٔ ۱">
+</label>
+<button class="primary" id="generate" disabled>ساخت از بانک Google Sheets</button>
+<button id="stop" disabled>توقف</button>
+<button id="show" disabled>نمایش پاسخ‌ها</button>
+<button id="download" disabled>دانلود پیش‌نویس JSON</button>
+</div>
+<p id="generatorStatus" class="note" role="status">ابتدا بانک گوگل‌شیت را دریافت کن. تنها رکوردهای دارای سؤال و پاسخ وارد موتور می‌شوند؛ جدول ناقص قابل انتشار نیست.</p>
+<div class="grid-scroll"><div id="grid" class="puzzle-grid"></div></div>
+<p id="report" class="muted"></p>
+</section>
+</main>
+<footer>بانک روی Google Sheets خصوصی می‌ماند؛ انتشار جدول‌ها همچنان به بازبینی ویراستاری نیاز دارد.</footer>
+<script src="./cloud-safety.js"></script>
+<script src="./clue-in-cell.js"></script>
+<script>
+(function(){
+'use strict';
+const ID='1u0dv4WNjQAz3QYleYDCbUkHDTWrLwxpYVDzCRl78p7E';
+const TAB="'بانک یکپارچه'";
+const $=id=>document.getElementById(id), fmt=n=>new Intl.NumberFormat('fa-IR').format(n);
+const normalize=s=>String(s||'').normalize('NFKC').replace(/[يى]/g,'ی').replace(/ك/g,'ک')
+  .replace(/[\u064b-\u065f\u0670\u0640\u200c\u200d\s-]/g,'').toLocaleLowerCase('fa');
+const pair=r=>normalize(r.answer)+'\u0000'+String(r.clue||'').trim();
+let token='',expires=0,remoteRows=[],available=[],revision=0,worker=null,result=null,showAnswers=false;
+const status=(id,text)=>{$(id).textContent=text;};
+const endpoint=()=> 'https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(ID)+'/values/'+encodeURIComponent(TAB+'!A:Q');
+function setButtons(){
+ $('refresh').disabled=!token;
+ $('logout').disabled=!token;
+ $('import').disabled=!token||!$('backup').files.length;
+ $('generate').disabled=!token||!available.length||!!worker;
+ $('stop').disabled=!worker;
+ $('download').disabled=!result;
+ $('show').disabled=!result;
+}
+function loadGIS(){
+ if(window.google?.accounts?.oauth2)return Promise.resolve();
+ return new Promise((resolve,reject)=>{
+  const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
+  script.onload=resolve;script.onerror=()=>reject(Error('بارگذاری ورود گوگل موفق نشد.'));document.head.appendChild(script);
+ });
+}
+async function authorize(){
+ const clientId=$('clientId').value.trim();
+ if(!/^[0-9]+-[a-z0-9-]+\.apps\.googleusercontent\.com$/.test(clientId))
+  throw Error('OAuth Client ID معتبر از نوع Web application را وارد کن.');
+ await loadGIS();
+ return new Promise((resolve,reject)=>{
+  const client=google.accounts.oauth2.initTokenClient({
+   client_id:clientId,scope:'https://www.googleapis.com/auth/spreadsheets',
+   callback:response=>{
+    if(response.error||!response.access_token){reject(Error(response.error||'مجوز گوگل دریافت نشد.'));return;}
+    token=response.access_token;expires=Date.now()+(Number(response.expires_in)||3500)*1000-60000;
+    localStorage.setItem('jadval-sheets-oauth-client-id',clientId);
+    resolve();
+   },
+   error_callback:()=>reject(Error('پنجرهٔ اجازهٔ دسترسی گوگل بسته شد یا خطا داشت.'))
+  });
+  client.requestAccessToken({prompt:'select_account'});
+ });
+}
+async function api(url,options){
+ if(!token||Date.now()>=expires)throw Error('نشست گوگل منقضی شده است؛ دوباره وارد شو.');
+ const response=await fetch(url,{
+  method:options?.method||'GET',
+  headers:{Authorization:'Bearer '+token,...(options?.body?{'Content-Type':'application/json'}:{})},
+  body:options?.body?JSON.stringify(options.body):undefined,cache:'no-store',referrerPolicy:'no-referrer'
+ });
+ if(!response.ok){
+  let message='';try{const details=await response.json();message=details?.error?.message||'';}catch(_){}
+  throw Error('Google Sheets API: '+response.status+' '+message);
+ }
+ return response.json();
+}
+function parseSheet(values){
+ const rows=(values||[]).slice(1).map((r,i)=>{
+  const answer=String(r[2]||r[1]||'').trim(),clue=String(r[4]||'').trim();
+  return {id:String(r[0]||'sheet-row-'+(i+2)),answer,clue,
+   letters:Number(r[3])||Array.from(normalize(answer)).length,
+   category:String(r[5]||'دسته‌بندی‌نشده'),difficulty:String(r[6]||'unknown'),
+   reviewed:String(r[7]||'').includes('تأیید')?1:0,
+   source:String(r[9]||''),license:String(r[11]||'')};
+ }).filter(r=>r.answer);
+ const keys=new Set();
+ const valid=rows.filter(r=>{
+  const answer=normalize(r.answer);
+  if(!r.clue||answer.length<2||answer.length>30||Array.from(answer).length!==r.letters)return false;
+  const k=pair(r);if(keys.has(k))return false;keys.add(k);return true;
+ });
+ return {rows,valid};
+}
+async function readSheet(){
+ const response=await api(endpoint()+'?valueRenderOption=UNFORMATTED_VALUE');
+ const parsed=parseSheet(response.values);
+ remoteRows=parsed.rows;available=parsed.valid;
+ revision=Date.now();
+ status('sheetStatus','بانک خصوصی از گوگل‌شیت خوانده شد: '+fmt(remoteRows.length)+' مدخل؛ '+fmt(available.length)+' پرسش‌وپاسخ قابل استفاده. خواندن، داده‌های موجود را تغییر نمی‌دهد.');
+ $('statAll').textContent='مدخل‌های شیت: '+fmt(remoteRows.length);
+ $('statClues').textContent='دارای سؤال و پاسخ: '+fmt(available.length);
+ $('statWords').textContent='صرفاً واژه/فاقد سرنخ قابل استفاده: '+fmt(remoteRows.length-available.length);
+ setButtons();
+}
+$('clientId').value=localStorage.getItem('jadval-sheets-oauth-client-id')||'';
+$('connect').onclick=async()=>{
+ $('connect').disabled=true;
+ try{await authorize();await readSheet();}
+ catch(e){status('sheetStatus','اتصال برقرار نشد: '+e.message);}
+ finally{$('connect').disabled=false;setButtons();}
+};
+$('refresh').onclick=async()=>{try{await readSheet();}catch(e){status('sheetStatus','دریافت انجام نشد: '+e.message);}};
+$('logout').onclick=()=>{
+ if(worker){worker.terminate();worker=null;}
+ if(token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(token,()=>{});
+ token='';expires=0;remoteRows=[];available=[];result=null;revision=0;
+ $('grid').replaceChildren();$('report').textContent='';
+ status('sheetStatus','نشست بسته شد. برای دسترسی دوباره، وارد حساب گوگل شو.');
+ $('statAll').textContent='مدخل‌های شیت: —';$('statClues').textContent='دارای سؤال و پاسخ: —';$('statWords').textContent='فقط واژه: —';
+ setButtons();
+};
+$('backup').onchange=()=>setButtons();
+async function readBackup(){
+ const file=$('backup').files[0];if(!file)throw Error('ابتدا فایل پشتیبان کامل را انتخاب کن.');
+ if(file.size>30000000)throw Error('حجم پشتیبان بیش از ۳۰ مگابایت است؛ فایل مناسب را بررسی کن.');
+ const payload=JSON.parse(await file.text()),S=window.JadvalSafety;
+ if(payload.schema!==2||!payload.state||!Array.isArray(payload.visibleEntries)||!payload.checksum)
+  throw Error('فایل باید پشتیبان کامل نسخهٔ ۲ کارگاه باشد.');
+ const digest=await S.digest({state:payload.state,visibleEntries:payload.visibleEntries});
+ if(digest!==payload.checksum)throw Error('اثر انگشت SHA-256 با فایل پشتیبان تطبیق ندارد.');
+ const rows=payload.state.bank?.entries;
+ if(!Array.isArray(rows)||!rows.length)throw Error('فایل بانک اصلی ندارد.');
+ for(const r of rows)S.validate(S.record(r));
+ return rows;
+}
+async function importBackup(){
+ $('import').disabled=true;
+ try{
+  status('importStatus','در حال بررسی پشتیبان SHA-256 و مقایسه با شیت موجود...');
+  const rows=await readBackup();
+  await readSheet(); // Never use stale deduplication data.
+  const ids=new Map(remoteRows.map(r=>[r.id,pair(r)])),known=new Set(remoteRows.map(pair)),newKeys=new Set();
+  const pending=[];
+  for(const r of rows){
+   const answer=normalize(r.answer),clue=String(r.clue||'').trim();
+   const k=answer+'\u0000'+clue;
+   if(!answer||!clue||known.has(k)||newKeys.has(k))continue;
+   if(ids.has(String(r.id))&&ids.get(String(r.id))!==k)
+    throw Error('برخورد شناسهٔ '+r.id+'؛ انتقال بدون بازنویسی متوقف شد.');
+   newKeys.add(k);
+   pending.push([String(r.id),answer,String(r.answer).trim(),Array.from(answer).length,clue,
+    String(r.category||'دسته‌بندی‌نشده'),String(r.difficulty||'unknown'),'تأیید فرضی کاربر',
+    'بانک مرورگر اصلی',String(r.source||'local-bank-backup'),'',String(r.license||''),
+    r.reviewed?'تأیید کاربر':'در انتظار بررسی','انتقال غیرمخرب از پشتیبان اصلی','','',
+    'در انتظار بررسی']);
+  }
+  const notice='پشتیبان معتبر: '+fmt(rows.length)+' مدخل. روی شیت: '+fmt(remoteRows.length)+
+   ' مدخل. افزودنی‌های غیرتکراری: '+fmt(pending.length)+'. هیچ ردیفی حذف یا ویرایش نمی‌شود.';
+  if(!pending.length){status('importStatus',notice+' نیازی به انتقال نیست.');return;}
+  if(!confirm(notice+'\nانتقال واقعی این '+pending.length+' ردیف به شیت خصوصی را تأیید می‌کنی؟')){
+   status('importStatus',notice+' انتقال لغو شد.');return;
+  }
+  for(let i=0;i<pending.length;i+=500){
+   const chunk=pending.slice(i,i+500);
+   await api(endpoint()+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',
+    {method:'POST',body:{values:chunk}});
+   status('importStatus','درخواست ثبت '+fmt(Math.min(i+500,pending.length))+' از '+fmt(pending.length)+
+    ' ردیف تأیید شد. لطفاً صفحه را نبند.');
+  }
+  await readSheet();
+  status('importStatus','ارسال پایان یافت. شیت مجدداً خوانده شد: '+fmt(remoteRows.length)+
+   ' مدخل و '+fmt(available.length)+' سؤال‌وجواب معتبر. پشتیبان اصلی دست‌نخورده باقی ماند.');
+ }catch(e){
+  status('importStatus','انتقال کامل نشد: '+e.message+
+   '؛ قبل از تلاش دوباره، شیت از سرور مجدداً خوانده و مدخل‌های ثبت‌شده حذف تکرار می‌شوند.');
+ }finally{setButtons();}
+}
+$('import').onclick=importBackup;
+function renderGrid(){
+ const grid=$('grid');grid.replaceChildren();if(!result)return;
+ const item=result.item,model=window.PayameClueInCell,size=model.sizes[item.variant];
+ grid.style.gridTemplateColumns='repeat('+size.width+',30px)';
+ const entryMap=new Map(item.puzzle.entries.map(e=>[e.id,e]));
+ for(const row of item.puzzle.grid)for(const c of row){
+  const div=document.createElement('div');div.className='cell '+c.kind;
+  if(c.kind==='letter')div.textContent=showAnswers?c.answer:'';
+  if(c.kind==='clue')div.textContent=(c.clueIds||[]).map(id=>{
+    const entry=entryMap.get(id);return entry?entry.clue+(entry.direction==='across'?' ←':' ↓'):'';
+  }).filter(Boolean).join(' / ');
+  grid.append(div);
+ }
+ const report=model.inspect(item);
+ $('report').textContent='مدخل مصرف‌شده: '+fmt(report.stats.entries)+
+  ' | تقاطع: '+fmt(report.stats.crossings)+
+  ' | خانهٔ بلاتکلیف: '+fmt(report.stats.empty)+
+  ' | '+(report.publishable?'عبور از کنترل ساختاری؛ بازبینی سردبیری همچنان ضروری است.':
+     'پیش‌نویس ناقص است و انتشار مجاز نیست. '+(report.errors||[]).slice(0,2).join('، '));
+ setButtons();
+}
+$('generate').onclick=async()=>{
+ if(worker||!available.length)return;
+ const snapshot=available.map(e=>({answer:e.answer,clue:e.clue}));
+ const sourceKeys=new Set(snapshot.map(pair)),generation=revision,variant=$('variant').value;
+ result=null;setButtons();
+ const controller=new Worker('./clue-auto-worker.js');worker=controller;setButtons();
+ status('generatorStatus','موتور روی '+fmt(snapshot.length)+' سرنخ واقعی گوگل‌شیت در حال جست‌وجوست...');
+ controller.onmessage=e=>{
+  if(worker!==controller)return;
+  const message=e.data||{};
+  if(message.type==='progress'){
+   status('generatorStatus','تلاش '+fmt(message.progress.round)+' از '+fmt(message.progress.attempts)+
+    '؛ '+fmt(message.progress.placements)+' پاسخ جای‌گذاری شد.');return;
+  }
+  worker=null;
+  if(message.type==='error'){status('generatorStatus','خطای موتور: '+message.message);setButtons();return;}
+  try{
+   const item=message.result.item;
+   if(!item?.puzzle?.entries||!item.puzzle.entries.every(x=>sourceKeys.has(pair(x))))
+    throw Error('سؤال یا جواب خارج از بانک خوانده‌شده یافت شد.');
+   const audit=window.PayameClueInCell.inspect(item);
+   if(!audit.valid)throw Error(audit.errors[0]||'طرح نامعتبر');
+   item.puzzle.meta={...(item.puzzle.meta||{}),source:'private-google-sheets-oauth',
+    sheetId:ID,bankSnapshot:generation,editorialApproval:false};
+   result=message.result;showAnswers=false;renderGrid();
+   status('generatorStatus',audit.publishable?
+    'جدول کامل از بانک Google Sheets ساخته شد؛ آمادهٔ بررسی ویراستاری.':
+    'بهترین پیش‌نویس هنوز ناقص است؛ انتشار متوقف می‌ماند.');
+  }catch(err){status('generatorStatus','نتیجه رد شد: '+err.message);setButtons();}
+ };
+ controller.onerror=e=>{
+  if(worker!==controller)return;worker=null;
+  status('generatorStatus','خطای Worker: '+(e.message||'نامشخص'));setButtons();
+ };
+ controller.postMessage({rows:snapshot,variant,seed:Date.now()>>>0,attempts:4,budgetMs:16000});
+};
+$('stop').onclick=()=>{
+ if(worker){worker.terminate();worker=null;}
+ status('generatorStatus','جست‌وجو متوقف شد؛ شیت تغییری نکرد.');setButtons();
+};
+$('show').onclick=()=>{
+ showAnswers=!showAnswers;$('show').textContent=showAnswers?'پنهان کردن پاسخ‌ها':'نمایش پاسخ‌ها';
+ renderGrid();
+};
+$('download').onclick=()=>{
+ if(!result)return;
+ const item=JSON.parse(JSON.stringify(result.item));
+ item.id='clue-sheets-'+Date.now();item.title=$('title').value.trim()||'شرح در متن';
+ item.puzzle.meta={...(item.puzzle.meta||{}),status:'draft',editorialApproval:false};
+ const blob=new Blob([JSON.stringify(item,null,2)],{type:'application/json;charset=utf-8'}),
+ url=URL.createObjectURL(blob),link=document.createElement('a');
+ link.href=url;link.download='payamejadval-sheets-clue-draft.json';link.click();
+ setTimeout(()=>URL.revokeObjectURL(url),5000);
+};
+setButtons();
+})();
+</script>
+</body></html>
