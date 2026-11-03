@@ -84,6 +84,29 @@ service cloud.firestore {
    allow create: if isEditor() && validPublicPuzzle(request.resource.data,puzzleId);
    allow update, delete: if false;
   }
+  // Aggregate-only public bank metrics; never publish word or clue text.
+  // Schema uses fixed keys with strictly numeric values; cannot leak bank rows.
+  function validPublicStats(d) {
+   return d.keys().hasAll(['schema','source','snapshotAt','totalEntries','rawEntries',
+      'duplicateEntries','uniqueAnswers','uniqueClues','uniquePairs']) &&
+    d.keys().hasOnly(['schema','source','snapshotAt','totalEntries','rawEntries',
+      'duplicateEntries','uniqueAnswers','uniqueClues','uniquePairs']) &&
+    d.schema == 1 && d.source == 'jadval-studio' &&
+    d.snapshotAt == request.time &&
+    d.rawEntries is int && d.rawEntries>=0 && d.rawEntries<=1000000 &&
+    d.duplicateEntries is int && d.duplicateEntries>=0 && d.duplicateEntries<=d.rawEntries &&
+    d.totalEntries is int && d.totalEntries == d.rawEntries-d.duplicateEntries &&
+    d.uniquePairs is int && d.uniquePairs == d.totalEntries &&
+    d.uniqueAnswers is int && d.uniqueAnswers>=0 && d.uniqueAnswers<=d.totalEntries &&
+    d.uniqueClues is int && d.uniqueClues>=0 && d.uniqueClues<=d.totalEntries &&
+    bank().status == 'ready' && bank().count == d.rawEntries;
+  }
+  match /publicStats/bank {
+   allow get: if true;
+   allow list: if false;
+   allow create, update: if isEditor() && validPublicStats(request.resource.data);
+   allow delete: if false;
+  }
   match /puzzles/{id} { allow read: if isEditor(); allow write: if false; }
   match /auditLogs/{id} { allow read: if isEditor(); allow write: if false; }
   match /{document=**} { allow read,write: if false; }
