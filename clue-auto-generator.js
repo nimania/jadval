@@ -7,18 +7,28 @@
 const model=root?.PayameClueInCell||(typeof module!=='undefined'?require('./clue-in-cell.js'):null);
 if(!model)throw Error('Clue-in-cell model missing');
 const FA=/^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیؤئء]+$/;
-function poolFrom(entries,{maxWord=15,maxClue=92}={}){
- const seen=new Set(),pool=[],byLength={};
+function poolFrom(entries,{maxWord=15,maxClue=92,seed=1}={}){
+ const pairs=new Set(),choices=new Map(),byLength={},rng=seedRandom(seed);
  for(const entry of Array.isArray(entries)?entries:[]){
   const word=model.normalize(entry?.answer),clue=String(entry?.clue||'').trim();
   const len=[...word].length;
   if(len<3||len>maxWord||!FA.test(word)||clue.length<3||clue.length>maxClue)continue;
-  if(seen.has(word))continue;
-  seen.add(word);
-  const value={answer:word,clue,letters:[...word],length:len};
-  pool.push(value);byLength[len]=(byLength[len]||0)+1;
+  const key=word+'\u0000'+clue;if(pairs.has(key))continue;
+  pairs.add(key);
+  const previous=choices.get(word);
+  if(previous){
+   // Reservoir sampling chooses different *legitimate* clues on different days
+   // while keeping each answer unique within the same grid.
+   previous.count++;
+   if(rng()<1/previous.count)previous.clue=clue;
+  }else choices.set(word,{answer:word,clue,letters:[...word],length:len,count:1});
  }
- return {pool,byLength,inputCount:Array.isArray(entries)?entries.length:0};
+ const pool=[];
+ for(const entry of choices.values()){
+  pool.push({answer:entry.answer,clue:entry.clue,letters:entry.letters,length:entry.length});
+  byLength[entry.length]=(byLength[entry.length]||0)+1;
+ }
+ return {pool,byLength,inputCount:Array.isArray(entries)?entries.length:0,uniquePairs:pairs.size};
 }
 function seedRandom(value){
  let x=(Number(value)||32843831)>>>0;
@@ -147,9 +157,9 @@ function rank(report){
 }
 function run(entries,variant,settings={}){
  const size=model.sizes[variant];if(!size)throw Error('قالب انتخاب‌شده وجود ندارد.');
- const prepared=poolFrom(entries);
- if(prepared.pool.length<200)throw Error('واژگان مناسب کافی نیستند؛ دست‌کم ۲۰۰ جواب یکتا و دارای سؤال لازم است.');
  const randomSeed=(Number(settings.seed)||Number(new Date().toISOString().slice(0,10).replaceAll('-',''))||20261103)>>>0;
+ const prepared=poolFrom(entries,{seed:randomSeed});
+ if(prepared.pool.length<200)throw Error('واژگان مناسب کافی نیستند؛ دست‌کم ۲۰۰ جواب یکتا و دارای سؤال لازم است.');
  const attempts=Math.max(1,Math.min(8,Number(settings.attempts)||4));
  const maxSteps=Math.max(30,Math.min(380,Number(settings.steps)||Math.round(size.width*size.height*.45)));
  const budgetMs=Math.max(1000,Math.min(30000,Number(settings.budgetMs)||14500));
