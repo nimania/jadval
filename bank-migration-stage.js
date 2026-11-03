@@ -98,11 +98,11 @@ async function stage(){
    throw Error('فایل بررسی‌شده تغییر کرده است.');
   const report=plan(originals,inspected.target,S);
   const name='before-pair-dedup-'+new Date().toISOString();
-  const consent=prompt('برای آماده‌سازی '+fmt(report.final)+' مدخل، تعداد را وارد کن. نسخهٔ کامل اصلی در مرورگر جداگانه حفظ می‌شود. هیچ داده‌ای به سرور ارسال نخواهد شد.');
-  const normalized=String(consent??'').replace(/[۰-۹٠-٩]/g,ch=>{
+  const consent=$('bankStageCount')?.value||'';
+  const normalized=String(consent).replace(/[۰-۹٠-٩]/g,ch=>{
    let c=ch.charCodeAt(0);return String(c>=0x06f0?c-0x06f0:c-0x0660);
   }).replace(/[\s٬,]/g,'');
-  if(normalized!==String(report.final))throw Error('تأیید تعداد انجام نشد؛ هیچ تغییری داده نشد.');
+  if(normalized!==String(report.final))throw Error('تعداد را در کادر تأیید به‌درستی وارد کن؛ هیچ تغییری داده نشد.');
   await B.put(name,{entries:clean(originals),savedAt:new Date().toISOString(),reason:'before-dedup-staging'});
   await B.put('bank',{entries:clean(inspected.target)});
   inspected=null;message.textContent='آماده‌سازی در مرورگر انجام شد؛ '+fmt(report.final)+' مدخل. نسخهٔ قبلی تحت '+name+
