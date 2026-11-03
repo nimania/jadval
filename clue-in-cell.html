@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>کارگاه شرح در متن | پیام جدول</title>
+<link rel="icon" href="https://nimania.github.io/payamejadval/assets/favicon.svg" type="image/svg+xml">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap');
+:root{font-family:Vazirmatn,Tahoma,Arial,sans-serif;color:#202f39;background:#f4f5f5}
+*{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}
+button{cursor:pointer}a{color:#17658b;text-decoration:none}button:disabled{cursor:not-allowed;opacity:.55}
+header{background:#fff;border-bottom:1px solid #d9e1e6}header .top{max-width:1480px;margin:auto;display:flex;justify-content:space-between;align-items:center;padding:10px 20px;gap:20px}
+header img{width:152px;height:auto;display:block}header .links{display:flex;gap:18px;align-items:center;font-size:13px}
+main{max-width:1480px;padding:22px;margin:auto}
+h1{font-size:clamp(22px,2.5vw,31px);margin:0}h2{font-size:17px;margin:0 0 12px}
+p{line-height:1.9;margin:7px 0}.muted{color:#637481;font-size:13px}
+.card{background:white;border:1px solid #dce3e8;border-radius:14px;padding:18px;margin-bottom:16px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.btn{border:1px solid #d5dfe5;padding:9px 14px;background:#fff;color:#26465c;border-radius:8px;font-size:13px}
+.primary{background:#195d7c;color:#fff;border-color:#195d7c}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}.field label{font-size:13px;font-weight:700}.field input,.field select,.field textarea{border:1px solid #c7d2db;border-radius:8px;padding:8px;background:#fff;width:100%;min-width:0}
+.config{display:grid;grid-template-columns:190px minmax(180px,1fr) auto;gap:12px;align-items:end}
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 326px;gap:16px;align-items:start}
+.sheet{min-width:0}.grid-scroller{overflow:auto;border:1px solid #cbd7df;border-radius:8px;background:#e6edf1;max-height:72vh}
+#clueGrid{display:grid;direction:ltr;width:max-content;margin:auto;gap:0;border:2px solid #38424a;background:#fff}
+.grid-cell{display:flex;align-items:center;justify-content:center;position:relative;width:34px;height:34px;border:1px solid #aebec6;padding:0;border-radius:0;font-size:14px;font-weight:700;color:#1c3d54;background:#fff}
+.grid-cell.empty{background:#eff2f3;color:#b7c4cd}.grid-cell.block{background:#282b2d;color:#fff}
+.grid-cell.clue{background:#e8e2d0;color:#423629;overflow:hidden}
+.grid-cell.clue .clue-label{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;line-height:1.15;font-size:8px;font-weight:600;direction:rtl;text-align:center;word-break:break-word;max-width:100%;padding:2px}
+.grid-cell.clue .arrow{position:absolute;bottom:0;left:0;color:#8c3230;background:#fff9;padding:0 2px;font-size:10px;font-weight:800}
+.grid-cell.selected{outline:3px solid #d38919;outline-offset:-3px;z-index:2}
+.grid-cell.conflict{outline:3px solid #be1a1a;z-index:3}
+.grid-cell.preview-input{font:700 14px Tahoma;direction:rtl;text-align:center;cursor:text;border-radius:0;outline-offset:-2px}
+.sidebar{display:flex;flex-direction:column;gap:14px}
+.note{background:#f3f8fb;border-right:3px solid #4388a1;padding:10px 12px;font-size:12px;line-height:1.8;white-space:pre-wrap}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.stats span{background:#f4f7f8;padding:8px;border-radius:7px;font-size:12px}
+#entryList{max-height:290px;overflow:auto;padding:0;list-style:none;margin:0}
+#entryList li{display:flex;align-items:center;justify-content:space-between;gap:6px;border-bottom:1px solid #e8edf0;padding:7px 3px;font-size:12px}
+#entryList button{border:0;background:none;color:#a33e3e;text-align:right}
+#entryList .select-entry{color:#236588}
+.quality-pass{color:#21694d}.quality-fail{color:#a33e3e}
+.footer{margin:20px 0;color:#74828a;font-size:12px}
+@media(max-width:1000px){.workspace{grid-template-columns:1fr}.sidebar{display:grid;grid-template-columns:1fr 1fr}.grid-scroller{max-height:55vh}}
+@media(max-width:680px){main{padding:10px}.config,.sidebar{grid-template-columns:1fr}.card{padding:12px}header .top{padding:8px}.grid-cell{width:30px;height:30px}header .links{font-size:11px}}
+</style></head><body>
+<header><div class="top">
+ <a href="https://nimania.github.io/payamejadval/" aria-label="صفحهٔ اصلی پیام جدول"><img src="https://nimania.github.io/payamejadval/assets/payamejadval-logo.webp" alt="پیام جدول"></a>
+ <div class="links"><a href="./">بازگشت به کارگاه</a><a href="https://nimania.github.io/payamejadval/">پیام جدول</a></div>
+</div></header>
+<main>
+<div class="card">
+ <h1>طراحی جدول «شرح در متن»</h1>
+ <p class="muted">سرنخ داخل شبکه قرار می‌گیرد؛ فلش «←» پاسخ افقی را از راست به چپ و فلش «↓» پاسخ عمودی را از بالا به پایین نشان می‌دهد. این کارگاه پیش‌نویس را فقط در مرورگر ذخیره می‌کند و هیچ‌چیز را خودکار منتشر نمی‌کند.</p>
+ <div class="config">
+  <div class="field"><label for="variant">طرح و ابعاد</label><select id="variant"><option value="horizontal">۳۰×۲۰ افقی (۶۰۰ خانه)</option><option value="vertical">۲۰×۱۴ عمودی (۲۸۰ خانه)</option></select></div>
+  <div class="field"><label for="puzzleTitle">عنوان جدول</label><input id="puzzleTitle" value="شرح در متن ـ شمارهٔ ۱" maxlength="120"></div>
+  <button id="newDraft" class="btn" type="button">شروع طرح جدید</button>
+ </div>
+ <div class="toolbar" style="margin-top:14px">
+  <button id="exportDraft" type="button" class="btn primary">دانلود پیش‌نویس JSON</button>
+  <label for="importDraft" class="btn">بازیابی فایل پیش‌نویس</label><input id="importDraft" type="file" accept=".json,application/json" hidden>
+  <button id="checkDraft" class="btn" type="button">کنترل کیفیت</button>
+  <button id="togglePreview" class="btn" type="button">پیش‌نمایش حل‌کننده</button>
+  <button id="exportApproved" class="btn" disabled type="button">خروجی آمادهٔ بررسی انتشار</button>
+ </div>
+</div>
+<div class="workspace">
+ <section class="card sheet">
+  <div class="toolbar" style="justify-content:space-between"><h2>شبکهٔ <span id="sizeLabel">۳۰×۲۰</span></h2><span id="selectionText" class="muted">برای انتخاب محل سؤال، روی یک خانه کلیک کن.</span></div>
+  <div class="grid-scroller"><div id="clueGrid" role="grid" aria-label="شبکهٔ طراحی شرح در متن"></div></div>
+  <p class="muted">خاکستری = تعیین‌تکلیف‌نشده؛ سفید = پاسخ؛ کِرِم = سرنخ و فلش؛ سیاه = خانهٔ بسته. برای قرارگیری کلمات، خانهٔ سرنخ را انتخاب کن و سؤال و جواب را در ستون کناری وارد کن.</p>
+  <div class="toolbar"><button id="toggleBlock" class="btn" type="button">سیاه/سفید کردن خانهٔ انتخابی</button><button id="fillBlocks" class="btn" type="button">بستن تمام خانه‌های بلاتکلیف</button><button id="checkPreview" class="btn" type="button" hidden>بررسی پاسخ‌های آزمایشی</button></div>
+ </section>
+ <aside class="sidebar">
+  <section class="card">
+   <h2>افزودن سرنخ و پاسخ</h2>
+   <form id="entryForm">
+    <div class="field"><label for="clueText">متن سؤال داخل خانه</label><textarea id="clueText" required rows="3" maxlength="180" placeholder="مثلاً: شهر شمالی"></textarea></div>
+    <div class="field"><label for="answerText">جواب فارسی (بدون فاصله)</label><input id="answerText" required maxlength="30" placeholder="مثلاً: رشت"></div>
+    <div class="field"><label for="entryDirection">جهت پاسخ</label><select id="entryDirection"><option value="across">← افقی، از راست به چپ</option><option value="down">↓ عمودی، از بالا به پایین</option></select></div>
+    <p id="entryLocation" class="muted">هنوز خانهٔ سرنخ انتخاب نشده است.</p>
+    <button class="btn primary" type="submit">جای‌گذاری در شبکه</button>
+   </form>
+   <p id="actionStatus" class="note" role="status">با کلیک روی هر خانه، جای سؤال را مشخص کن.</p>
+  </section>
+  <section class="card"><h2>گزارش فنی و آماری</h2><div class="stats" id="gridStats"></div><p class="note" id="qaStatus" role="status"></p></section>
+  <section class="card"><h2>سرنخ‌های ثبت‌شده</h2><ul id="entryList"></ul></section>
+ </aside>
+</div>
+<p class="footer">بانک اصلی واژگان و جدول‌های منتشرشده تغییر نمی‌کنند. خروجی آمادهٔ انتشار تنها پس از عبور از کنترل ساختار فعال می‌شود؛ انتشار در سایت مرحله‌ای مستقل و نیازمند تأیید نهایی است.</p>
+</main>
+<script src="./clue-in-cell.js"></script>
+<script src="./clue-editor.js"></script>
+</body></html>
