@@ -121,7 +121,7 @@ function inspect(item){
  if(stats.across<6||stats.down<6)checks.push('سؤال‌های افقی و عمودی باید هر دو به تعداد کافی وجود داشته باشند.');
  if(stats.letter<size.width*size.height*.55)checks.push('پوشش پاسخ‌ها کمتر از ۵۵٪ شبکه است.');
  if(stats.block>size.width*size.height*.3)checks.push('تعداد خانه‌های سیاه بیش از ۳۰٪ شبکه است.');
- if(stats.letter&&stats.crossings/stats.letter<.2)checks.push('تقاطع پاسخ‌ها کمتر از ۲۰٪ حروف است.');
+ if(stats.letter&&stats.crossings/stats.letter<.15)checks.push('تقاطع پاسخ‌ها کمتر از ۱۵٪ حروف است.');
  const publishable=structurallyValid&&checks.length===0;
  return {valid:structurallyValid,publishable,errors:[...errors,...checks],stats,grid:built.grid};
 }
