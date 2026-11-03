@@ -7,6 +7,7 @@ on:
       - clue-in-cell.html
       - clue-in-cell.js
       - clue-editor.js
+      - clue-bank-lookup.js
       - demo-generator.js
       - sparse-generator.js
       - mosaic-generator.js
@@ -79,6 +80,8 @@ jobs:
           node --check bank-migration-stage.js
           node --check clue-in-cell.js
           node --check clue-editor.js
+          node --check clue-bank-lookup.js
+          node tests/test_clue_bank_lookup.cjs
           node tests/test_clue_in_cell_model.cjs
           node --check studio-novelty.js
           node --test tests/test_cloud_safety.cjs
