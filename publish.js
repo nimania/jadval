@@ -34,7 +34,8 @@ function preparedPuzzle(data,bank,title,evaluation){
  // Precisely whitelist the public shape. No private bank or source metadata.
  return {title:name,size:n,editorApproved:false,puzzle:{
   version:3,grid,clues,meta:{title:name,size:{rows:n,cols:n},
-   language:'fa',direction:'rtl',status:'published',method:'editor-approved'}
+   language:'fa',direction:'rtl',status:'published',method:'editor-approved',
+   ...(source.meta?.profile==='iran-magazine'?{profile:'iran-magazine'}:{})
  }};
 }
 function newPublicId(){
