@@ -304,7 +304,22 @@ async function bootstrap(){
  if(!configured){state('اتصال مرکزی تنظیم نشده است.');buttons();return;}
  try{const [a,b,c]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-auth.js'),import(SDK+'firebase-firestore.js')]);const app=a.initializeApp(config,'jadval-private');api={...b,...c};auth=b.getAuth(app);db=c.getFirestore(app);b.onAuthStateChanged(auth,authChanged);buttons();checkPublicPublishing();}catch(e){state('بارگذاری Firebase ناموفق: '+e.message);}
 }
-window.JadvalCloud={isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading&&publishReadReady,checkPublicPublishing,publishPuzzle,saveEntry,loadCentral,recentPublished,publishBankStats,preflightNewBank,configIsReady:()=>configured};
+// Only a signed-in administrator may request the current Firestore-backed
+// wordbank for private, same-origin generation. Never fall back to local demos.
+async function verifiedGenerationSnapshot(){
+ if(!administrator)throw Error('ابتدا با حساب مدیر بانک مرکزی وارد شو.');
+ if(loading)throw Error('بانک مرکزی در حال به‌روزرسانی است؛ پس از پایان دریافت دوباره تلاش کن.');
+ await loadCentral();
+ if(!remoteReady||source!=='cloud'||!cache||cache.uid!==administrator.uid||
+    !Number.isInteger(cache.generation)||!Array.isArray(cache.entries))
+  throw Error('نسخهٔ بانک مرکزی در دسترس نیست؛ تولید با بانک محلی یا آزمایشی ممنوع است.');
+ const pending=await window.JadvalApp.pendingCount();
+ if(pending)throw Error('ویرایش‌های معلق وجود دارد؛ پیش از ساخت، تعارض‌ها را حل کن.');
+ return {generation:cache.generation,count:cache.entries.length,rows:cache.entries.map(row=>({
+  answer:row.answer,clue:row.clue
+ }))};
+}
+window.JadvalCloud={verifiedGenerationSnapshot,isReady:()=>remoteReady&&!!administrator,isConnected:()=>!!administrator,canEdit:()=>!!administrator&&!loading&&(source==='cloud'||source==='local'),canPublish:()=>!!administrator&&!loading&&publishReadReady,checkPublicPublishing,publishPuzzle,saveEntry,loadCentral,recentPublished,publishBankStats,preflightNewBank,configIsReady:()=>configured};
 function init(){ $('cloudLogin').onclick=login;$('cloudLogout').onclick=()=>api.signOut(auth);$('cloudReload').onclick=()=>administrator?loadCentral():authChanged(auth.currentUser);$('cloudImport').onclick=importBrowser;if($('cloudCheckPublish'))$('cloudCheckPublish').onclick=checkPublicPublishing;
  if($('cloudPublicStatsSync'))$('cloudPublicStatsSync').onclick=()=>publishBankStats(true)
   .catch(e=>{const el=$('cloudPublicStatsStatus');if(el)el.textContent='آمار عمومی به‌روز نشد: '+e.message;});
