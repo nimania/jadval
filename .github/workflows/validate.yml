@@ -8,6 +8,9 @@ on:
       - clue-in-cell.js
       - clue-editor.js
       - clue-bank-lookup.js
+      - clue-auto-generator.js
+      - clue-auto-worker.js
+      - clue-auto-ui.js
       - demo-generator.js
       - sparse-generator.js
       - mosaic-generator.js
@@ -82,6 +85,10 @@ jobs:
           node --check clue-editor.js
           node --check clue-bank-lookup.js
           node tests/test_clue_bank_lookup.cjs
+          node --check clue-auto-generator.js
+          node --check clue-auto-worker.js
+          node --check clue-auto-ui.js
+          node tests/test_clue_auto_generator.cjs
           node tests/test_clue_in_cell_model.cjs
           node --check studio-novelty.js
           node --test tests/test_cloud_safety.cjs
