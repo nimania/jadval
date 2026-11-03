@@ -75,6 +75,7 @@ jobs:
           node tests/test_verified_sample_15.cjs
           node tests/test_classic_solver.cjs
           node tests/test_classic_patterns.cjs
+          node tests/test_magazine_profile.cjs
           node tests/test_demo_generator.cjs
           node tests/test_sparse_generator.cjs
           node tests/test_mosaic_generator.cjs
