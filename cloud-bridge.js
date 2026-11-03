@@ -199,6 +199,10 @@ async function importBrowser(){
   if(final.size!==plan.count||S.reconcile(plan.prepared,final.docs.map(d=>({id:d.id,record:d.data()}))).length)throw Error('تطبیق کامل تعداد/محتوا موفق نبود؛ بانک آماده اعلام نشد.');
   await api.runTransaction(db,async tx=>{const current=await tx.get(bankRef()),m=current.data();if(m.status!=='importing'||m.owner!==uid||m.fingerprint!==plan.fingerprint)throw Error('نشانگر انتقال تغییر کرده است.');tx.update(bankRef(),{status:'ready',count:plan.count,generation:0,completedAt:api.serverTimestamp()});});
   const rows=final.docs.map(rawToLocal);await cacheRows(rows,0,uid);window.JadvalApp.useCloudRows(rows);window.JadvalApp.grantEditorView();remoteReady=true;source='cloud';state('انتقال و تطبیق کامل موفق: '+rows.length+' مدخل. بانک اصلی مرورگر محفوظ است.');
+  void publishBankStats().catch(error=>{
+   const el=$('cloudPublicStatsStatus');
+   if(el)el.textContent='بانک مرکزی منتقل شد ولی انتشار آمار تجمیعی انجام نشد: '+(error.message||error);
+  });
  }catch(e){remoteReady=false;state('انتقال متوقف شد؛ داده‌های محلی محفوظ‌اند: '+(e.code||e.message));}
  finally{loading=false;buttons();}
 }
