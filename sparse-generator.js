@@ -5,7 +5,7 @@ const normalize=s=>String(s||"").replace(/[يى]/g,"ی").replace(/ك/g,"ک").rep
 const alphabet=/^[آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیؤئء]+$/;
 const $=id=>document.getElementById(id);
 let last=null,lastDiagnostic=null,sampleVariant=0;
-function updateReport(report){lastDiagnostic=report;const button=$("downloadSolveReport");if(button)button.disabled=!report;}
+function updateReport(report){lastDiagnostic=report;const button=$("downloadSolveReport");if(button)button.disabled=!report;if(!report)window.JadvalNovelty?.clear?.();}
 function rng(seed){return ()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
 function slotsFor(mask,allowSingles=false) {
  const n=mask.length,slots=[],cellSlots=new Map();
@@ -287,6 +287,7 @@ function render(data){
  const profileLabel=data.puzzle.meta?.profile==="iran-magazine"?"سبک مجله‌ای ایرانی":
   data.puzzle.meta?.profile==="strict"?"سبک کلاسیک سخت‌گیرانه":"الگوی آزاد";
  $("demoMeta").textContent="جدول کامل: "+data.slots+" پاسخ — شبکهٔ "+size+"×"+size+" — "+blackCount+" خانهٔ سیاه؛ "+profileLabel+".";
+ window.JadvalNovelty?.evaluate(data);
  section.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function solveClassicInWorker(masks,source,seed,budgetMs=12000){
