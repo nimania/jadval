@@ -19,8 +19,7 @@ assert(prepared.pool.length>=1600);
 assert(prepared.pool.every(x=>x.answer&&!x.answer.includes(' ')));
 assert.equal(prepared.pool.filter(x=>x.answer===source[0].answer).length,1);
 for(const variant of ['horizontal','vertical']){
- const data=auto.run(source,variant,{seed:42,attempts:2,steps:65,budgetMs:7000,
-  crossAttempts:120,newAttempts:70});
+ const data=auto.run(source,variant,{seed:42,attempts:3,steps:230,budgetMs:10000});
  const report=model.inspect(data.item);
  assert(report.valid,report.errors.join(' | '));
  assert.equal(data.item.type,'clue-in-cell');
