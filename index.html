@@ -1,12 +1,15 @@
 <!doctype html>
 <html lang="fa" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>جدول | کارگاه طراحی</title>
+<link rel="icon" type="image/svg+xml" href="https://nimania.github.io/payamejadval/assets/favicon.svg"><title>جدول | کارگاه طراحی</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap');
 :root{font-family:Vazirmatn,Tahoma,sans-serif;background:#f6f7f8;color:#1b2734;font-size:15px}
 *{box-sizing:border-box}body{margin:0}button,input,select,textarea{font:inherit}button{cursor:pointer}a{color:#1765a4;text-decoration:none}
 header{background:#fff;border-bottom:1px solid #e0e5e9;position:sticky;top:0;z-index:2}.top{max-width:1200px;padding:15px 22px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.brand{font-size:21px;font-weight:800;color:#243647}.subtitle{color:#71808b;font-size:12px}
+.brand{display:inline-flex;align-items:center;gap:12px;color:#243647;font-weight:800}
+.brand img{display:block;width:150px;height:auto;object-fit:contain}
+.brand .subtitle{white-space:nowrap}
+@media(max-width:520px){.brand img{width:113px}.brand .subtitle{display:none}}.subtitle{color:#71808b;font-size:12px}
 main{max-width:1200px;margin:26px auto;padding:0 22px}.hero{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;margin-bottom:23px}
 h1{font-size:29px;margin:0 0 6px}h2{font-size:19px;margin:0 0 15px}h3{font-size:16px;margin:0}p{line-height:1.9;margin:4px 0}.muted{color:#677784}.small{font-size:12px}
 .btn{padding:10px 17px;border:1px solid #d6dfe7;border-radius:9px;background:white;color:#23394b;display:inline-flex;gap:8px;align-items:center;justify-content:center;font-weight:600}
@@ -63,7 +66,7 @@ body.simple-maker #makerQuickstart{border-color:#74a3bb}
 .demo-cell.demo-block.art-red::after{content:none}
 html.cloud-locked .hero,html.cloud-locked .stats,html.cloud-locked main>.panel:not(#cloudManagement),html.cloud-locked main>p{display:none!important}
 </style><script src="./firebase-config.js"></script></head>
-<body><header><div class="top"><div><div class="brand">جدول <span class="subtitle">/ کارگاه طراحی فارسی</span></div></div><a href="https://nimania.github.io/payamejadval/" target="_blank" rel="noopener">پیام جدول ↗</a></div></header>
+<body><header><div class="top"><div><div class="brand"><a href="https://nimania.github.io/payamejadval/" aria-label="پیام جدول؛ صفحهٔ اصلی"><img src="https://nimania.github.io/payamejadval/assets/payamejadval-logo.webp" alt="لوگوی پیام جدول" width="150" height="51" loading="eager"></a><span class="subtitle">/ کارگاه طراحی فارسی</span></div></div><a href="https://nimania.github.io/payamejadval/" target="_blank" rel="noopener">پیام جدول ↗</a></div></header>
 <main>
 <div class="hero"><div><h1>بانک سؤال و جواب</h1><p class="muted">مدیریت، پالایش و آماده‌سازی مدخل‌ها برای تولید جدول‌های تازه</p></div>
 <div class="toolbar"><label class="btn primary" for="file">ورود بانک JSON</label><input id="file" type="file" accept=".json,application/json">
