@@ -2,7 +2,7 @@ name: Abadis full-page crawl — checkpointed batch
 on:
   push:
     branches: [abadis-safe-import]
-    paths: [.github/workflows/abadis-full-scan.yml]
+    paths: [tools/abadis-full-cursor.json]
   workflow_dispatch:
     inputs:
       letter:
@@ -13,7 +13,7 @@ on:
       page:
         description: 'Index page from previous next_cursor'
         required: true
-        default: '23'
+        default: '1'
         type: string
       offset:
         description: 'Next item number, 0 to 49'
@@ -21,12 +21,15 @@ on:
         default: '0'
         type: string
       max_details:
-        description: 'Bounded requests (1–150); 50 = whole listing page'
+        description: 'Bounded requests 1..150'
         required: true
         default: '60'
         type: string
 permissions:
   contents: read
+concurrency:
+  group: abadis-full-scan
+  cancel-in-progress: false
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -36,29 +39,45 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install HTML parser
+      - name: Install parser
         run: python -m pip install -q beautifulsoup4
-      - name: Static check
+      - name: Verify Python syntax
         run: python -m py_compile tools/abadis_expand_batch.py tools/abadis_full_scan.py
-      - name: Crosswords-only parser smoke test
+      - name: Check source structure before harvesting
         run: |
           python - <<'PY'
           import sys
           sys.path.insert(0,'tools')
           from abadis_expand_batch import fetch,section_answers
-          a,e=section_answers(fetch('https://abadis.ir/fatofa/خا/',2.0))
-          print('answers',a,'error',e)
-          if e or 'دوش' not in a:raise SystemExit('Source structure changed; no scan')
+          answers,error=section_answers(fetch('https://abadis.ir/fatofa/خا/',2.0))
+          if error or 'دوش' not in answers:raise SystemExit('Source HTML changed, refusing harvest')
           PY
-      - name: Scan complete listing pages with checkpoint
+      - name: Resolve exact cursor parameters
         env:
-          L: ${{ inputs.letter || 'ا' }}
-          PAGE: ${{ inputs.page || '23' }}
-          OFFSET: ${{ inputs.offset || '0' }}
-          MAX_DETAILS: ${{ inputs.max_details || '60' }}
+          LETTER_INPUT: ${{ inputs.letter }}
+          PAGE_INPUT: ${{ inputs.page }}
+          OFFSET_INPUT: ${{ inputs.offset }}
+          DETAILS_INPUT: ${{ inputs.max_details }}
         run: |
-          python tools/abadis_full_scan.py --letter "$L" --page "$PAGE" --offset "$OFFSET" --max-pages 3 --max-details "$MAX_DETAILS" --delay 2.0 --out abadis-full-results.json
-      - name: Save attributed result and cursor, no bank/credentials
+          python - <<'PY'
+          import json,os
+          if os.environ['GITHUB_EVENT_NAME']=='push':
+              c=json.load(open('tools/abadis-full-cursor.json',encoding='utf8'))
+          else:
+              c={'letter':os.environ['LETTER_INPUT'],'page':int(os.environ['PAGE_INPUT']),
+                 'offset':int(os.environ['OFFSET_INPUT']),
+                 'max_details':int(os.environ['DETAILS_INPUT'])}
+          assert len(c['letter'])==1 and 1<=int(c['page'])<=20000
+          assert 0<=int(c['offset'])<50 and 1<=int(c['max_details'])<=150
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf8') as f:
+              for key,val in [('AB_LETTER',c['letter']),('AB_PAGE',c['page']),
+                              ('AB_OFFSET',c['offset']),('AB_DETAILS',c['max_details'])]:
+                  f.write(f'{key}={val}\n')
+          PY
+      - name: Read up to two complete index pages, checkpoint as needed
+        run: |
+          python tools/abadis_full_scan.py --letter "$AB_LETTER" --page "$AB_PAGE" --offset "$AB_OFFSET" --max-pages 3 --max-details "$AB_DETAILS" --delay 2.0 --out abadis-full-results.json
+      - name: Save candidate data and next cursor, never private bank
         if: always()
         uses: actions/upload-artifact@v4
         with:
