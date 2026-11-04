@@ -67,12 +67,13 @@ def section_answers(html):
          if x.get_text(' ',strip=True).replace(' ','')=='جدولکلمات'),None)
  if h is None:return [],'no_crossword_heading'
  parts=[]
- for sib in h.next_siblings:
-  if isinstance(sib,Tag) and sib.name in ('h1','h2','h3','h4'):break
-  if isinstance(sib,NavigableString): t=str(sib).strip()
-  else:
-   t=sib.get_text(' ',strip=True) if isinstance(sib,Tag) else ''
-  if t:parts.append(t)
+ # Answers can be nested in a different wrapper than the heading itself.
+ # Walk following text nodes until the next heading, not next_siblings.
+ for el in h.next_elements:
+  if isinstance(el,Tag) and el.name in ('h1','h2','h3','h4'):break
+  if not isinstance(el,NavigableString):continue
+  t=re.sub(r'\s+',' ',str(el)).strip()
+  if t and t!='جدول کلمات':parts.append(t)
   if sum(map(len,parts))>420:break
  raw=' '.join(parts).strip()
  if not raw:return [],'empty_crossword_section'
