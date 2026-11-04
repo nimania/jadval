@@ -94,7 +94,7 @@ async function generate(){
    if(!output?.item||!output.item.puzzle?.entries)throw Error('نتیجهٔ موتور نامعتبر است.');
    if(!output.item.puzzle.entries.every(e=>sourcePairs.has(key(e))))
     throw Error('دست‌کم یک سؤال یا جواب در بانک مرکزی وجود ندارد.');
-   if(output.diagnostics?.source!=='central-firestore-authenticated')
+   if(output.diagnostics?.source!=='authenticated-bank-snapshot')
     throw Error('منبع واژگان تأیید نشده است.');
    const fresh=model.inspect(output.item);
    if(!fresh.valid)throw Error(fresh.errors[0]||'چیدمان ناسازگار است.');
@@ -120,7 +120,7 @@ function exportJson(ready){
  copy.title=$('autoClueTitle').value.trim()||copy.title;
  copy.puzzle.meta={...copy.puzzle.meta,status:ready?'review-pending':'draft',
   method:'central-bank-generator',bankGeneration:sourceGeneration,
-  editorialApproval:false,diagnostics:{...result.diagnostics,source:'central-firestore-authenticated'}};
+  editorialApproval:false,diagnostics:{...result.diagnostics,source:'authenticated-bank-snapshot'}};
  const filename='payame-clue-'+copy.variant+'-'+(ready?'for-review':'draft')+'.json';
  const blob=new Blob([JSON.stringify(copy,null,2)+'\n'],{type:'application/json;charset=utf-8'}),
  url=URL.createObjectURL(blob),link=document.createElement('a');
