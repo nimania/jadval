@@ -24,7 +24,7 @@ for(const variant of ['horizontal','vertical']){
  assert(report.valid,report.errors.join(' | '));
  assert.equal(data.item.type,'clue-in-cell');
  assert.equal(data.item.variant,variant);
- assert.equal(data.diagnostics.source,'central-firestore-authenticated');
+ assert.equal(data.diagnostics.source,'authenticated-bank-snapshot');
  assert.equal(data.item.puzzle.meta.status,'draft');
  assert.equal(data.item.puzzle.meta.method,'central-bank-generator');
  assert(data.item.puzzle.entries.length>=1);
@@ -33,6 +33,8 @@ for(const variant of ['horizontal','vertical']){
  assert.equal(new Set(data.item.puzzle.entries.map(e=>e.answer)).size,data.item.puzzle.entries.length);
  assert.equal(model.validate(data.item),false,'Generated drafts never auto-publish');
  assert.equal(report.publishable,data.diagnostics.complete);
+ assert.equal(report.stats.block,0,'No non-clue black squares');
+ assert.equal(report.stats.empty,0,'All cells must have a clue or answer letter');
  console.log('Auto clue '+variant+':',JSON.stringify({entries:report.stats.entries,letters:report.stats.letter,empty:report.stats.empty,crossings:report.stats.crossings,publishable:report.publishable}));
 }
 assert.throws(()=>auto.run(source,'unknown'),/قالب/);
