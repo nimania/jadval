@@ -91,6 +91,10 @@ def main():
    try:
     raw=parse_answer(get(url,a.delay),clue);stats['detail_pages']+=1
     ans=word(raw)
+    if len(ans)>=6 and len(ans)%2==0 and ans[:len(ans)//2]==ans[len(ans)//2:]:
+     stats['missing_answer']+=1
+     issues.append({'url':url,'error':'possible duplicated answer in HTML; held for review'})
+     continue
     if not 2<=len(ans)<=30:
      stats['missing_answer']+=1;continue
     clue=re.sub(r'\s+',' ',clue).strip()
