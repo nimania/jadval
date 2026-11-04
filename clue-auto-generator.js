@@ -59,6 +59,12 @@ function idx(b,r,c){return r*b.width+c;}
 function inBounds(b,r,c){return r>=0&&c>=0&&r<b.height&&c<b.width;}
 function evaluate(b,entry,dir,clueR,clueC){
  if(!inBounds(b,clueR,clueC)||b.used.has(entry.answer))return null;
+ // Editorial diversity: routine capital/currency clues must not dominate.
+ const capMax=b.width>=30?15:8, currencyMax=b.width>=30?8:4;
+ if(entry.clue.startsWith('پایتخت') &&
+    b.entries.filter(x=>x.clue.startsWith('پایتخت')).length>=capMax)return null;
+ if(entry.clue.startsWith('واحد پول') &&
+    b.entries.filter(x=>x.clue.startsWith('واحد پول')).length>=currencyMax)return null;
  const startR=clueR+(dir===2?1:0),startC=clueC-(dir===1?1:0);
  const endR=startR+(dir===2?entry.length-1:0);
  const endC=startC-(dir===1?entry.length-1:0);
@@ -103,6 +109,22 @@ function place(b,proposal){
 }
 function bestProposal(b,pool,index,rng,options={}){
  let best=null;
+ // Prefer filling a second arrow in an already established clue cell.
+ // Right-to-left across runs left; down runs toward the bottom. Edge
+ // cells are permitted to have only the geometrically valid arrow.
+ if(b.clues.size){
+  let second=null;
+  for(const [key,mask] of b.clues){
+   if(mask===3)continue;
+   const r=Math.floor(key/b.width),c=key%b.width,dir=mask===1?2:1;
+   for(const entry of pool){
+    if(b.used.has(entry.answer))continue;
+    const proposal=evaluate(b,entry,dir,r,c);
+    if(proposal&&(!second||proposal.score>second.score))second=proposal;
+   }
+  }
+  if(second)return second;
+ }
  const crossAttempts=options.crossAttempts||340,newAttempts=options.newAttempts||120;
  if(b.frontier.length){
   for(let count=0;count<crossAttempts;count++){
