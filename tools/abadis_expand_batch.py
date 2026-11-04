@@ -153,6 +153,14 @@ def main():
      if isinstance(e,HTTPError) and e.code in (403,429,503):site_error=f'http_{e.code}';break
     num+=1
   print(json.dumps({'letter':letter,'pages_attempted':len(pages),'details_so_far':details,'pairs_so_far':len(items),'site_error':site_error},ensure_ascii=False),flush=True)
+  # Persist after each letter, so a timeout or site limitation never loses prior work.
+  snapshot={'schema':2,'source':SITE,'generated_at':datetime.now(timezone.utc).isoformat(),
+   'group':args.group,'letters':GROUPS[args.group],
+   'meta':{'index_pages_read':probed,'detail_pages_read':details,'pair_count':len(items),
+    'source_errors':len(log),'site_error':site_error,'checkpoint':True,'review_required':True},
+   'items':items,'errors':log[:300]}
+  with open(args.out,'w',encoding='utf-8') as f:
+   json.dump(snapshot,f,ensure_ascii=False,indent=2)
   if site_error:break
  # dedup within shard (no guessing/reordering clue words)
  unique={}
