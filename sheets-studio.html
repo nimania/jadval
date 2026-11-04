@@ -260,7 +260,7 @@ function renderGrid(){
   const div=document.createElement('div');div.className='cell '+c.kind;
   if(c.kind==='letter')div.textContent=showAnswers?c.answer:'';
   if(c.kind==='clue')div.textContent=(c.clueIds||[]).map(id=>{
-    const entry=entryMap.get(id);return entry?entry.clue+(entry.direction==='across'?' ←':' ↓'):'';
+    const entry=entryMap.get(id);return entry?(entry.shortClue||entry.clue)+(entry.direction==='across'?' ←':' ↓'):'';
   }).filter(Boolean).join(' / ');
   grid.append(div);
  }
