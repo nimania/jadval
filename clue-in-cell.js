@@ -120,7 +120,7 @@ function inspect(item){
  if(stats.entries<size.minEntries)checks.push('تعداد سؤال‌ها برای انتشار حرفه‌ای کافی نیست (حداقل '+size.minEntries+').');
  if(stats.across<6||stats.down<6)checks.push('سؤال‌های افقی و عمودی باید هر دو به تعداد کافی وجود داشته باشند.');
  if(stats.letter<size.width*size.height*.55)checks.push('پوشش پاسخ‌ها کمتر از ۵۵٪ شبکه است.');
- if(stats.block>size.width*size.height*.3)checks.push('تعداد خانه‌های سیاه بیش از ۳۰٪ شبکه است.');
+ if(stats.block>0)checks.push('در شرح در متن هیچ خانهٔ سیاهِ فاقد سؤال مجاز نیست؛ همهٔ خانه‌ها باید سؤال یا حرف باشند.');
  if(stats.letter&&stats.crossings/stats.letter<.15)checks.push('تقاطع پاسخ‌ها کمتر از ۱۵٪ حروف است.');
  // A clue cell or black square must immediately terminate each answer
  // unless that answer ends at the outside edge of the printed grid.
@@ -131,7 +131,7 @@ function inspect(item){
   if(!end)continue;
   const r=end.row+(entry.direction==='down'?1:0);
   const c=end.col-(entry.direction==='across'?1:0);
-  if(inBounds(r,c,size)&&!['clue','block'].includes(built.grid[r][c].kind))
+  if(inBounds(r,c,size)&&built.grid[r][c].kind!=='clue')
    unterminated.push(entry.id);
  }
  if(unterminated.length)
