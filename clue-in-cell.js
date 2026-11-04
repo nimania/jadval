@@ -163,6 +163,7 @@ function removeEntry(item,id){
  return refresh(out);
 }
 function setBlock(item,r,c,blocked=true){
+ if(blocked)throw Error('خانهٔ سیاه بدون سؤال در شرح در متن مجاز نیست.');
  const out=clone(item),size=sizes[out.variant];
  if(!size||!inBounds(r,c,size))throw Error('مختصات خانه معتبر نیست.');
  const key=coord(r,c);
@@ -173,8 +174,8 @@ function setBlock(item,r,c,blocked=true){
 function finishBlocks(item){
  const out=clone(item),compiled=build(out);
  if(compiled.errors.length)throw Error(compiled.errors[0]);
- for(let r=0;r<compiled.grid.length;r++)for(let c=0;c<compiled.grid[r].length;c++)
-  if(compiled.grid[r][c].kind==='empty')out.puzzle.blocked.push([r,c]);
+ if(compiled.stats.empty||compiled.stats.block)
+  throw Error('برای شرح در متن باید همهٔ خانه‌ها با سؤال واقعی یا حرف پاسخ پُر شوند؛ سیاه‌کردن خانه‌های خالی مجاز نیست.');
  return refresh(out);
 }
 function validate(item){return inspect(item).publishable&&
