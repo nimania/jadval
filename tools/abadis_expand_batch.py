@@ -111,7 +111,7 @@ def main():
  items=[];log=[];seen=set();probed=0;details=0;site_error=None
  for letter in GROUPS[args.group]:
   letter_entries=[];num=0;miss=0
-  pages=PAGE_SETS[args.group]
+  pages=PAGE_SETS[args.group] if letter in 'ا ب پ خ د ر ص ض ط ظ ع گ ل م'.split() else [1]
   for pg in pages:
    if num>=args.per_letter or site_error:break
    url=SITE+'/crossword/?ch='+quote(letter)+(('&pn='+str(pg)) if pg>1 else '')
