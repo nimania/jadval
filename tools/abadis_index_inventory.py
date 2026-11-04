@@ -51,7 +51,8 @@ def main():
   try:
    first=fetch_index(letter,1,cache)
    if not first:
-    count=0;exact=True;last=0
+    count=None;exact=False;last=0
+    problem='empty index response; unknown count, not zero'
    else:
     valid=1;invalid=None;probe=2
     while probe<=a.max_page:
@@ -86,9 +87,11 @@ def main():
       html=get(url,a.delay);total_requests+=1
       raw=parse_answer(html,clue);ans=word(raw)
       hold=should_hold_answer(ans,clue)
+      if not hold and raw and (re.search(r'[,،؛;/|]',raw) or len(raw.split())>1):
+       hold='multiword_or_multisynonym_answer_requires_review'
       record={'id':'abadis-'+hashlib.sha256((url+'\n'+ans).encode()).hexdigest()[:24],
        'clue':clean_clue(clue),'source_clue_raw':clue,'answer':ans,'letters':len(ans),
-       'source':'آبادیس','source_url':url,'page':pg,'letter':letter,
+       'source':'آبادیس','source_url':url,'source_answer_raw':raw,'page':pg,'letter':letter,
        'reviewed':False,'status':'unreviewed','hold_reason':hold}
       candidates.append(record)
      except (HTTPError,URLError,ValueError,TimeoutError) as exc:
