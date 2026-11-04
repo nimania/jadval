@@ -37,7 +37,7 @@ jobs:
               raise SystemExit('Crossword extraction smoke test failed; halt before crawling')
           PY
       - name: Harvest strict crossword sections with robots controls
-        run: python tools/abadis_expand_batch.py --group ${{ matrix.shard }} --per-letter 30 --delay 1.7 --out abadis-harvest-${{ matrix.shard }}.json
+        run: python tools/abadis_expand_batch.py --group ${{ matrix.shard }} --per-letter 20 --pages '4,6,7,8,9,11,12,13' --delay 1.7 --out abadis-harvest-${{ matrix.shard }}.json
       - name: Keep attributed candidate data as short-lived artifact
         if: always()
         uses: actions/upload-artifact@v4
