@@ -156,11 +156,35 @@ function bestProposal(b,pool,index,rng,options={}){
  }
  return best;
 }
+// A compact printed label is distinct from the complete editable source clue.
+function shortClue(clue){
+ const source=String(clue||'').trim();
+ if(source.startsWith('پایتخت '))return source.slice('پایتخت '.length).trim()
+  .replace('امارات متحده عربی','امارات')
+  .replace('جزایر مارشال','مارشال');
+ const province=source.match(/^مرکز استان (.+)$/);
+ if(province)return 'مرکز '+province[1];
+ const symbol=source.match(/^عنصری شیمیایی با نماد ([A-Za-z]+)$/);
+ if(symbol)return 'عنصر '+symbol[1];
+ const simplifications=[
+  [/^ابزار سنجش دما$/,'سنجش دما'],
+  [/^ابزار اندازه‌گیری فشار$/,'سنجش فشار'],
+  [/^ابزار رصد اجرام دوردست$/,'رصد آسمان'],
+  [/^نام دیگر دریای خزر$/,'دریای خزر'],
+  [/^رشته‌کوهی در (شمال|غرب) ایران$/,'کوهستان $1'],
+  [/^رودی که از شهر اهواز می‌گذرد$/,'رود اهواز'],
+  [/^رود شناخته‌شدهٔ اصفهان$/,'رود اصفهان']
+ ];
+ for(const [pattern,replacement] of simplifications){
+  if(pattern.test(source))return source.replace(pattern,replacement);
+ }
+ return source.length<=16?source:source.slice(0,16).replace(/\s+\S*$/,'')+'…';
+}
 function toItem(b,variant,seed,index){
  const item=model.blank(variant);
  item.id='draft-clue-'+variant+'-'+seed+'-'+index;
  item.title='شرح در متن '+(variant==='horizontal'?'افقی ۳۰×۲۰':'عمودی ۲۰×۱۴')+' ـ طرح خودکار';
- item.puzzle.entries=b.entries.map(e=>({...e,clueCell:e.clueCell.slice(),start:e.start.slice()}));
+ item.puzzle.entries=b.entries.map(e=>({...e,shortClue:shortClue(e.clue),clueCell:e.clueCell.slice(),start:e.start.slice()}));
  item.puzzle.meta={status:'draft',method:'central-bank-generator',
   seed:Number(seed)||0,generatedAt:new Date().toISOString()};
  const result=model.build(item);
