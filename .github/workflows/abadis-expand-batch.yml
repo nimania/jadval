@@ -1,10 +1,17 @@
 name: One-time bounded Abadis clue-answer harvest
 on:
-  push:
-    branches: [abadis-safe-import]
-    paths:
-      - .github/workflows/abadis-expand-batch.yml
   workflow_dispatch:
+    inputs:
+      pages:
+        description: 'Comma-separated unseen index page numbers, max 8'
+        required: true
+        default: '14,15,16,17,18,19,21,22'
+        type: string
+      per_letter:
+        description: 'Maximum detail pages per letter, from 2 to 35'
+        required: true
+        default: '20'
+        type: string
 permissions:
   contents: read
 jobs:
@@ -37,7 +44,10 @@ jobs:
               raise SystemExit('Crossword extraction smoke test failed; halt before crawling')
           PY
       - name: Harvest strict crossword sections with robots controls
-        run: python tools/abadis_expand_batch.py --group ${{ matrix.shard }} --per-letter 20 --pages '4,6,7,8,9,11,12,13' --delay 1.7 --out abadis-harvest-${{ matrix.shard }}.json
+        env:
+          PAGES: ${{ inputs.pages }}
+          PER_LETTER: ${{ inputs.per_letter }}
+        run: python tools/abadis_expand_batch.py --group ${{ matrix.shard }} --per-letter "$PER_LETTER" --pages "$PAGES" --delay 1.7 --out abadis-harvest-${{ matrix.shard }}.json
       - name: Keep attributed candidate data as short-lived artifact
         if: always()
         uses: actions/upload-artifact@v4
