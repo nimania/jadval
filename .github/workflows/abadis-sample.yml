@@ -1,10 +1,5 @@
 name: Sample Abadis crossword candidates (unreviewed)
 on:
-  push:
-    branches: [abadis-safe-import]
-    paths:
-      - tools/abadis_sample.py
-      - .github/workflows/abadis-sample.yml
   workflow_dispatch:
 permissions:
   contents: read
