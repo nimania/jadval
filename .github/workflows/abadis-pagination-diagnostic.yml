@@ -1,0 +1,41 @@
+name: Diagnose Abadis pagination safely
+on:
+  push:
+    branches: [abadis-safe-import]
+    paths: [.github/workflows/abadis-pagination-diagnostic.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q beautifulsoup4
+      - name: Compare listing structure without bulk extraction
+        run: |
+          python - <<'PY'
+          import sys
+          from bs4 import BeautifulSoup
+          sys.path.insert(0,'tools')
+          from abadis_expand_batch import fetch,listing
+          urls=['https://abadis.ir/crossword/?ch=%D8%A7',
+                'https://abadis.ir/crossword/?ch=%D8%A7&pn=2',
+                'https://abadis.ir/crossword/?ch=%D8%A8&pn=2']
+          for url in urls:
+              try:
+                  html=fetch(url,2.0)
+                  soup=BeautifulSoup(html,'html.parser')
+                  title=soup.title.get_text(' ',strip=True) if soup.title else ''
+                  headings=[h.get_text(' ',strip=True)[:120] for h in soup.find_all(['h1','h2'])][:4]
+                  links=listing(html)
+                  print({'url':url,'html_length':len(html),'title':title[:140],
+                    'headings':headings,'crossword_links':len(links),
+                    'first_link':links[0][1] if links else None})
+              except Exception as e:
+                  print({'url':url,'error':str(e)[:200]})
+          PY
