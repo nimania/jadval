@@ -51,7 +51,7 @@ function board(dim){
   width:dim.width,height:dim.height,
   letters:Array(dim.width*dim.height).fill(''),
   owners:new Uint8Array(dim.width*dim.height),
-  clues:new Map(),used:new Set(),entries:[],frontier:[],numAcross:0,numDown:0,
+  clues:new Map(),ends:new Set(),used:new Set(),entries:[],frontier:[],numAcross:0,numDown:0,
   crossing:0
  };
 }
@@ -72,13 +72,13 @@ function evaluate(b,entry,dir,clueR,clueC){
  const clueKey=idx(b,clueR,clueC),oldClues=b.clues.get(clueKey)||0;
  if(b.letters[clueKey]||oldClues&dir)return null;
  const afterR=endR+(dir===2?1:0),afterC=endC-(dir===1?1:0);
- // Prevent accidental continuation of another answer in the same direction.
- if(inBounds(b,afterR,afterC)&&(b.owners[idx(b,afterR,afterC)]&dir))return null;
+ // A word cannot visually continue into the adjacent letter of another word.
+ if(inBounds(b,afterR,afterC)&&b.letters[idx(b,afterR,afterC)])return null;
  let added=0,intersections=0;
  const cells=[];
  for(let i=0;i<entry.length;i++){
   const row=startR+(dir===2?i:0),col=startC-(dir===1?i:0),key=idx(b,row,col);
-  if(b.clues.has(key)||(b.owners[key]&dir))return null;
+  if(b.clues.has(key)||b.ends.has(key)||(b.owners[key]&dir))return null;
   if(b.letters[key]&&b.letters[key]!==entry.letters[i])return null;
   if(b.letters[key])intersections++;else added++;
   cells.push([key,row,col,entry.letters[i]]);
@@ -88,11 +88,12 @@ function evaluate(b,entry,dir,clueR,clueC){
  const score=added*3+intersections*12+Math.min(12,entry.length)
   +(dir===1?b.numAcross<b.numDown?10:0:b.numDown<b.numAcross?10:0)
   +(!intersections&&b.entries.length>4?-7:0);
- return {entry,dir,clueR,clueC,cells,score,added,intersections};
+ return {entry,dir,clueR,clueC,cells,score,added,intersections,after:inBounds(b,afterR,afterC)?idx(b,afterR,afterC):null};
 }
 function place(b,proposal){
- const {entry,dir,clueR,clueC,cells}=proposal;
- const key=idx(b,clueR,clueC);b.clues.set(key,(b.clues.get(key)||0)|dir);
+ const {entry,dir,clueR,clueC,cells,after}=proposal;
+ const key=idx(b,clueR,clueC);b.clues.set(key,(b.clues.get(key)||0)|dir);b.ends.delete(key);
+ if(after!==null&&!b.clues.has(after))b.ends.add(after);
  b.entries.push({
   id:'auto-'+String(b.entries.length+1).padStart(3,'0'),
   answer:entry.answer,clue:entry.clue,clueCell:[clueR,clueC],
@@ -185,6 +186,8 @@ function toItem(b,variant,seed,index){
  item.id='draft-clue-'+variant+'-'+seed+'-'+index;
  item.title='شرح در متن '+(variant==='horizontal'?'افقی ۳۰×۲۰':'عمودی ۲۰×۱۴')+' ـ طرح خودکار';
  item.puzzle.entries=b.entries.map(e=>({...e,shortClue:shortClue(e.clue),clueCell:e.clueCell.slice(),start:e.start.slice()}));
+ // Every reserved terminal becomes either the next clue cell or a black square.
+ item.puzzle.blocked=[...b.ends].filter(k=>!b.clues.has(k)).map(k=>[Math.floor(k/b.width),k%b.width]);
  item.puzzle.meta={status:'draft',method:'central-bank-generator',
   seed:Number(seed)||0,generatedAt:new Date().toISOString()};
  const result=model.build(item);
