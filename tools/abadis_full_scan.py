@@ -63,8 +63,17 @@ def main():
                 record['errors'].append({'page':page,'stage':'index','error':str(e)[:160]})
                 checkpoint('index_error');break
             if not links:
-                record['errors'].append({'page':page,'error':'empty unknown page; not proven EOF'})
-                checkpoint('unknown_empty_page');break
+                # One ordinary delayed retry for intermittent blank listings; no bypass.
+                try:
+                    html=fetch(index_url,a.delay+1.5)
+                    record['meta']['index_requests']+=1
+                    links=listing(html)
+                except (HTTPError,URLError,ValueError,TimeoutError) as e:
+                    record['errors'].append({'page':page,'stage':'index_retry','error':str(e)[:160]})
+                    checkpoint('index_error');break
+                if not links:
+                    record['errors'].append({'page':page,'error':'two empty index responses; unknown, not proven EOF'})
+                    checkpoint('unknown_empty_page');break
             if len(links)>50:
                 checkpoint('listing_format_changed');break
             start=a.offset if page==a.page else 0
