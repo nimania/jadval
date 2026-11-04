@@ -37,14 +37,24 @@ def parse_listing(html):
   seen.add(u);out.append((label,u))
  return out
 
-def parse_answer(html):
+def comparable(s):
+ s=unicodedata.normalize('NFKC',s).translate(str.maketrans({'آ':'ا','أ':'ا','إ':'ا','ي':'ی','ك':'ک'}))
+ return ''.join(c for c in s if c.isalnum())
+
+def parse_answer(html, clue):
+ from difflib import SequenceMatcher
  p=Pars();p.feed(html);p.flush()
  lines=[re.sub(r'\s+',' ',s).strip() for s in p.text]
  for i,s in enumerate(lines):
   if s=='جدول کلمات':
-   for nxt in lines[i+1:i+8]:
+   vals=[]
+   for nxt in lines[i+1:i+12]:
     if nxt.startswith('پیشنهاد کاربران') or nxt.startswith('دیکشنری آبادیس'):break
-    if nxt:return nxt
+    if nxt and nxt!='* * *':vals.append(nxt)
+   if not vals:return ''
+   if len(vals)>=2 and SequenceMatcher(None,comparable(vals[0]),comparable(clue)).ratio()>.74:
+    return vals[1]
+   return vals[0]
  return ''
 
 def word(s):
@@ -79,7 +89,7 @@ def main():
    if url in seen:continue
    seen.add(url)
    try:
-    raw=parse_answer(get(url,a.delay));stats['detail_pages']+=1
+    raw=parse_answer(get(url,a.delay),clue);stats['detail_pages']+=1
     ans=word(raw)
     if not 2<=len(ans)<=30:
      stats['missing_answer']+=1;continue
