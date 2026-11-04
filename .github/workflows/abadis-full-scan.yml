@@ -1,0 +1,68 @@
+name: Abadis full-page crawl — checkpointed batch
+on:
+  push:
+    branches: [abadis-safe-import]
+    paths: [.github/workflows/abadis-full-scan.yml]
+  workflow_dispatch:
+    inputs:
+      letter:
+        description: 'One Persian starting letter'
+        required: true
+        default: 'ا'
+        type: string
+      page:
+        description: 'Index page from previous next_cursor'
+        required: true
+        default: '23'
+        type: string
+      offset:
+        description: 'Next item number, 0 to 49'
+        required: true
+        default: '0'
+        type: string
+      max_details:
+        description: 'Bounded requests (1–150); 50 = whole listing page'
+        required: true
+        default: '60'
+        type: string
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install HTML parser
+        run: python -m pip install -q beautifulsoup4
+      - name: Static check
+        run: python -m py_compile tools/abadis_expand_batch.py tools/abadis_full_scan.py
+      - name: Crosswords-only parser smoke test
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0,'tools')
+          from abadis_expand_batch import fetch,section_answers
+          a,e=section_answers(fetch('https://abadis.ir/fatofa/خا/',2.0))
+          print('answers',a,'error',e)
+          if e or 'دوش' not in a:raise SystemExit('Source structure changed; no scan')
+          PY
+      - name: Scan complete listing pages with checkpoint
+        env:
+          L: ${{ inputs.letter || 'ا' }}
+          PAGE: ${{ inputs.page || '23' }}
+          OFFSET: ${{ inputs.offset || '0' }}
+          MAX_DETAILS: ${{ inputs.max_details || '60' }}
+        run: |
+          python tools/abadis_full_scan.py --letter "$L" --page "$PAGE" --offset "$OFFSET" --max-pages 3 --max-details "$MAX_DETAILS" --delay 2.0 --out abadis-full-results.json
+      - name: Save attributed result and cursor, no bank/credentials
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: abadis-full-${{ github.run_id }}
+          path: abadis-full-results.json
+          retention-days: 7
+          if-no-files-found: ignore
