@@ -1,10 +1,6 @@
 name: Inventory Abadis indexes and sample candidates
 on:
-  push:
-    branches: [abadis-safe-import]
-    paths:
-      - tools/abadis_index_inventory.py
-      - .github/workflows/abadis-inventory.yml
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
