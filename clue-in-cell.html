@@ -67,8 +67,8 @@ p{line-height:1.9;margin:7px 0}.muted{color:#637481;font-size:13px}
  <section class="card sheet">
   <div class="toolbar" style="justify-content:space-between"><h2>شبکهٔ <span id="sizeLabel">۳۰×۲۰</span></h2><span id="selectionText" class="muted">برای انتخاب محل سؤال، روی یک خانه کلیک کن.</span></div>
   <div class="grid-scroller"><div id="clueGrid" role="grid" aria-label="شبکهٔ طراحی شرح در متن"></div></div>
-  <p class="muted">خاکستری = تعیین‌تکلیف‌نشده؛ سفید = پاسخ؛ کِرِم = سرنخ و فلش؛ سیاه = خانهٔ بسته. برای قرارگیری کلمات، خانهٔ سرنخ را انتخاب کن و سؤال و جواب را در ستون کناری وارد کن.</p>
-  <div class="toolbar"><button id="toggleBlock" class="btn" type="button">سیاه/سفید کردن خانهٔ انتخابی</button><button id="fillBlocks" class="btn" type="button">بستن تمام خانه‌های بلاتکلیف</button><button id="checkPreview" class="btn" type="button" hidden>بررسی پاسخ‌های آزمایشی</button></div>
+  <p class="muted">خاکستری = هنوز کامل‌نشده؛ سفید = خانهٔ پاسخ؛ کِرِم = خانهٔ سؤال و فلش. در شرح در متن خانهٔ سیاهِ خالی مجاز نیست. تمام خانه‌ها باید به حرف یا سؤال واقعی اختصاص پیدا کنند.</p>
+  <div class="toolbar"><button id="toggleBlock" class="btn" type="button" hidden disabled aria-hidden="true">خانهٔ سیاه غیرفعال</button><button id="fillBlocks" class="btn" type="button" hidden disabled aria-hidden="true">پُرکردن سیاه غیرفعال</button><button id="checkPreview" class="btn" type="button" hidden>بررسی پاسخ‌های آزمایشی</button></div>
  </section>
  <aside class="sidebar">
   <section class="card">
