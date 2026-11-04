@@ -59,7 +59,7 @@ def candidate_answer(s):
  if len(w)>=6 and len(w)%2==0 and w[:len(w)//2]==w[len(w)//2:]:return False
  return True
 
-def section_answers(html):
+def section_answers(html, clue=''):
  """Only accept text under real heading «جدول کلمات», never dictionary prose."""
  from bs4 import BeautifulSoup, Tag, NavigableString
  soup=BeautifulSoup(html,'html.parser')
@@ -77,6 +77,15 @@ def section_answers(html):
   if sum(map(len,parts))>420:break
  raw=' '.join(parts).strip()
  if not raw:return [],'empty_crossword_section'
+ # Some pages echo their own heading before actual answer (e.g. «آبکی شل»).
+ # Remove complete matching heading tokens, never reverse or guess word order.
+ clue_words=str(clue).split()
+ answer_words=raw.split()
+ def equaltoken(t):return normal(t).replace('آ','ا')
+ if clue_words and len(answer_words)>len(clue_words) and all(
+  equaltoken(a)==equaltoken(b) for a,b in zip(clue_words,answer_words[:len(clue_words)])
+ ):
+  raw=' '.join(answer_words[len(clue_words):])
  if len(raw)>420:return [],'long_dictionary_prose'
  # Prefer comma separated answers, but never fuse several dictionary synonyms into one fake word.
  segments=[re.sub(r'\s+',' ',s).strip() for s in re.split(r'[,،;؛|]',raw)]
@@ -132,7 +141,7 @@ def main():
     if not rp.can_fetch(UA,detail_url):continue
     try:
      html=fetch(detail_url,args.delay);details+=1
-     answers,err=section_answers(html)
+     answers,err=section_answers(html,clue)
      if err:
       log.append({'letter':letter,'url':detail_url,'problem':err})
       continue
