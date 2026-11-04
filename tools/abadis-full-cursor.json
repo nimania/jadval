@@ -1,0 +1,11 @@
+{
+  "letter": "ا",
+  "page": 1,
+  "offset": 0,
+  "max_details": 70,
+  "reason": "Begin sequential full coverage, unlike sampled pages 23/24",
+  "previous_completed_pages": [
+    23
+  ],
+  "previous_run_id": 41904851166
+}
