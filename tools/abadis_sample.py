@@ -53,7 +53,7 @@ def word(s):
 
 def get(url,delay):
  time.sleep(delay)
- with urlopen(Request(url,headers={'User-Agent':UA,'Accept':'text/html','Accept-Language':'fa'}),timeout=20) as r:
+ with urlopen(Request(quote(url,safe=':/?&=%#'),headers={'User-Agent':UA,'Accept':'text/html','Accept-Language':'fa'}),timeout=20) as r:
   if r.status!=200 or 'html' not in r.headers.get('Content-Type',''):raise ValueError('Invalid HTTP response')
   return r.read(800000).decode('utf-8','replace')
 
