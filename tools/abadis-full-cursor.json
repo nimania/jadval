@@ -1,11 +1,12 @@
 {
   "letter": "ا",
-  "page": 1,
+  "page": 2,
   "offset": 0,
   "max_details": 70,
-  "reason": "Begin sequential full coverage, unlike sampled pages 23/24",
+  "reason": "Retry transient empty page 2 after independent 50-link diagnostic",
   "previous_completed_pages": [
+    1,
     23
   ],
-  "previous_run_id": 41904851166
+  "last_successful_batch_run": 41906108998
 }
