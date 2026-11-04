@@ -22,14 +22,10 @@ function test(variant){
  const trimmed=api.removeEntry(crossed,'a');
  assert.equal(trimmed.puzzle.grid[4][4].kind,'empty');
  assert.equal(trimmed.puzzle.grid[4][2].answer,'ا');
- const blocked=api.setBlock(trimmed,0,0,true);
- assert.equal(blocked.puzzle.grid[0][0].kind,'block');
- const unblocked=api.setBlock(blocked,0,0,false);
- assert.equal(unblocked.puzzle.grid[0][0].kind,'empty');
- const filled=api.finishBlocks(crossed);
- assert.equal(api.inspect(filled).stats.empty,0);
- assert.equal(api.inspect(filled).publishable,false,'Sparse template must not pass publishing');
- assert.equal(api.validate({...filled,id:'sample',title:'test',puzzle:{...filled.puzzle,meta:{status:'published',method:'editor-approved'}}}),false);
+ assert.throws(()=>api.setBlock(trimmed,0,0,true),/خانهٔ سیاه بدون سؤال/);
+ assert.throws(()=>api.finishBlocks(crossed),/سؤال واقعی یا حرف پاسخ/);
+ assert.equal(api.inspect(crossed).publishable,false,'Incomplete cells cannot be padded with black');
+ assert.equal(api.validate({...crossed,id:'sample',title:'test',puzzle:{...crossed.puzzle,meta:{status:'published',method:'editor-approved'}}}),false);
  const corrupt=JSON.parse(JSON.stringify(crossed));
  corrupt.puzzle.grid[4][2].answer='ب';
  assert.equal(api.inspect(corrupt).valid,false,'Stored grid must exactly match clue answers');
