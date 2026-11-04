@@ -112,16 +112,20 @@ def main():
  ap.add_argument('--group',type=int,required=True,choices=range(4))
  ap.add_argument('--per-letter',type=int,default=30)
  ap.add_argument('--delay',type=float,default=1.7)
+ ap.add_argument('--pages',default='',help='Comma-separated index pages for later batches, max 8 distinct pages')
  ap.add_argument('--out',required=True)
  args=ap.parse_args()
  if args.per_letter>35 or args.per_letter<2 or args.delay<1.5:raise SystemExit('Unsafe request budget')
+ if args.pages and not re.fullmatch(r'[0-9]+(?:,[0-9]+){0,7}',args.pages):raise SystemExit('Invalid page list')
+ requested_pages=list(dict.fromkeys(int(n) for n in args.pages.split(',') if n))
+ if any(p<1 or p>128 for p in requested_pages):raise SystemExit('Index page outside safe range')
  rp=RobotFileParser();rp.set_url(SITE+'/robots.txt');rp.read()
  if not (rp.can_fetch(UA,SITE+'/crossword/?ch=%D8%A7') and rp.can_fetch(UA,SITE+'/fatofa/test/')):
   raise SystemExit('Robots permission denied/unknown')
  items=[];log=[];seen=set();probed=0;details=0;site_error=None
  for letter in GROUPS[args.group]:
   letter_entries=[];num=0;miss=0
-  pages=PAGE_SETS[args.group] if letter in 'ا ب پ خ د ر ص ض ط ظ ع گ ل م'.split() else [1]
+  pages=requested_pages if requested_pages else (PAGE_SETS[args.group] if letter in 'ا ب پ خ د ر ص ض ط ظ ع گ ل م'.split() else [1])
   for pg in pages:
    if num>=args.per_letter or site_error:break
    url=SITE+'/crossword/?ch='+quote(letter)+(('&pn='+str(pg)) if pg>1 else '')
