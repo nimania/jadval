@@ -18,7 +18,7 @@ function cell(r,c,value,entries){
   button.title='سطر '+fmt.format(r+1)+'، ستون '+fmt.format(entries[0]?.gridWidth-c||c+1);
  }else if(value.kind==='clue'){
   const source=(value.clueIds||[]).map(id=>entries.find(x=>x.id===id)).filter(Boolean);
-  const words=source.map(x=>x.clue+(x.direction==='across'?' ←':' ↓'));
+  const words=source.map(x=>(x.shortClue||x.clue)+(x.direction==='across'?' ←':' ↓'));
   button.textContent=words.join(' / ');
   button.title=words.join('\n');
  }
