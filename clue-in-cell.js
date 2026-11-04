@@ -122,6 +122,21 @@ function inspect(item){
  if(stats.letter<size.width*size.height*.55)checks.push('پوشش پاسخ‌ها کمتر از ۵۵٪ شبکه است.');
  if(stats.block>size.width*size.height*.3)checks.push('تعداد خانه‌های سیاه بیش از ۳۰٪ شبکه است.');
  if(stats.letter&&stats.crossings/stats.letter<.15)checks.push('تقاطع پاسخ‌ها کمتر از ۱۵٪ حروف است.');
+ // A clue cell or black square must immediately terminate each answer
+ // unless that answer ends at the outside edge of the printed grid.
+ const unterminated=[];
+ for(const entry of item.puzzle.entries){
+  if(!entry||!['across','down'].includes(entry.direction))continue;
+  const path=positions(entry),end=path[path.length-1];
+  if(!end)continue;
+  const r=end.row+(entry.direction==='down'?1:0);
+  const c=end.col-(entry.direction==='across'?1:0);
+  if(inBounds(r,c,size)&&!['clue','block'].includes(built.grid[r][c].kind))
+   unterminated.push(entry.id);
+ }
+ if(unterminated.length)
+  checks.push('پایان '+unterminated.length+' پاسخ فاقد خانهٔ سؤال یا خانهٔ سیاه است: '+
+   unterminated.slice(0,4).join('، '));
  const publishable=structurallyValid&&checks.length===0;
  return {valid:structurallyValid,publishable,errors:[...errors,...checks],stats,grid:built.grid};
 }
