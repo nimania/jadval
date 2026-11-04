@@ -204,7 +204,222 @@ function rank(report){
    Math.max(0,s.letter*.2-s.crossings)*15-
    Math.max(0,s.block-s.total*.30)*14;
 }
+
+/* Dense zero-black layout: every square is either a real clue or a solution
+   letter.  Two long vertical bands provide meaningful intersections without
+   padding the grid with anonymous black separators. */
+function noBlackLayout(variant){
+ if(variant==='horizontal')return {
+  width:30,height:20,split:11,columns:[23,17,11,5,0],
+  special:[5,5,5,5,4],wordCount:5};
+ if(variant==='vertical')return {
+  width:20,height:14,split:7,columns:[14,9,4,0],
+  special:[4,4,4,3],wordCount:4};
+ throw Error('قالب انتخاب‌شده وجود ندارد.');
+}
+function noBlackTuples(layout){
+ const valid=[],K=layout.wordCount,W=layout.width;
+ const visit=(lengths)=>{
+  if(lengths.length===K-1){
+   const last=W-K-lengths.reduce((a,b)=>a+b,0);
+   if(last<3||last>15)return;
+   const all=[...lengths,last],offsets=[];let c=W-1;
+   for(let i=0;i<K;i++){
+    const offset=c-1-layout.columns[i];
+    if(offset<0||offset>=all[i])return;
+    offsets.push(offset);c-=all[i]+1;
+   }
+   if(c===-1)valid.push({lengths:all,offsets});
+   return;
+  }
+  for(let length=3;length<=15;length++)visit([...lengths,length]);
+ };
+ visit([]);
+ return valid;
+}
+function minCostAssignment(matrix){
+ const n=matrix.length,m=matrix[0]?.length||0;
+ if(!n||m<n)throw Error('مدخل‌های بانک برای جایگاه‌های شبکه کافی نیستند.');
+ const u=Array(n+1).fill(0),v=Array(m+1).fill(0),
+  p=Array(m+1).fill(0),way=Array(m+1).fill(0);
+ for(let i=1;i<=n;i++){
+  p[0]=i;let j0=0;
+  const minv=Array(m+1).fill(Infinity),used=Array(m+1).fill(false);
+  do{
+   used[j0]=true;const i0=p[j0];let delta=Infinity,j1=0;
+   for(let j=1;j<=m;j++){
+    if(used[j])continue;
+    const current=matrix[i0-1][j-1]-u[i0]-v[j];
+    if(current<minv[j]){minv[j]=current;way[j]=j0;}
+    if(minv[j]<delta){delta=minv[j];j1=j;}
+   }
+   for(let j=0;j<=m;j++){
+    if(used[j]){u[p[j]]+=delta;v[j]-=delta;}
+    else minv[j]-=delta;
+   }
+   j0=j1;
+  }while(p[j0]!==0);
+  do{const j1=way[j0];p[j0]=p[j1];j0=j1;}while(j0!==0);
+ }
+ const assigned=Array(n).fill(-1);
+ for(let j=1;j<=m;j++)if(p[j])assigned[p[j]-1]=j-1;
+ if(assigned.some((j,i)=>j<0||matrix[i][j]>1000000))
+  throw Error('همهٔ جواب‌ها را بدون تکرار نتوانستیم جای‌گذاری کنیم.');
+ return assigned;
+}
+function runZeroBlack(entries,variant,settings={}){
+ const layout=noBlackLayout(variant),seed=(Number(settings.seed)||20261104)>>>0,
+  rng=seedRandom(seed),prepared=poolFrom(entries,{seed}),pool=prepared.pool;
+ if(pool.length<200)throw Error('برای این قالب دست‌کم ۲۰۰ پاسخ یکتای دارای سؤال لازم است.');
+ const {width,height,split,columns,special,wordCount:K}=layout;
+ const topLength=split-1,bottomLength=height-split-1;
+ const byLength=new Map(),buckets=new Map();
+ for(let i=0;i<pool.length;i++){
+  const word=pool[i];
+  if(!byLength.has(word.length))byLength.set(word.length,[]);
+  byLength.get(word.length).push(i);
+  for(let j=0;j<word.length;j++){
+   const key=word.length+'|'+j+'|'+word.letters[j];
+   if(!buckets.has(key))buckets.set(key,[]);
+   buckets.get(key).push(i);
+  }
+ }
+ if((byLength.get(topLength)||[]).length<K ||
+    (byLength.get(bottomLength)||[]).length<K ||
+    (topLength===bottomLength&&(byLength.get(topLength)||[]).length<2*K))
+  throw Error('بانک به واژگان متنوع با طول مناسب برای ساخت بدون خانهٔ سیاه نیاز دارد.');
+ const tuples=noBlackTuples(layout);
+ if(!tuples.length)throw Error('الگوی هندسی فاقد خانهٔ سیاه در دسترس نیست.');
+ const cache=new Map();
+ const options=(chars)=>{
+  const key=chars.join('');if(cache.has(key))return cache.get(key);
+  const available=[];
+  for(const tuple of tuples){
+   const choices=tuple.lengths.map((len,i)=>buckets.get(len+'|'+tuple.offsets[i]+'|'+chars[i])||[]);
+   if(choices.every(x=>x.length))available.push({tuple,choices,
+    weight:choices.reduce((x,a)=>x*Math.min(a.length,25),1)});
+  }
+  available.sort((a,b)=>b.weight-a.weight);
+  cache.set(key,available);
+  return available;
+ };
+ const shuffle=a=>{
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+ };
+ const cap=Number(settings.budgetMs)||14500;
+ const budget=Math.max(1000,Math.min(30000,cap)),limit=Date.now()+budget;
+ const maxAttempts=Math.max(120,Math.min(4000,(Number(settings.attempts)||4)*650));
+ let tried=0;
+ for(;tried<maxAttempts&&Date.now()<limit;tried++){
+  const top=shuffle((byLength.get(topLength)||[]).slice()).slice(0,K);
+  const bottom=shuffle((byLength.get(bottomLength)||[]).filter(i=>!top.includes(i))).slice(0,K);
+  if(bottom.length!==K)continue;
+  const vertical=[top,bottom],used=new Set([...top,...bottom]);
+  const rows=[];
+  let possible=true;
+  for(let r=1;r<height;r++){
+   if(r===split)continue;
+   const group=r<split?0:1,index=r<split?r-1:r-split-1;
+   const chars=columns.map((_,j)=>pool[vertical[group][j]].letters[index]);
+   const candidates=options(chars);
+   if(!candidates.length){possible=false;break;}
+   rows.push({r,candidates});
+  }
+  if(!possible)continue;
+  rows.sort((a,b)=>a.candidates.length-b.candidates.length+(rng()-.5)*.05);
+  const chosenLengths=new Map();
+  for(const row of rows){
+   let chosen=null;
+   // The word assignment below is a feasibility check; the final editorial
+   // assignment is a minimum-cost global matching over the same slot geometry.
+   const choices=row.candidates.slice(0,90);
+   shuffle(choices);choices.sort((a,b)=>b.weight-a.weight);
+   for(const op of choices){
+    const selected=[];
+    for(const candidates of op.choices){
+     const available=candidates.filter(i=>!used.has(i)&&!selected.includes(i));
+     if(!available.length){selected.length=0;break;}
+     selected.push(available[Math.floor(rng()*available.length)]);
+    }
+    if(selected.length===K){chosen=op.tuple.lengths;for(const i of selected)used.add(i);break;}
+   }
+   if(!chosen){possible=false;break;}
+   chosenLengths.set(row.r,chosen);
+  }
+  if(!possible)continue;
+  const verticalChars=new Map();
+  for(const origin of [0,split]){
+   const group=origin===0?0:1;
+   for(let col=0;col<K;col++){
+    const word=pool[vertical[group][col]];
+    for(let i=0;i<word.length;i++)
+     verticalChars.set((origin+1+i)+','+columns[col],word.letters[i]);
+   }
+  }
+  const slots=[];
+  for(let r=0;r<height;r++){
+   const lengths=r===0||r===split?special:chosenLengths.get(r);
+   if(!lengths){possible=false;break;}
+   let c=width-1;
+   for(const len of lengths){
+    const constraints=[];
+    for(let i=0;i<len;i++){
+     const ch=verticalChars.get(r+','+(c-i-1));
+     if(ch)constraints.push([i,ch]);
+    }
+    slots.push({r,c,len,constraints});
+    c-=len+1;
+   }
+   if(c!==(r===0||r===split?0:-1)){possible=false;break;}
+  }
+  if(!possible)continue;
+  const candidateIds=pool.map((_,i)=>i).filter(i=>!top.includes(i)&&!bottom.includes(i));
+  let chosen;
+  try{
+   const costs=slots.map(slot=>candidateIds.map((id,j)=>{
+    const e=pool[id];
+    if(e.length!==slot.len||slot.constraints.some(([off,ch])=>e.letters[off]!==ch))return 1e7;
+    const q=e.clue,cost=q.startsWith('پایتخت')?600:
+     q.startsWith('واحد پول')?100:
+     q.startsWith('مرکز استان')||q.startsWith('مرکز استانی')?28:0;
+    return cost+(q.length>80?2:0)+j*.000001;
+   }));
+   chosen=minCostAssignment(costs).map(i=>pool[candidateIds[i]]);
+  }catch(_){continue;}
+  const item=model.blank(variant);
+  let entryNumber=0;
+  const add=(data,r,c,direction)=>{
+   const entry={id:'auto-'+String(++entryNumber).padStart(3,'0'),answer:data.answer,
+    clue:data.clue,shortClue:shortClue(data.clue),direction,clueCell:[r,c],
+    start:model.startFor([r,c],direction)};
+   item.puzzle.entries.push(entry);
+  };
+  for(let i=0;i<slots.length;i++)add(chosen[i],slots[i].r,slots[i].c,'across');
+  for(const origin of [0,split]){
+   const group=origin===0?0:1;
+   for(let j=0;j<K;j++)add(pool[vertical[group][j]],origin,columns[j],'down');
+  }
+  const built=model.build(item);
+  if(built.errors.length)continue;
+  item.puzzle.grid=built.grid;
+  const report=model.inspect(item);
+  if(!report.publishable||report.stats.block!==0||report.stats.empty!==0)continue;
+  item.puzzle.meta={status:'draft',method:'central-bank-generator',
+   source:'authenticated-bank-snapshot',seed,bankRows:prepared.inputCount,
+   eligibleWords:prepared.pool.length,generatedAt:new Date().toISOString(),
+   noBlack:true,complete:true};
+  const diagnostics={source:'authenticated-bank-snapshot',inputCount:prepared.inputCount,
+   eligible:prepared.pool.length,uniqueAnswers:prepared.pool.length,
+   attempted:tried+1,complete:true,seed,budgetMs:budget-(limit-Date.now()),
+   attemptReports:[{round:tried+1,items:item.puzzle.entries.length,
+    letters:report.stats.letter,crossings:report.stats.crossings,empty:0,publishable:true}]};
+  return {item,report,diagnostics};
+ }
+ throw Error('در بودجهٔ تولید، جدول کاملِ بدون خانهٔ سیاهِ اضافی پیدا نشد. بانک را گسترش بدهید یا دوباره تولید کنید.');
+}
 function run(entries,variant,settings={}){
+ return runZeroBlack(entries,variant,settings);
  const size=model.sizes[variant];if(!size)throw Error('قالب انتخاب‌شده وجود ندارد.');
  const randomSeed=(Number(settings.seed)||Number(new Date().toISOString().slice(0,10).replaceAll('-',''))||20261103)>>>0;
  const prepared=poolFrom(entries,{seed:randomSeed});
