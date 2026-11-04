@@ -101,11 +101,13 @@ def main():
                 except HTTPError as e:
                     record['meta']['failures']+=1
                     record['errors'].append({'page':page,'index':i,'url':url,'error':f'HTTP {e.code}'})
-                    if e.code in (403,429,503):
-                        checkpoint('rate_limited_or_forbidden');return 2
+                    checkpoint('rate_limited_or_forbidden' if e.code in (403,429,503) else 'detail_error_retry_required')
+                    return 2
                 except (URLError,ValueError,TimeoutError) as e:
                     record['meta']['failures']+=1
                     record['errors'].append({'page':page,'index':i,'url':url,'error':str(e)[:160]})
+                    checkpoint('detail_error_retry_required')
+                    return 2
                 cursor.update({'page':page,'offset':i+1})
                 if i+1==len(links):cursor.update({'page':page+1,'offset':0})
                 if i%5==4:checkpoint()
