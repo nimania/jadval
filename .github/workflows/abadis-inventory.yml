@@ -1,0 +1,35 @@
+name: Inventory Abadis indexes and sample candidates
+on:
+  push:
+    branches: [abadis-safe-import]
+    paths:
+      - tools/abadis_index_inventory.py
+      - .github/workflows/abadis-inventory.yml
+permissions:
+  contents: read
+jobs:
+  sample:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        group: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify Python syntax
+        run: python -m py_compile tools/abadis_index_inventory.py tools/abadis_sample.py
+      - name: Inventory eight letters and sample a few clues per letter
+        run: python tools/abadis_index_inventory.py --group ${{ matrix.group }} --max-page 128 --per-letter 6 --delay 1.4 --out abadis-inventory-${{ matrix.group }}.json
+      - name: Save private-for-review temporary research artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: abadis-inventory-${{ matrix.group }}
+          path: abadis-inventory-${{ matrix.group }}.json
+          if-no-files-found: ignore
+          retention-days: 1
