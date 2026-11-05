@@ -39,6 +39,15 @@ class PairDedupTests(unittest.TestCase):
         m,q,d,_=prepare([entry('new','کشور زیبا','ایران')],old,[],'example')
         self.assertEqual(len(d),1)
         self.assertEqual(len(m)+len(q),0)
+    def test_distinct_numbers_make_distinct_clues(self):
+        old=[row('old','سال ۱','سیب')]
+        items=[entry('a','سال ۲','سیب'),entry('b','سال 1','سیب')]
+        main,review,dupes,_=prepare(items,old,[],'example')
+        self.assertEqual(len(main),1)
+        self.assertEqual(len(dupes),1)
+        self.assertEqual(norm('سال ۱'),norm('سال 1'))
+        self.assertNotEqual(norm('سال ۱'),norm('سال ۲'))
+
     def test_ambiguous_answers_are_both_preserved_for_review(self):
         entries=[entry('a','حکومت','دولت',['ambiguous_answers']),
                  entry('b','حکومت','امارت',['ambiguous_answers'])]
