@@ -1,18 +1,24 @@
 {
   "letter": "ب",
-  "page": 2,
+  "page": 3,
   "offset": 0,
-  "max_details": 70,
-  "last_imported_run": 42007897486,
-  "added_to_main": 15,
-  "added_to_review": 5,
+  "max_details": 150,
+  "last_imported_run": 42009163981,
+  "batch_target": 1000,
+  "current_batch": 1,
+  "new_pairs_in_current_batch": 32,
+  "previous_batch_base_abadi_entries": 376,
   "pending_pages": [
     {
       "letter": "ا",
       "page": 6,
-      "reason": "empty response on previous crawl; later pages exist",
-      "status": "retry_later"
+      "reason": "intermittently blank; not verified end"
+    },
+    {
+      "letter": "ب",
+      "page": 3,
+      "reason": "retry blank page before moving to another letter"
     }
   ],
-  "reason": "Retry Beh page 2, confirmed previously accessible. Never treat blank index as completion."
+  "reason": "Continue in 150-detail bounded increments; each nonduplicate clue+answer pair is independent even when answer repeats"
 }
