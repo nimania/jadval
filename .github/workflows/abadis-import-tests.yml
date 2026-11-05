@@ -5,6 +5,8 @@ on:
     paths:
       - tools/abadis_prepare_import.py
       - tools/abadis_full_scan.py
+      - tools/abadis_sprint.py
+      - tools/tests/test_abadis_sprint.py
       - tools/tests/test_abadis_pair_dedup.py
       - tools/tests/test_abadis_lookahead.py
       - .github/workflows/abadis-import-tests.yml
