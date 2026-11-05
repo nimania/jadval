@@ -1,5 +1,5 @@
 {
-  "letter": "ث",
+  "letter": "ج",
   "page": 1,
   "offset": 0,
   "max_details": 150,
@@ -31,9 +31,15 @@
       "page": 2,
       "reason": "two empty index responses in run 42028756816; unknown, not EOF",
       "status": "retry_later"
+    },
+    {
+      "letter": "ث",
+      "page": 1,
+      "reason": "two empty index responses in run 42046037520; unknown, not EOF",
+      "status": "retry_later"
     }
   ],
-  "note": "Run 42028756816: 60 extracted, 5 exact pair duplicates, 12 new main, 43 review; all 55 rows read back. Sheet grids expanded; batch 120/1000. Preserve pending ا6, ب5, پ2, ت2. Continue ث1.",
+  "note": "Run 42046037520 extracted zero pairs because ث page 1 returned two empty listings. No bank or review writes required; kept ث1 for retry and advanced to ج1. Last imported run remains 42028756816; batch 120/1000.",
   "added_to_main": 12,
   "added_to_review": 43
 }
