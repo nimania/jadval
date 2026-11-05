@@ -1,12 +1,12 @@
 {
-  "letter": "ج",
+  "letter": "چ",
   "page": 1,
   "offset": 0,
   "max_details": 150,
-  "last_imported_run": 42028756816,
+  "last_imported_run": 42056531158,
   "batch_target": 1000,
   "current_batch": 1,
-  "new_pairs_in_current_batch": 120,
+  "new_pairs_in_current_batch": 166,
   "baseline_abadis_count": 376,
   "pending_pages": [
     {
@@ -37,9 +37,15 @@
       "page": 1,
       "reason": "two empty index responses in run 42046037520; unknown, not EOF",
       "status": "retry_later"
+    },
+    {
+      "letter": "ج",
+      "page": 2,
+      "reason": "two empty index responses in run 42056531158; unknown, not EOF",
+      "status": "retry_later"
     }
   ],
-  "note": "Run 42046037520 extracted zero pairs because ث page 1 returned two empty listings. No bank or review writes required; kept ث1 for retry and advanced to ج1. Last imported run remains 42028756816; batch 120/1000.",
-  "added_to_main": 12,
-  "added_to_review": 43
+  "note": "Run 42056531158: 53 extracted, 7 exact duplicates, 28 main and 18 review written and verified in private Sheets. ج page 2 empty twice, preserved for retry. Continue چ page 1. Batch 166/1000.",
+  "added_to_main": 28,
+  "added_to_review": 18
 }
