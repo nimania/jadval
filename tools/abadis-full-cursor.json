@@ -1,13 +1,9 @@
 {
   "letter": "ا",
-  "page": 3,
-  "offset": 20,
+  "page": 4,
+  "offset": 40,
   "max_details": 70,
-  "reason": "Continue sequential coverage after completed page 2; page 3 resume at index 20",
-  "previous_completed_pages": [
-    1,
-    2,
-    23
-  ],
-  "last_successful_batch_run": 41907118112
+  "last_imported_run": 42001186317,
+  "review_queued": 42,
+  "description": "Continue sequential coverage after verifying 42 rows written and no main-bank changes"
 }
