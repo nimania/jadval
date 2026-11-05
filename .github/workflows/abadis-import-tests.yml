@@ -1,0 +1,21 @@
+name: Check Abadis pair staging
+on:
+  push:
+    branches: [abadis-safe-import]
+    paths:
+      - tools/abadis_prepare_import.py
+      - tools/tests/test_abadis_pair_dedup.py
+      - .github/workflows/abadis-import-tests.yml
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test pair deduplication
+        run: python -m unittest discover -s tools/tests -p test_abadis_pair_dedup.py -v
