@@ -1,12 +1,12 @@
 {
-  "letter": "ب",
-  "page": 4,
+  "letter": "پ",
+  "page": 1,
   "offset": 0,
   "max_details": 150,
-  "last_imported_run": 42011710410,
+  "last_imported_run": 42012783674,
   "batch_target": 1000,
   "current_batch": 1,
-  "new_pairs_in_current_batch": 57,
+  "new_pairs_in_current_batch": 81,
   "baseline_abadis_count": 376,
   "pending_pages": [
     {
@@ -16,9 +16,10 @@
     },
     {
       "letter": "ب",
-      "page": 4,
-      "reason": "page returned empty after completed page 3; retry"
+      "page": 5,
+      "reason": "two empty index responses on 2026-11-05 run 42012783674; unknown, not EOF",
+      "status": "retry_later"
     }
   ],
-  "note": "Keep multiple distinct clues for each answer. Import verified before cursor advance. All rows unreviewed."
+  "note": "Run 42012783674: 55 extracted, 19 duplicates, 24 new main, 12 review. All 36 rows read back in Sheets; preserve pending pages ا6 and ب5. Continue sequentially with پ1."
 }
