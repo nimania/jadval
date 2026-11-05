@@ -52,8 +52,15 @@ class PairDedupTests(unittest.TestCase):
             for name,rows in [('main',[]),('review',[])]:
                 with (tmp/(name+'.csv')).open('w',encoding='utf-8-sig',newline='') as f:
                     w=csv.DictWriter(f,fieldnames=HEADERS);w.writeheader();w.writerows(rows)
-            items=[entry(f'i{i}',f'سرنخ نمونه {i} با توصیف متفاوت','واژه') for i in range(1005)]
-            # Include numbers in clues only as test identifiers; flags do not affect output batching.
+            letters='ابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی'
+            def encode(n):
+                n+=1
+                out=''
+                while n:
+                    n,r=divmod(n-1,len(letters))
+                    out=letters[r]+out
+                return out
+            items=[entry(f'i{i}',f'سرنخ نمونه {encode(i)} با توصیف متفاوت','واژه') for i in range(1005)]
             art=tmp/'art.json';art.write_text(json.dumps({'source':'https://abadis.ir/crossword/','items':items},ensure_ascii=False),encoding='utf8')
             prefix=str(tmp/'batch')
             out=subprocess.check_output([sys.executable,str(ROOT/'abadis_prepare_import.py'),
