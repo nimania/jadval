@@ -1,9 +1,19 @@
 {
-  "letter": "ا",
-  "page": 4,
-  "offset": 40,
+  "letter": "ب",
+  "page": 1,
+  "offset": 0,
   "max_details": 70,
-  "last_imported_run": 42001186317,
-  "review_queued": 42,
-  "description": "Continue sequential coverage after verifying 42 rows written and no main-bank changes"
+  "last_imported_run": 42002330708,
+  "added_to_main": 18,
+  "added_to_review": 14,
+  "pending_pages": [
+    {
+      "letter": "ا",
+      "page": 6,
+      "reason": "two empty listing responses despite later pages existing; not EOF",
+      "status": "retry_later"
+    }
+  ],
+  "completed_pages_note": "Alef 1-5,23; pages 6 and onward remain incomplete",
+  "reason": "Continue different letter while page 6 of Alef unresolved. Do not mark Alef complete."
 }
