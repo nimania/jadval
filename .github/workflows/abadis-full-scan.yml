@@ -76,7 +76,7 @@ jobs:
           PY
       - name: Read up to two complete index pages, checkpoint as needed
         run: |
-          python tools/abadis_full_scan.py --letter "$AB_LETTER" --page "$AB_PAGE" --offset "$AB_OFFSET" --max-pages 3 --max-details "$AB_DETAILS" --delay 2.0 --out abadis-full-results.json
+          python tools/abadis_full_scan.py --letter "$AB_LETTER" --page "$AB_PAGE" --offset "$AB_OFFSET" --max-pages 8 --max-details "$AB_DETAILS" --delay 2.0 --out abadis-full-results.json
       - name: Save candidate data and next cursor, never private bank
         if: always()
         uses: actions/upload-artifact@v4
