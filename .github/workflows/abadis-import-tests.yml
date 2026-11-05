@@ -4,7 +4,9 @@ on:
     branches: [abadis-safe-import]
     paths:
       - tools/abadis_prepare_import.py
+      - tools/abadis_full_scan.py
       - tools/tests/test_abadis_pair_dedup.py
+      - tools/tests/test_abadis_lookahead.py
       - .github/workflows/abadis-import-tests.yml
 permissions:
   contents: read
@@ -18,4 +20,4 @@ jobs:
         with:
           python-version: '3.12'
       - name: Test pair deduplication
-        run: python -m unittest discover -s tools/tests -p test_abadis_pair_dedup.py -v
+        run: python -m unittest discover -s tools/tests -p 'test_abadis_*.py' -v
