@@ -7,6 +7,7 @@ from urllib.parse import quote
 from urllib.error import HTTPError, URLError
 from urllib.robotparser import RobotFileParser
 from abadis_expand_batch import SITE, UA, fetch, listing, normal, section_answers
+from abadis_prepare_import import norm as pair_norm
 
 def risks(clue, display, all_answers):
     flags=[]
@@ -126,7 +127,7 @@ def main():
                         for display in answers:
                             answer=normal(display)
                             if answer==normal(clue):continue
-                            key=(normal(clue),answer)
+                            key=(pair_norm(clue),answer)
                             if key in seen:continue
                             seen.add(key)
                             flags=risks(clue,display,answers)
