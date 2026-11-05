@@ -1,24 +1,24 @@
 {
   "letter": "ب",
-  "page": 3,
+  "page": 4,
   "offset": 0,
   "max_details": 150,
-  "last_imported_run": 42009163981,
+  "last_imported_run": 42011710410,
   "batch_target": 1000,
   "current_batch": 1,
-  "new_pairs_in_current_batch": 32,
-  "previous_batch_base_abadi_entries": 376,
+  "new_pairs_in_current_batch": 57,
+  "baseline_abadis_count": 376,
   "pending_pages": [
     {
       "letter": "ا",
       "page": 6,
-      "reason": "intermittently blank; not verified end"
+      "reason": "intermittent empty listing; not EOF"
     },
     {
       "letter": "ب",
-      "page": 3,
-      "reason": "retry blank page before moving to another letter"
+      "page": 4,
+      "reason": "page returned empty after completed page 3; retry"
     }
   ],
-  "reason": "Continue in 150-detail bounded increments; each nonduplicate clue+answer pair is independent even when answer repeats"
+  "note": "Keep multiple distinct clues for each answer. Import verified before cursor advance. All rows unreviewed."
 }
