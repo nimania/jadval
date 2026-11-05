@@ -1,19 +1,18 @@
 {
   "letter": "ب",
-  "page": 1,
+  "page": 2,
   "offset": 0,
   "max_details": 70,
-  "last_imported_run": 42002330708,
-  "added_to_main": 18,
-  "added_to_review": 14,
+  "last_imported_run": 42007897486,
+  "added_to_main": 15,
+  "added_to_review": 5,
   "pending_pages": [
     {
       "letter": "ا",
       "page": 6,
-      "reason": "two empty listing responses despite later pages existing; not EOF",
+      "reason": "empty response on previous crawl; later pages exist",
       "status": "retry_later"
     }
   ],
-  "completed_pages_note": "Alef 1-5,23; pages 6 and onward remain incomplete",
-  "reason": "Continue different letter while page 6 of Alef unresolved. Do not mark Alef complete."
+  "reason": "Retry Beh page 2, confirmed previously accessible. Never treat blank index as completion."
 }
