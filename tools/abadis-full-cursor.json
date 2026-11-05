@@ -1,12 +1,13 @@
 {
   "letter": "ا",
-  "page": 2,
-  "offset": 0,
+  "page": 3,
+  "offset": 20,
   "max_details": 70,
-  "reason": "Retry transient empty page 2 after independent 50-link diagnostic",
+  "reason": "Continue sequential coverage after completed page 2; page 3 resume at index 20",
   "previous_completed_pages": [
     1,
+    2,
     23
   ],
-  "last_successful_batch_run": 41906108998
+  "last_successful_batch_run": 41907118112
 }
