@@ -28,7 +28,7 @@ def main():
     p.add_argument('--out',required=True)
     a=p.parse_args()
     if (len(a.letter)!=1 or not 1<=a.page<=20000 or not 0<=a.offset<50
-        or not 1<=a.max_pages<=5 or not 1<=a.max_details<=150 or a.delay<1.8):
+        or not 1<=a.max_pages<=8 or not 1<=a.max_details<=150 or a.delay<1.8):
         raise SystemExit('Invalid/unsafe scan bounds')
     robots=RobotFileParser();robots.set_url(SITE+'/robots.txt');robots.read()
     if not robots.can_fetch(UA,SITE+'/crossword/?ch=%D8%A7') or not robots.can_fetch(UA,SITE+'/fatofa/test/'):
