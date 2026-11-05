@@ -27,7 +27,10 @@ TRANSLATION = str.maketrans({
 def norm(s):
     s=unicodedata.normalize('NFKC',str(s or '')).translate(TRANSLATION)
     s=re.sub(r'[\u064b-\u065f\u0670\u0640\u200c\u200d\s\-]+','',s)
-    return ''.join(c for c in s if c.isalpha())
+    # Keep digits inside clues: «کشور ۱» and «کشور ۲» are different clues.
+    # Convert Persian/Arabic digits to the same ASCII form for stable matching.
+    return ''.join(str(unicodedata.digit(c)) if c.isdigit() else c
+                   for c in s if c.isalpha() or c.isdigit())
 
 def display_clue(s):
     # Never swap Persian word order or silently rewrite a source clue.
@@ -50,7 +53,7 @@ def prepare(items,existing_main,existing_review,run_id):
         if row.get('شناسه'):ids.add(row['شناسه'])
     main=[];review=[];dupes=[];counter=Counter()
     answer_to_clues=defaultdict(set)
-    new_answer_count=0; new_clue_for_old_answer_count=0
+    new_answers=set(); new_clue_for_old_answer_count=0
     for i,x in enumerate(items):
         raw=str(x.get('raw_clue') or x.get('source_clue_raw') or x.get('clue') or '')
         clue=display_clue(raw)
@@ -66,7 +69,7 @@ def prepare(items,existing_main,existing_review,run_id):
         # Crucial: do NOT deduplicate by answer; each different clue remains.
         keys.add(key); ids.add(rid)
         if answer in old_answers:new_clue_for_old_answer_count+=1
-        else:new_answer_count+=1
+        else:new_answers.add(answer)
         answer_to_clues[answer].add(key[0])
         flags=list(x.get('quality_flags') or [])
         if any(len(token)==1 and token!='و' for token in clue.split()):
@@ -96,7 +99,7 @@ def prepare(items,existing_main,existing_review,run_id):
         'structurally_eligible':len(main),'quarantine':len(review),
         'duplicate_or_invalid':len(dupes),
         'new_pairs_using_existing_answers':new_clue_for_old_answer_count,
-        'candidate_answers_not_in_previous_bank':new_answer_count,
+        'distinct_answers_not_in_previous_bank':len(new_answers),
         'distinct_answers_in_new_pairs':len(answer_to_clues),
         'answers_with_multiple_new_clues':sum(len(v)>1 for v in answer_to_clues.values()),
         'flags':dict(counter)
