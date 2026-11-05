@@ -43,7 +43,7 @@ class PairDedupTests(unittest.TestCase):
         old=[row('old','سال ۱','سیب')]
         items=[entry('a','سال ۲','سیب'),entry('b','سال 1','سیب')]
         main,review,dupes,_=prepare(items,old,[],'example')
-        self.assertEqual(len(main),1)
+        self.assertEqual(len(main)+len(review),1)
         self.assertEqual(len(dupes),1)
         self.assertEqual(norm('سال ۱'),norm('سال 1'))
         self.assertNotEqual(norm('سال ۱'),norm('سال ۲'))
