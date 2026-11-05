@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Resume-safe bounded Abadis scan: all 50 listing items, never writes private bank."""
-import argparse, hashlib, json, re, sys
+import argparse, hashlib, json, re, sys, time
 from pathlib import Path
 from datetime import datetime, timezone
 from urllib.parse import quote
@@ -32,18 +32,22 @@ def main():
     robots=RobotFileParser();robots.set_url(SITE+'/robots.txt');robots.read()
     if not robots.can_fetch(UA,SITE+'/crossword/?ch=%D8%A7') or not robots.can_fetch(UA,SITE+'/fatofa/test/'):
         raise SystemExit('Robots permission missing')
+    started=time.monotonic()
     out=Path(a.out);out.parent.mkdir(parents=True,exist_ok=True)
     cursor={'letter':a.letter,'page':a.page,'offset':a.offset}
     record={'schema':3,'source':SITE+'/crossword/',
       'started_at':datetime.now(timezone.utc).isoformat(),
       'initial_cursor':dict(cursor),'next_cursor':dict(cursor),
       'meta':{'detail_requests':0,'index_requests':0,'candidates':0,'quarantined':0,
-              'failures':0,'status':'running'},
-      'items':[],'errors':[]}
+              'failures':0,'status':'running','lookahead_hits':0,'missing_index_pages':0,
+              'detail_rejections':0,'elapsed_seconds':0},
+      'items':[],'errors':[],'pending_pages':[]}
     seen=set()
+    preloaded_listings={}
     def checkpoint(status=None):
         if status:record['meta']['status']=status
         record['meta']['candidates']=len(record['items'])
+        record['meta']['elapsed_seconds']=round(time.monotonic()-started,2)
         record['next_cursor']=dict(cursor)
         record['saved_at']=datetime.now(timezone.utc).isoformat()
         tmp=out.with_suffix('.tmp')
@@ -55,25 +59,52 @@ def main():
             index_url=SITE+'/crossword/?ch='+quote(a.letter)+(('&pn='+str(page)) if page>1 else '')
             if not robots.can_fetch(UA,index_url):
                 checkpoint('blocked_robots_index');break
-            try:
-                html=fetch(index_url,a.delay)
-                record['meta']['index_requests']+=1
-                links=listing(html)
-            except (HTTPError,URLError,ValueError,TimeoutError) as e:
-                record['errors'].append({'page':page,'stage':'index','error':str(e)[:160]})
-                checkpoint('index_error');break
-            if not links:
-                # One ordinary delayed retry for intermittent blank listings; no bypass.
+            if page in preloaded_listings:
+                links=preloaded_listings.pop(page)
+                record['meta']['lookahead_hits']+=1
+            else:
                 try:
-                    html=fetch(index_url,a.delay+1.5)
+                    html=fetch(index_url,a.delay)
                     record['meta']['index_requests']+=1
                     links=listing(html)
                 except (HTTPError,URLError,ValueError,TimeoutError) as e:
-                    record['errors'].append({'page':page,'stage':'index_retry','error':str(e)[:160]})
+                    record['errors'].append({'page':page,'stage':'index','error':str(e)[:160]})
                     checkpoint('index_error');break
                 if not links:
-                    record['errors'].append({'page':page,'error':'two empty index responses; unknown, not proven EOF'})
-                    checkpoint('unknown_empty_page');break
+                    # One ordinary delayed retry; never bypass forbidden/rate-limited access.
+                    try:
+                        html=fetch(index_url,a.delay+1.5)
+                        record['meta']['index_requests']+=1
+                        links=listing(html)
+                    except (HTTPError,URLError,ValueError,TimeoutError) as e:
+                        record['errors'].append({'page':page,'stage':'index_retry','error':str(e)[:160]})
+                        checkpoint('index_error');break
+            if not links:
+                # One-page look-ahead distinguishes a missing index page from
+                # an apparently ended alphabet. This does NOT mark the gap complete.
+                following=page+1
+                following_url=SITE+'/crossword/?ch='+quote(a.letter)+'&pn='+str(following)
+                if following<=20000 and robots.can_fetch(UA,following_url):
+                    try:
+                        later_html=fetch(following_url,a.delay+1.5)
+                        record['meta']['index_requests']+=1
+                        later_links=listing(later_html)
+                    except (HTTPError,URLError,ValueError,TimeoutError) as e:
+                        record['errors'].append({'page':page,'stage':'lookahead','error':str(e)[:160]})
+                        checkpoint('index_error');break
+                    if later_links:
+                        if len(later_links)>50:
+                            checkpoint('listing_format_changed');break
+                        record['pending_pages'].append({'letter':a.letter,'page':page,
+                            'reason':'blank twice but next page has links','verified_next_page':following})
+                        record['meta']['missing_index_pages']+=1
+                        record['errors'].append({'page':page,'stage':'index','error':'recoverable_gap_next_page_has_links'})
+                        preloaded_listings[following]=later_links
+                        cursor.update({'page':following,'offset':0})
+                        checkpoint()
+                        continue
+                record['errors'].append({'page':page,'stage':'index','error':'two empty responses; lookahead also empty; EOF not proven'})
+                checkpoint('unknown_empty_page');break
             if len(links)>50:
                 checkpoint('listing_format_changed');break
             start=a.offset if page==a.page else 0
@@ -88,7 +119,9 @@ def main():
                     body=fetch(url,a.delay)
                     record['meta']['detail_requests']+=1
                     answers,err=section_answers(body,clue)
-                    if err:record['errors'].append({'page':page,'index':i,'url':url,'error':err})
+                    if err:
+                        record['meta']['detail_rejections']+=1
+                        record['errors'].append({'page':page,'index':i,'url':url,'error':err})
                     else:
                         for display in answers:
                             answer=normal(display)
