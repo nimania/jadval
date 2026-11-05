@@ -1,12 +1,12 @@
 {
-  "letter": "ت",
+  "letter": "ث",
   "page": 1,
   "offset": 0,
   "max_details": 150,
-  "last_imported_run": 42019499949,
+  "last_imported_run": 42028756816,
   "batch_target": 1000,
   "current_batch": 1,
-  "new_pairs_in_current_batch": 108,
+  "new_pairs_in_current_batch": 120,
   "baseline_abadis_count": 376,
   "pending_pages": [
     {
@@ -25,9 +25,15 @@
       "page": 2,
       "reason": "two empty index responses on 2026-11-05 run 42019499949; unknown, not EOF",
       "status": "retry_later"
+    },
+    {
+      "letter": "ت",
+      "page": 2,
+      "reason": "two empty index responses in run 42028756816; unknown, not EOF",
+      "status": "retry_later"
     }
   ],
-  "note": "Run 42019499949: 61 extracted, 4 exact pair duplicates, 27 new main, 30 review. All 57 rows read back in Sheets; current batch 108/1000. Preserve pending ا6, ب5, پ2. Continue ت1.",
-  "added_to_main": 27,
-  "added_to_review": 30
+  "note": "Run 42028756816: 60 extracted, 5 exact pair duplicates, 12 new main, 43 review; all 55 rows read back. Sheet grids expanded; batch 120/1000. Preserve pending ا6, ب5, پ2, ت2. Continue ث1.",
+  "added_to_main": 12,
+  "added_to_review": 43
 }
