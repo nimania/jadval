@@ -1,12 +1,12 @@
 {
-  "letter": "چ",
-  "page": 2,
+  "letter": "خ",
+  "page": 1,
   "offset": 0,
   "max_details": 150,
-  "last_imported_run": 42065388400,
+  "last_imported_run": 42078915561,
   "batch_target": 1000,
   "current_batch": 1,
-  "new_pairs_in_current_batch": 174,
+  "new_pairs_in_current_batch": 227,
   "baseline_abadis_count": 376,
   "pending_pages": [
     {
@@ -49,11 +49,23 @@
       "page": 2,
       "reason": "two blank listing responses in run 42065388400; retry with multi-letter sprint",
       "status": "retry_later"
+    },
+    {
+      "letter": "چ",
+      "page": 3,
+      "reason": "two empty listings, next page not confirmed; run 42078915561",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ح",
+      "page": 1,
+      "reason": "two empty listings, next page not confirmed; run 42078915561",
+      "status": "retry_later"
     }
   ],
-  "note": "All 55 pairs from 42065388400 compared to private bank+review; 7 exact duplicate pairs, 26 main, 22 review, read-back verified. Resume چ page 2 with sequential multi-letter sprint.",
-  "added_to_main": 26,
-  "added_to_review": 22,
+  "note": "Run 42078915561 schema4: 57 pairs; 4 exact duplicate, 33 main and 20 review; all 53 read-back verified 2026-11-06. STOP: source_blocked_or_error/index_error at خ1; do not dispatch until source status resolved. Pending pages preserved.",
+  "added_to_main": 33,
+  "added_to_review": 20,
   "daily_target_pairs": 1500,
   "baseline_performance_utc": "2026-11-05T17:44:14Z"
 }
