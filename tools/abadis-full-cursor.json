@@ -1,12 +1,12 @@
 {
-  "letter": "خ",
+  "letter": "ص",
   "page": 1,
   "offset": 0,
   "max_details": 150,
-  "last_imported_run": 42078915561,
+  "last_imported_run": 42175657754,
   "batch_target": 1000,
   "current_batch": 1,
-  "new_pairs_in_current_batch": 227,
+  "new_pairs_in_current_batch": 286,
   "baseline_abadis_count": 376,
   "pending_pages": [
     {
@@ -61,11 +61,59 @@
       "page": 1,
       "reason": "two empty listings, next page not confirmed; run 42078915561",
       "status": "retry_later"
+    },
+    {
+      "letter": "خ",
+      "page": 2,
+      "reason": "two empty listings; next page not confirmed; run 42175657754",
+      "status": "retry_later"
+    },
+    {
+      "letter": "د",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42175657754",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ذ",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42175657754",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ر",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42175657754",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ز",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42175657754",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ژ",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42175657754",
+      "status": "retry_later"
+    },
+    {
+      "letter": "س",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42175657754",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ش",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42175657754",
+      "status": "retry_later"
     }
   ],
-  "note": "Run 42078915561 schema4: 57 pairs; 4 exact duplicate, 33 main and 20 review; all 53 read-back verified 2026-11-06. STOP: source_blocked_or_error/index_error at خ1; do not dispatch until source status resolved. Pending pages preserved.",
-  "added_to_main": 33,
-  "added_to_review": 20,
+  "note": "Run 42175657754 schema4: 67 candidates; 8 exact duplicates; 27 main + 32 review, read-back verified 2026-11-07; 8 pending pages merged. Previous source_blocked_or_error requires resolution before dispatch; empty index pages not EOF.",
+  "added_to_main": 27,
+  "added_to_review": 32,
   "daily_target_pairs": 1500,
   "baseline_performance_utc": "2026-11-05T17:44:14Z"
 }
