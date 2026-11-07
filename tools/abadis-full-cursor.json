@@ -1,12 +1,12 @@
 {
-  "letter": "ص",
+  "letter": "ک",
   "page": 1,
   "offset": 0,
   "max_details": 150,
-  "last_imported_run": 42175657754,
+  "last_imported_run": 42343307225,
   "batch_target": 1000,
   "current_batch": 1,
-  "new_pairs_in_current_batch": 286,
+  "new_pairs_in_current_batch": 347,
   "baseline_abadis_count": 376,
   "pending_pages": [
     {
@@ -109,11 +109,59 @@
       "page": 1,
       "reason": "two empty listings; next page not confirmed; run 42175657754",
       "status": "retry_later"
+    },
+    {
+      "letter": "ص",
+      "page": 2,
+      "reason": "two empty listings, next page not confirmed; run 42343307225",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ض",
+      "page": 1,
+      "reason": "two empty listings, next page not confirmed; run 42343307225",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ط",
+      "page": 1,
+      "reason": "two empty listings, next page not confirmed; run 42343307225",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ظ",
+      "page": 1,
+      "reason": "two empty listings, next page not confirmed; run 42343307225",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ع",
+      "page": 1,
+      "reason": "two empty listings, next page not confirmed; run 42343307225",
+      "status": "retry_later"
+    },
+    {
+      "letter": "غ",
+      "page": 1,
+      "reason": "two empty listings, next page not confirmed; run 42343307225",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ف",
+      "page": 1,
+      "reason": "two empty listings, next page not confirmed; run 42343307225",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ق",
+      "page": 1,
+      "reason": "two empty listings, next page not confirmed; run 42343307225",
+      "status": "retry_later"
     }
   ],
-  "note": "Run 42175657754 schema4: 67 candidates; 8 exact duplicates; 27 main + 32 review, read-back verified 2026-11-07; 8 pending pages merged. Previous source_blocked_or_error requires resolution before dispatch; empty index pages not EOF.",
-  "added_to_main": 27,
-  "added_to_review": 32,
+  "note": "Run 42343307225: 65 candidates; 4 exact duplicates; 26 main + 35 review, read-back verified 2026-11-07. 8 pending pages merged; source access errors from previous run remain unresolved, do not dispatch new extraction.",
+  "added_to_main": 26,
+  "added_to_review": 35,
   "daily_target_pairs": 1500,
   "baseline_performance_utc": "2026-11-05T17:44:14Z"
 }
