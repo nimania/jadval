@@ -1,12 +1,12 @@
 {
   "letter": "ی",
-  "page": 1,
+  "page": 2,
   "offset": 0,
   "max_details": 150,
-  "last_imported_run": 42360320419,
+  "last_imported_run": 42439102134,
   "batch_target": 1000,
   "current_batch": 1,
-  "new_pairs_in_current_batch": 391,
+  "new_pairs_in_current_batch": 441,
   "baseline_abadis_count": 376,
   "pending_pages": [
     {
@@ -205,11 +205,17 @@
       "page": 1,
       "reason": "two empty listings; next page not confirmed; run 42360320419",
       "status": "retry_later"
+    },
+    {
+      "letter": "ی",
+      "page": 2,
+      "reason": "two empty listings, next page not confirmed; run 42439102134",
+      "status": "retry_later"
     }
   ],
-  "note": "Run 42360320419: 50 candidates, 6 exact duplicates, 31 main + 13 review; read-back verified 2026-11-08. 8 pending pages merged; source access warnings remain unresolved: do not dispatch new extraction.",
-  "added_to_main": 31,
-  "added_to_review": 13,
+  "note": "Run 42439102134: 52 candidates, 2 exact duplicates, 37 main + 13 review; private sheet read-back verified 2026-11-08T22:37Z. 34 pending pages retained; prior source access warnings unresolved: do not dispatch new extraction.",
+  "added_to_main": 68,
+  "added_to_review": 26,
   "daily_target_pairs": 1500,
   "baseline_performance_utc": "2026-11-05T17:44:14Z"
 }
