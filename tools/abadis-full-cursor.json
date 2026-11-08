@@ -1,12 +1,12 @@
 {
-  "letter": "ک",
+  "letter": "ی",
   "page": 1,
   "offset": 0,
   "max_details": 150,
-  "last_imported_run": 42343307225,
+  "last_imported_run": 42360320419,
   "batch_target": 1000,
   "current_batch": 1,
-  "new_pairs_in_current_batch": 347,
+  "new_pairs_in_current_batch": 391,
   "baseline_abadis_count": 376,
   "pending_pages": [
     {
@@ -157,11 +157,59 @@
       "page": 1,
       "reason": "two empty listings, next page not confirmed; run 42343307225",
       "status": "retry_later"
+    },
+    {
+      "letter": "ک",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42360320419",
+      "status": "retry_later"
+    },
+    {
+      "letter": "گ",
+      "page": 2,
+      "reason": "two empty listings; next page not confirmed; run 42360320419",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ل",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42360320419",
+      "status": "retry_later"
+    },
+    {
+      "letter": "م",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42360320419",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ن",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42360320419",
+      "status": "retry_later"
+    },
+    {
+      "letter": "و",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42360320419",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ه",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42360320419",
+      "status": "retry_later"
+    },
+    {
+      "letter": "ی",
+      "page": 1,
+      "reason": "two empty listings; next page not confirmed; run 42360320419",
+      "status": "retry_later"
     }
   ],
-  "note": "Run 42343307225: 65 candidates; 4 exact duplicates; 26 main + 35 review, read-back verified 2026-11-07. 8 pending pages merged; source access errors from previous run remain unresolved, do not dispatch new extraction.",
-  "added_to_main": 26,
-  "added_to_review": 35,
+  "note": "Run 42360320419: 50 candidates, 6 exact duplicates, 31 main + 13 review; read-back verified 2026-11-08. 8 pending pages merged; source access warnings remain unresolved: do not dispatch new extraction.",
+  "added_to_main": 31,
+  "added_to_review": 13,
   "daily_target_pairs": 1500,
   "baseline_performance_utc": "2026-11-05T17:44:14Z"
 }
